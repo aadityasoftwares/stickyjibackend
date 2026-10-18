@@ -16,7 +16,9 @@
     "seed:subscriptions:apply": "tsx src/scripts/seed-default-subscriptions.ts --apply",
     "seed:subscriptions:verify": "tsx src/scripts/seed-default-subscriptions.ts --verify",
     "seed:subscriptions:dry-run": "tsx src/scripts/seed-default-subscriptions.ts --dry-run",
-    "start": "node dist/server.js",
+    "db:init": "tsx src/scripts/initialize-database.ts",
+    "db:init:verify": "tsx src/scripts/verify-database-initialization.ts",
+    "test:db-init": "node --import tsx --test tests/databaseInitialization.test.mjs",
     "backfill:ranks": "tsx src/scripts/backfillRanks.ts",
     "backfill:sticky-numbers": "tsx src/scripts/backfillStickyNoteNumbers.ts"
   },

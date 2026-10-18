@@ -5,6 +5,7 @@ dotenv.config();
 
 import app from "./app.js";
 import { connectDatabase } from "./config/database.js";
+import { initializeDatabaseIfRequired } from "./database/initialization/database-initializer.js";
 import { startStickyNoteRetentionScheduler } from "./modules/stickynotes/schedulers/stickyNoteRetention.scheduler.js";
 
 const PORT = process.env.PORT || 5000;
@@ -18,6 +19,7 @@ console.log("JWT_SECRET:", process.env.JWT_SECRET ? "Loaded ‚úÖ" : "Not Found ‚ù
 async function startServer() {
     try {
         await connectDatabase();
+        await initializeDatabaseIfRequired();
 
         startStickyNoteRetentionScheduler();
         startWorkspaceRetentionScheduler();
