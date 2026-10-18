@@ -1,0 +1,44 @@
+export enum PermissionAction {
+    CREATE = "CREATE",
+    READ = "READ",
+    UPDATE = "UPDATE",
+    DELETE = "DELETE",
+
+    MANAGE = "MANAGE",
+
+    INVITE = "INVITE",
+    ASSIGN = "ASSIGN",
+    REMOVE = "REMOVE",
+
+    ARCHIVE = "ARCHIVE",
+    MOVE = "MOVE",
+
+    SHARE = "SHARE",
+
+    EXPORT = "EXPORT",
+    IMPORT = "IMPORT",
+
+    SETTINGS = "SETTINGS",
+    TRANSFER = "TRANSFER",
+}
+
+export enum PermissionAccess {
+
+    GENERAL = "GENERAL",
+    OWN = "OWN",
+    ANY = "ANY",
+}
+
+export enum PermissionModule {
+    SUBSCRIPTION_ENTITLEMENT = "SUBSCRIPTION_ENTITLEMENT",
+    SUBSCRIPTION_USAGE = "SUBSCRIPTION_USAGE",
+    USER_SUBSCRIPTION = "USER_SUBSCRIPTION",
+    WORKSPACE = "WORKSPACE",
+    ROLES = "ROLES",
+    MEMBERS = "MEMBERS",
+    NOTES = "NOTES",
+    FOLDERS = "FOLDERS",
+    TASKS = "TASKS",
+    BILLING = "BILLING",
+    SUBSCRIPTION_PAYMENT = "SUBSCRIPTION_PAYMENT",
+}

@@ -1,0 +1,1131 @@
+import bcrypt from "bcryptjs";
+import { Types } from "mongoose";
+
+import { UserRepository } from "../../user/repositories/user.repository.js";
+import { UserService } from "../../user/services/user.service.js";
+
+import {
+    UserAuthProvider,
+    UserStatus,
+} from "../../user/constants/user.enums.js";
+
+import type {
+    IUser,
+    IUserDocument,
+} from "../../user/interfaces/user.interface.js";
+
+import { SessionService } from "./session.service.js";
+import { AppError } from "../../../utils/errors/app.error.js";
+import { AuthMessages } from "../constants/auth.messages.js";
+
+import type {
+    IAuthUserResponse,
+    ILoginInput,
+    IRegisterInput,
+} from "../interfaces/auth.interface.js";
+
+import { SessionType } from "../constants/session.constants.js";
+import { AUTH_CONSTANTS } from "../constants/auth.constants.js";
+import { CryptoUtil } from "../utils/crypto.util.js";
+
+import {
+    AuditLogAction,
+    AuditLogActorType,
+    AuditLogSeverity,
+    AuditLogStatus,
+} from "../../auditlog/constants/auditLog.enums.js";
+
+import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
+import { AppModule } from "../../../utils/enums/appModule.enums.js";
+
+import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
+
+import { forgotPasswordEmailTemplate } from "../../../emails/templates/forgotPassword.template.js";
+import { sendEmail } from "../../../emails/services/emailService.js";
+import { UserProfileProvisioningService } from "../../userprofile/services/userProfileProvisioning.service.js";
+import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
+
+
+export interface IAuthPublicTokens {
+    accessToken: string;
+    accessTokenExpiresAt: Date;
+}
+
+export interface IAuthPublicResponse {
+    user: IAuthUserResponse;
+    sessionId: Types.ObjectId;
+    tokens: IAuthPublicTokens;
+}
+
+export interface IAuthServiceResult {
+    data: IAuthPublicResponse;
+    refreshToken: string;
+    refreshTokenExpiresAt: Date;
+}
+
+interface AuthSessionResult {
+    userId?: string | Types.ObjectId;
+    sessionId: string | Types.ObjectId;
+    accessToken: string;
+    refreshToken: string;
+    accessTokenExpiresAt: Date;
+    refreshTokenExpiresAt: Date;
+}
+
+export class AuthService {
+    private userRepository: UserRepository;
+    private userService: UserService;
+    private sessionService: SessionService;
+    private auditLogService: AuditLogService;
+    private userProfileProvisioningService: UserProfileProvisioningService;
+
+    constructor() {
+        this.userRepository = new UserRepository();
+        this.userService = new UserService();
+        this.sessionService = new SessionService();
+        this.auditLogService = new AuditLogService();
+        this.userProfileProvisioningService = new UserProfileProvisioningService();
+    }
+
+    async register(
+        data: IRegisterInput,
+        ipAddress?: string,
+        userAgent?: string,
+        context?: IAuditLogContext,
+    ): Promise<IAuthServiceResult> {
+        const normalizedEmail =
+            data.email
+                .trim()
+                .toLowerCase();
+
+        const existingUser =
+            await this.userRepository
+                .existsByEmail(
+                    normalizedEmail,
+                );
+
+        if (existingUser) {
+            throw new AppError(
+                AuthMessages.EMAIL_ALREADY_EXISTS,
+                409,
+            );
+        }
+
+        const userData: Partial<IUser> = {
+            email:
+                normalizedEmail,
+
+            password:
+                data.password,
+
+            authProvider:
+                UserAuthProvider.LOCAL,
+
+            ...(data.phone !== undefined && {
+                phone:
+                    data.phone,
+            }),
+
+            ...(data.termsAccepted && {
+                termsAcceptedAt:
+                    new Date(),
+            }),
+
+            ...(data.privacyPolicyAccepted && {
+                privacyPolicyAcceptedAt:
+                    new Date(),
+            }),
+        };
+
+        let user:
+            IUserDocument |
+            null =
+            null;
+
+        let session:
+            AuthSessionResult |
+            null =
+            null;
+
+        try {
+            /*
+             * CRITICAL REGISTRATION PHASE
+             *
+             * Do not create welcome emails, audit side-effects,
+             * personal workspaces, folders or starter notes yet.
+             *
+             * Until user + profile + auth session all succeed,
+             * registration is not considered complete.
+             */
+            user =
+                await this.userService
+                    .createUser(
+                        userData as IUser,
+                        context,
+                        {
+                            provisionDefaults:
+                                false,
+
+                            sendWelcomeEmail:
+                                false,
+
+                            writeAuditLog:
+                                false,
+                        },
+                    );
+
+            await this
+                .userProfileProvisioningService
+                .provisionRegistrationProfile(
+                    user._id,
+                    {
+                        firstName:
+                            data.firstName,
+
+                        lastName:
+                            data.lastName,
+
+                        countryCodeHint:
+                            data.countryCodeHint,
+
+                        timezoneCode:
+                            data.timezoneCode,
+
+                        locale:
+                            data.locale,
+                    },
+                    {
+                        ...context,
+
+                        actorId:
+                            user._id,
+
+                        ipAddress:
+                            ipAddress ??
+                            context?.ipAddress ??
+                            null,
+
+                        userAgent:
+                            userAgent ??
+                            context?.userAgent ??
+                            null,
+                    },
+                );
+
+            session =
+                await this.sessionService
+                    .createSession({
+                        userId:
+                            user._id
+                                .toString(),
+
+                        deviceId:
+                            data.deviceId,
+
+                        deviceName:
+                            data.deviceName,
+
+                        type:
+                            data.sessionType ??
+                            SessionType.WEB,
+
+                        userAgent,
+
+                        ipAddress,
+                    }) as AuthSessionResult;
+        } catch (error) {
+            /*
+             * Local MongoDB installations are commonly
+             * standalone and therefore may not support
+             * multi-document transactions.
+             *
+             * Registration uses compensation rollback:
+             *
+             * session -> profile -> user
+             *
+             * Because default workspace seeding is delayed
+             * until AFTER this phase, rollback does not leave
+             * starter workspaces/folders/notes behind.
+             */
+            if (user) {
+                await this
+                    .rollbackFailedRegistration(
+                        user._id.toString(),
+                        session?.sessionId,
+                    );
+            }
+
+            throw error;
+        }
+
+        /*
+         * At this point all critical records exist:
+         *
+         * User       ✓
+         * UserProfile ✓
+         * Session    ✓
+         *
+         * Anything below is a post-registration side effect.
+         * It must NEVER turn a successful account creation
+         * into a failed API response.
+         */
+        await this
+            .safeCompleteRegistration(
+                user,
+                data,
+                ipAddress,
+                userAgent,
+                context,
+            );
+
+        return this
+            .toAuthServiceResult(
+                user,
+                session,
+            );
+    }
+
+    async login(
+        data: ILoginInput,
+        ipAddress?: string,
+        userAgent?: string,
+        context?: IAuditLogContext,
+    ): Promise<IAuthServiceResult> {
+        const user = await this.userRepository.findByEmailWithPassword(
+            data.email,
+        );
+
+        if (!user) {
+            await this.auditLogService.log({
+                ...context,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.LOGIN_FAILED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                description:
+                    "Login failed because the account was not found.",
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "INVALID_CREDENTIALS",
+                },
+                ipAddress: ipAddress ?? context?.ipAddress ?? null,
+                userAgent: userAgent ?? context?.userAgent ?? null,
+            });
+
+            throw new AppError(AuthMessages.INVALID_CREDENTIALS, 401);
+        }
+
+        if (user.status !== UserStatus.ACTIVE) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.LOGIN_FAILED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Login failed for inactive user ${user.email}.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "ACCOUNT_INACTIVE",
+                    status: user.status,
+                },
+                ipAddress: ipAddress ?? context?.ipAddress ?? null,
+                userAgent: userAgent ?? context?.userAgent ?? null,
+            });
+
+            throw new AppError(AuthMessages.ACCOUNT_INACTIVE, 403);
+        }
+
+        if (user.authProvider !== UserAuthProvider.LOCAL) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.LOGIN_FAILED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Login failed for ${user.email} because the account uses another authentication provider.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "AUTH_PROVIDER_MISMATCH",
+                    authProvider: user.authProvider,
+                },
+                ipAddress: ipAddress ?? context?.ipAddress ?? null,
+                userAgent: userAgent ?? context?.userAgent ?? null,
+            });
+
+            throw new AppError(
+                "This account uses a different authentication provider.",
+                400,
+            );
+        }
+
+        if (!user.password) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.LOGIN_FAILED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Login failed for ${user.email} because password authentication is unavailable.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "PASSWORD_AUTH_UNAVAILABLE",
+                },
+                ipAddress: ipAddress ?? context?.ipAddress ?? null,
+                userAgent: userAgent ?? context?.userAgent ?? null,
+            });
+
+            throw new AppError(
+                "Password authentication is not available for this account.",
+                400,
+            );
+        }
+
+        const passwordMatches = await bcrypt.compare(
+            data.password,
+            user.password,
+        );
+
+        if (!passwordMatches) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.LOGIN_FAILED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Login failed for ${user.email} because of invalid credentials.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "INVALID_PASSWORD",
+                },
+                ipAddress: ipAddress ?? context?.ipAddress ?? null,
+                userAgent: userAgent ?? context?.userAgent ?? null,
+            });
+
+            throw new AppError(AuthMessages.INVALID_CREDENTIALS, 401);
+        }
+
+        await this.userService.provisionMissingUserPreferences(
+            user._id.toString(),
+        );
+
+        const session = (await this.sessionService.createSession({
+            userId: user._id.toString(),
+            deviceId: data.deviceId,
+            deviceName: data.deviceName,
+            type: data.sessionType ?? SessionType.WEB,
+            userAgent,
+            ipAddress,
+        })) as AuthSessionResult;
+
+        await this.auditLogService.log({
+            ...context,
+            actorId: user._id,
+            actorType: AuditLogActorType.USER,
+            action: AuditLogAction.LOGIN,
+            module: AppModule.AUTH,
+            resourceType: "User",
+            resourceId: user._id,
+            resourceName: user.email,
+            description: `User ${user.email} logged in successfully.`,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+            metadata: {
+                sessionId: session.sessionId,
+                sessionType: data.sessionType ?? SessionType.WEB,
+                authProvider: user.authProvider,
+            },
+            ipAddress: ipAddress ?? context?.ipAddress ?? null,
+            userAgent: userAgent ?? context?.userAgent ?? null,
+        });
+
+        return this.toAuthServiceResult(user, session);
+    }
+
+    async refreshToken(
+        refreshToken: string,
+        ipAddress?: string,
+    ): Promise<IAuthServiceResult> {
+        const session = (await this.sessionService.refreshSession(
+            refreshToken,
+            ipAddress,
+        )) as AuthSessionResult;
+
+        if (!session.userId) {
+            throw new AppError(AuthMessages.INVALID_REFRESH_TOKEN, 401);
+        }
+
+        const user = await this.userRepository.findById(
+            session.userId.toString(),
+        );
+
+        if (!user) {
+            await this.safeLogoutSession(session.sessionId);
+
+            throw new AppError(AuthMessages.ACCOUNT_NOT_FOUND, 401);
+        }
+
+        const refreshAllowed =
+            user.status === UserStatus.ACTIVE ||
+            user.status === UserStatus.PENDING;
+
+        if (!refreshAllowed) {
+            await this.safeLogoutSession(session.sessionId);
+
+            throw new AppError(AuthMessages.ACCOUNT_INACTIVE, 403);
+        }
+
+        return this.toAuthServiceResult(user, session);
+    }
+
+    async verifyEmail(
+        token: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        const tokenHash = CryptoUtil.hashToken(token);
+
+        const user =
+            await this.userRepository.findByEmailVerificationToken(tokenHash);
+
+        if (!user) {
+            await this.auditLogService.log({
+                ...context,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.EMAIL_VERIFIED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                description:
+                    "Email verification failed because the token was invalid or expired.",
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "INVALID_OR_EXPIRED_TOKEN",
+                },
+            });
+
+            throw new AppError(
+                AuthMessages.INVALID_EMAIL_VERIFICATION_TOKEN,
+                400,
+            );
+        }
+
+        if (user.isEmailVerified) {
+            return;
+        }
+
+        user.isEmailVerified = true;
+        user.emailVerifiedAt = new Date();
+        user.emailVerificationTokenHash = null;
+        user.emailVerificationExpiresAt = null;
+
+        await user.save();
+
+        await this.auditLogService.log({
+            ...context,
+            actorId: user._id,
+            actorType: AuditLogActorType.USER,
+            action: AuditLogAction.EMAIL_VERIFIED,
+            module: AppModule.AUTH,
+            resourceType: "User",
+            resourceId: user._id,
+            resourceName: user.email,
+            description: `Email address for ${user.email} was verified successfully.`,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+        });
+    }
+
+    async forgotPassword(
+        email: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await this.userRepository.findByEmail(normalizedEmail);
+
+        if (!user || user.authProvider !== UserAuthProvider.LOCAL) {
+            return;
+        }
+
+        const resetToken = CryptoUtil.generateToken();
+        const resetTokenHash = CryptoUtil.hashToken(resetToken);
+        const passwordResetExpiresAt = new Date(
+            Date.now() +
+            AUTH_CONSTANTS.PASSWORD_RESET.TOKEN_EXPIRES_IN_MS,
+        );
+
+        await this.userRepository.updateById(user._id.toString(), {
+            passwordResetTokenHash: resetTokenHash,
+            passwordResetExpiresAt,
+        });
+
+        try {
+            await this.sendPasswordResetEmail(
+                user.email,
+                resetToken,
+            );
+
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.PASSWORD_RESET_REQUESTED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Password reset was requested for ${user.email}.`,
+                status: AuditLogStatus.SUCCESS,
+                severity: AuditLogSeverity.INFO,
+                metadata: {
+                    expiresInMinutes:
+                        AUTH_CONSTANTS.PASSWORD_RESET.TOKEN_EXPIRES_IN_MINUTES,
+                    delivery: "EMAIL",
+                },
+            });
+        } catch (error) {
+            await this.clearPasswordResetToken(user._id.toString());
+
+            console.error(
+                `Failed to send password reset email to ${user.email}.`,
+                error,
+            );
+
+            throw new AppError(
+                "Password reset email could not be sent. Please try again shortly.",
+                503,
+            );
+        }
+    }
+
+    async resetPassword(
+        token: string,
+        password: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        const tokenHash = CryptoUtil.hashToken(token);
+
+        const user =
+            await this.userRepository.findByPasswordResetToken(tokenHash);
+
+        if (!user) {
+            await this.auditLogService.log({
+                ...context,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.PASSWORD_RESET,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                description:
+                    "Password reset failed because the token was invalid or expired.",
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "INVALID_OR_EXPIRED_TOKEN",
+                },
+            });
+
+            throw new AppError(
+                AuthMessages.INVALID_PASSWORD_RESET_TOKEN,
+                400,
+            );
+        }
+
+        if (!user.passwordResetExpiresAt) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.PASSWORD_RESET,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description:
+                    "Password reset failed because the reset token expiration was missing.",
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "RESET_EXPIRATION_MISSING",
+                },
+            });
+
+            throw new AppError(
+                AuthMessages.INVALID_PASSWORD_RESET_TOKEN,
+                400,
+            );
+        }
+
+        const now = new Date();
+
+        if (user.passwordResetExpiresAt.getTime() <= now.getTime()) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.PASSWORD_RESET,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Password reset failed for ${user.email} because the token expired.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "TOKEN_EXPIRED",
+                },
+            });
+
+            throw new AppError(
+                AuthMessages.INVALID_PASSWORD_RESET_TOKEN,
+                400,
+            );
+        }
+
+        const hashedPassword = await bcrypt.hash(
+            password,
+            AUTH_CONSTANTS.PASSWORD.SALT_ROUNDS,
+        );
+
+        await this.userRepository.updateById(user._id.toString(), {
+            password: hashedPassword,
+            passwordChangedAt: now,
+            passwordResetTokenHash: null,
+            passwordResetExpiresAt: null,
+        });
+
+        await this.sessionService.logoutAll(user._id.toString());
+
+        await this.auditLogService.log({
+            ...context,
+            actorId: user._id,
+            actorType: AuditLogActorType.USER,
+            action: AuditLogAction.PASSWORD_RESET,
+            module: AppModule.AUTH,
+            resourceType: "User",
+            resourceId: user._id,
+            resourceName: user.email,
+            description: `Password for ${user.email} was reset successfully.`,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+        });
+    }
+
+    async changePassword(
+        userId: string,
+        currentPassword: string,
+        newPassword: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        const user =
+            await this.userRepository.findByIdWithPassword(userId);
+
+        if (!user) {
+            throw new AppError(AuthMessages.ACCOUNT_NOT_FOUND, 404);
+        }
+
+        if (!user.password) {
+            throw new AppError(
+                "Password authentication is not available for this account.",
+                400,
+            );
+        }
+
+        const passwordMatches = await bcrypt.compare(
+            currentPassword,
+            user.password,
+        );
+
+        if (!passwordMatches) {
+            await this.auditLogService.log({
+                ...context,
+                actorId: user._id,
+                actorType: AuditLogActorType.USER,
+                action: AuditLogAction.PASSWORD_CHANGED,
+                module: AppModule.AUTH,
+                resourceType: "User",
+                resourceId: user._id,
+                resourceName: user.email,
+                description: `Password change failed for ${user.email} because the current password was invalid.`,
+                status: AuditLogStatus.FAILURE,
+                severity: AuditLogSeverity.WARNING,
+                metadata: {
+                    reason: "INVALID_CURRENT_PASSWORD",
+                },
+            });
+
+            throw new AppError(
+                AuthMessages.INVALID_CURRENT_PASSWORD,
+                400,
+            );
+        }
+
+        const hashedPassword = await bcrypt.hash(
+            newPassword,
+            AUTH_CONSTANTS.PASSWORD.SALT_ROUNDS,
+        );
+
+        await this.userRepository.updateById(userId, {
+            password: hashedPassword,
+            passwordChangedAt: new Date(),
+        });
+
+        await this.sessionService.logoutAll(userId);
+
+        await this.auditLogService.log({
+            ...context,
+            actorId: user._id,
+            actorType: AuditLogActorType.USER,
+            action: AuditLogAction.PASSWORD_CHANGED,
+            module: AppModule.AUTH,
+            resourceType: "User",
+            resourceId: user._id,
+            resourceName: user.email,
+            description: `Password for ${user.email} was changed successfully.`,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+        });
+    }
+
+    async logout(
+        sessionId: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        await this.sessionService.logout(sessionId);
+
+        await this.auditLogService.log({
+            ...context,
+            action: AuditLogAction.LOGOUT,
+            module: AppModule.AUTH,
+            resourceType: "Session",
+            resourceId: sessionId,
+            description: "User session was logged out successfully.",
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+            metadata: {
+                sessionId,
+            },
+        });
+    }
+
+    async logoutAll(
+        userId: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        if (!Types.ObjectId.isValid(userId)) {
+            throw new AppError("Invalid user ID.", 400);
+        }
+
+        await this.sessionService.logoutAll(userId);
+
+        const userObjectId = new Types.ObjectId(userId);
+
+        await this.auditLogService.log({
+            ...context,
+            actorId: userObjectId,
+            actorType: AuditLogActorType.USER,
+            action: AuditLogAction.LOGOUT_ALL,
+            module: AppModule.AUTH,
+            resourceType: "User",
+            resourceId: userObjectId,
+            description: "All active user sessions were logged out successfully.",
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
+        });
+    }
+
+    async getSessions(userId: string) {
+        return this.sessionService.getUserSessions(userId);
+    }
+
+    private async sendPasswordResetEmail(
+        email: string,
+        resetToken: string,
+    ): Promise<void> {
+        const resetUrl = this.buildPasswordResetUrl(resetToken);
+
+        const html = forgotPasswordEmailTemplate({
+            resetUrl,
+            expiresInMinutes:
+                AUTH_CONSTANTS.PASSWORD_RESET.TOKEN_EXPIRES_IN_MINUTES,
+        });
+
+        await sendEmail({
+            to: email,
+            subject: "Reset your Sticky Ji password 🔐",
+            html,
+        });
+    }
+
+    private buildPasswordResetUrl(
+        resetToken: string,
+    ): string {
+        const frontendUrl = (process.env.FRONTEND_URL ?? "")
+            .trim()
+            .replace(/\/+$/, "");
+
+        if (!frontendUrl) {
+            throw new AppError(
+                "Password reset service is temporarily unavailable.",
+                503,
+            );
+        }
+
+        return `${frontendUrl}/auth/reset-password?token=${encodeURIComponent(
+            resetToken,
+        )}`;
+    }
+
+    private async clearPasswordResetToken(
+        userId: string,
+    ): Promise<void> {
+        try {
+            await this.userRepository.updateById(userId, {
+                passwordResetTokenHash: null,
+                passwordResetExpiresAt: null,
+            });
+        } catch (error) {
+            console.error(
+                "Failed to clear password reset token.",
+                error,
+            );
+        }
+    }
+
+    private async rollbackFailedRegistration(
+        userId: string,
+        sessionId?:
+            string |
+            Types.ObjectId,
+    ): Promise<void> {
+        /*
+         * Best-effort rollback.
+         *
+         * Each cleanup is isolated so one failed cleanup
+         * does not prevent the remaining cleanup steps.
+         */
+
+        if (sessionId) {
+            await this
+                .safeLogoutSession(
+                    sessionId,
+                );
+        }
+
+        if (
+            Types.ObjectId.isValid(
+                userId,
+            )
+        ) {
+            try {
+                await UserProfileModel
+                    .deleteMany({
+                        userId:
+                            new Types.ObjectId(
+                                userId,
+                            ),
+                    })
+                    .exec();
+            } catch (error) {
+                console.error(
+                    "Failed to rollback user profile after registration failure.",
+                    {
+                        userId,
+                        error,
+                    },
+                );
+            }
+        }
+
+        try {
+            await this
+                .userRepository
+                .hardDeleteById(
+                    userId,
+                );
+        } catch (error) {
+            console.error(
+                "Failed to rollback user after registration failure.",
+                {
+                    userId,
+                    error,
+                },
+            );
+        }
+    }
+
+    private async safeCompleteRegistration(
+        user: IUserDocument,
+        data: IRegisterInput,
+        ipAddress?: string,
+        userAgent?: string,
+        context?: IAuditLogContext,
+    ): Promise<void> {
+        /*
+         * UserService handles:
+         *
+         * - user-created audit log
+         * - default workspace/folder/columns/starter note
+         * - welcome email
+         *
+         * The method is intentionally non-throwing.
+         */
+        try {
+            await this.userService
+                .completeRegistration(
+                    user,
+                    context,
+                );
+        } catch (error) {
+            console.error(
+                "Registration succeeded, but post-registration user setup failed.",
+                {
+                    userId:
+                        user._id.toString(),
+
+                    error,
+                },
+            );
+        }
+
+        try {
+            await this.auditLogService
+                .log({
+                    ...context,
+
+                    actorId:
+                        user._id,
+
+                    actorType:
+                        AuditLogActorType.USER,
+
+                    action:
+                        AuditLogAction.REGISTER,
+
+                    module:
+                        AppModule.AUTH,
+
+                    resourceType:
+                        "User",
+
+                    resourceId:
+                        user._id,
+
+                    resourceName:
+                        user.email,
+
+                    description:
+                        `User ${user.email} registered successfully.`,
+
+                    status:
+                        AuditLogStatus.SUCCESS,
+
+                    severity:
+                        AuditLogSeverity.INFO,
+
+                    metadata: {
+                        authProvider:
+                            UserAuthProvider.LOCAL,
+
+                        sessionType:
+                            data.sessionType ??
+                            SessionType.WEB,
+                    },
+
+                    ipAddress:
+                        ipAddress ??
+                        context?.ipAddress ??
+                        null,
+
+                    userAgent:
+                        userAgent ??
+                        context?.userAgent ??
+                        null,
+                });
+        } catch (error) {
+            /*
+             * Audit infrastructure must not make the client
+             * believe account creation failed after the
+             * critical registration phase already succeeded.
+             */
+            console.error(
+                "Registration succeeded, but the auth audit log could not be written.",
+                {
+                    userId:
+                        user._id.toString(),
+
+                    error,
+                },
+            );
+        }
+    }
+
+    private async safeLogoutSession(
+        sessionId: string | Types.ObjectId,
+    ): Promise<void> {
+        try {
+            await this.sessionService.logout(sessionId.toString());
+        } catch (error) {
+            console.error("Failed to revoke invalid authentication session.", {
+                sessionId: sessionId.toString(),
+                error,
+            });
+        }
+    }
+
+    private toAuthUserResponse(
+        user: IUserDocument,
+    ): IAuthUserResponse {
+        return {
+            id: user._id,
+            email: user.email,
+            globalRoleId: user.globalRoleId,
+            status: user.status,
+            authProvider: user.authProvider,
+            isEmailVerified: user.isEmailVerified,
+            isPhoneVerified: user.isPhoneVerified,
+            isMfaEnabled: user.isMfaEnabled,
+        };
+    }
+
+    private toPublicAuthTokens(
+        session: Pick<
+            AuthSessionResult,
+            "accessToken" | "accessTokenExpiresAt"
+        >,
+    ): IAuthPublicTokens {
+        return {
+            accessToken: session.accessToken,
+            accessTokenExpiresAt: session.accessTokenExpiresAt,
+        };
+    }
+
+    private toAuthServiceResult(
+        user: IUserDocument,
+        session: AuthSessionResult,
+    ): IAuthServiceResult {
+        return {
+            data: {
+                user: this.toAuthUserResponse(user),
+                sessionId: new Types.ObjectId(session.sessionId),
+                tokens: this.toPublicAuthTokens(session),
+            },
+            refreshToken: session.refreshToken,
+            refreshTokenExpiresAt: session.refreshTokenExpiresAt,
+        };
+    }
+}

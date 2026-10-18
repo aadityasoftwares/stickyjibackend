@@ -1,0 +1,22 @@
+export const LanguageMessages = {
+
+    CREATED: "Language created successfully.",
+    UPDATED: "Language updated successfully.",
+    DELETED: "Language deleted successfully.",
+    FETCHED: "Language fetched successfully.",
+    FETCHED_ALL: "Languages fetched successfully.",
+    NOT_FOUND: "Language not found.",
+    ALREADY_EXISTS: "Language already exists.",
+    NAME_REQUIRED: "Language name is required.",
+    NATIVE_NAME_REQUIRED: "Language native name is required.",
+    CODE_REQUIRED: "Language code is required.",
+    LOCALE_REQUIRED: "Language locale is required.",
+    INVALID_CODE: "Invalid language code.",
+    INVALID_DIRECTION: "Invalid language direction.",
+    INVALID_STATUS: "isActive must be a boolean value.",
+    INVALID_DEFAULT: "isDefault must be a boolean value.",
+    UPDATE_REQUIRED: "Please provide at least one field to update.",
+    SYSTEM_LANGUAGE_UPDATE: "System languages cannot be modified.",
+    SYSTEM_LANGUAGE_DELETE: "System languages cannot be deleted.",
+    DEFAULT_LANGUAGE_DELETE: "The default language cannot be deleted.",
+};

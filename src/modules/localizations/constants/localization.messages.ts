@@ -1,0 +1,21 @@
+export const LocalizationMessages = {
+
+    CREATED: "Localization created successfully.",
+    UPDATED: "Localization updated successfully.",
+    DELETED: "Localization deleted successfully.",
+    FETCHED: "Localization fetched successfully.",
+    FETCHED_ALL: "Localizations fetched successfully.",
+    NOT_FOUND: "Localization not found.",
+    ALREADY_EXISTS: "Localization already exists.",
+    LANGUAGE_REQUIRED: "Language is required.",
+    LANGUAGE_CODE_REQUIRED: "Language code is required.",
+    LOCALE_REQUIRED: "Locale is required.",
+    KEY_REQUIRED: "Localization key is required.",
+    VALUE_REQUIRED: "Localization value is required.",
+    MODULE_REQUIRED: "Localization module is required.",
+    INVALID_LANGUAGE: "Invalid localization language.",
+    INVALID_DIRECTION: "Invalid localization direction.",
+    INVALID_STATUS: "isActive must be a boolean value.",
+    UPDATE_REQUIRED: "Please provide at least one field to update.",
+
+};

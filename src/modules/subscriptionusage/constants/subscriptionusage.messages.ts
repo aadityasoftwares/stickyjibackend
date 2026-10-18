@@ -1,0 +1,16 @@
+export const SubscriptionUsageMessages = {
+    FETCHED: "Subscription usage fetched successfully.",
+    FETCHED_ALL: "Subscription usage records fetched successfully.",
+    WORKSPACE_USAGE_FETCHED: "Workspace usage fetched successfully.",
+    RECALCULATED: "Subscription usage recalculated successfully.",
+    RECONCILED: "Subscription usage reconciliation completed successfully.",
+    NOT_FOUND: "Subscription usage record not found.",
+    WORKSPACE_NOT_FOUND: "Workspace not found.",
+    INVALID_WORKSPACE_ID: "Invalid workspace ID.",
+    INVALID_USER_ID: "Invalid user ID.",
+    INVALID_SCOPE: "Invalid billing scope.",
+    CANNOT_ACCESS_WORKSPACE: "You do not have access to this workspace.",
+    UNAUTHORIZED: "Authentication required.",
+    FORBIDDEN: "Access denied.",
+    RECONCILIATION_FAILED: "Subscription usage reconciliation failed.",
+} as const;

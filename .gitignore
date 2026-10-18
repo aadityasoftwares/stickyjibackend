@@ -1,0 +1,85 @@
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Testing and coverage
+coverage/
+.nyc_output/
+test-results/
+playwright-report/
+
+# Temporary files
+tmp/
+temp/
+.cache/
+*.tmp
+*.temp
+
+# Local uploads and generated files
+uploads/
+storage/
+*.local
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor and IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Process and runtime files
+*.pid
+*.pid.lock
+pids/
+
+# Local database files and backups
+*.sqlite
+*.sqlite3
+*.db
+*.bak
+backups/
+dump/
+
+# Application secrets and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials.json
+
+# Deployment and infrastructure
+.terraform/
+*.tfstate
+*.tfstate.*
+.vercel/
+.netlify/
+
+# Local Docker overrides
+docker-compose.override.yml

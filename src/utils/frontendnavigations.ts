@@ -1,0 +1,3 @@
+export const FRONTEND_NAVIGATIONS = {
+    WORKSPACE_BASE: 'app/workspace', // USING IT FOR THE REDIRECTION RELATED TO THE WORKSPACE
+} as const;

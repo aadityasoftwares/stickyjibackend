@@ -1,0 +1,11 @@
+import { CountryCode, CountryCodeAlpha3, CountryNumericCode, CountryContinent, CurrencyCode, CountryDialCode, } from "./country.enums.js";
+export const DEFAULT_COUNTRY_STATUS = true;
+export const DEFAULT_COUNTRY_SYSTEM = true;
+export const DEFAULT_COUNTRY_CODE = CountryCode.INDIA;
+export const DEFAULT_COUNTRY_ALPHA3_CODE = CountryCodeAlpha3.INDIA;
+export const DEFAULT_COUNTRY_NUMERIC_CODE = CountryNumericCode.INDIA;
+export const DEFAULT_COUNTRY_CONTINENT = CountryContinent.ASIA;
+export const DEFAULT_COUNTRY_CURRENCY = CurrencyCode.INR;
+export const DEFAULT_COUNTRY_CURRENCY_SYMBOL = "₹";
+export const DEFAULT_COUNTRY_LOCALE = "en-IN";
+export const DEFAULT_COUNTRY_DIAL_CODE = CountryDialCode.INDIA;

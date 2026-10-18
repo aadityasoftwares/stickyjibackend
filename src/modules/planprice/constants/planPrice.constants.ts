@@ -1,0 +1,9 @@
+export const DEFAULT_PLAN_PRICE_STATUS = true;
+export const DEFAULT_PLAN_PRICE_SORT_ORDER = 0;
+
+export const PLAN_PRICE_CONSTANTS = {
+    MIN_AMOUNT_MINOR: 1,
+    DEFAULT_PAGE: 1,
+    DEFAULT_LIMIT: 10,
+    MAX_LIMIT: 100,
+} as const;

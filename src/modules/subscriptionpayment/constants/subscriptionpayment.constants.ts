@@ -1,0 +1,6 @@
+export const SUBSCRIPTION_PAYMENT_CONSTANTS = {
+    DEFAULT_PAGE: 1,
+    DEFAULT_LIMIT: 20,
+    MAX_LIMIT: 100,
+    DEFAULT_CURRENCY: "INR",
+} as const;
