@@ -10,23 +10,19 @@ export const createRoleValidation = (req: Request, _res: Response, next: NextFun
             return next(new AppError("Invalid request body.", 400));
         }
 
-        const {
-            name,
-            displayName,
-            code,
-            type,
-            scope,
-            workspaceId,
-            permissions,
-            priority,
-            isActive,
-        } = req.body;
+        const { name, displayName, code, type, scope, workspaceId, permissions, priority, isActive } =
+            req.body;
 
         if (name === undefined || name === null || typeof name !== "string" || name.trim().length === 0) {
             return next(new AppError(RoleMessages.NAME_REQUIRED, 400));
         }
 
-        if (displayName === undefined || displayName === null || typeof displayName !== "string" || displayName.trim().length === 0) {
+        if (
+            displayName === undefined ||
+            displayName === null ||
+            typeof displayName !== "string" ||
+            displayName.trim().length === 0
+        ) {
             return next(new AppError(RoleMessages.DISPLAY_NAME_REQUIRED, 400));
         }
 
@@ -57,7 +53,10 @@ export const createRoleValidation = (req: Request, _res: Response, next: NextFun
                 return next(new AppError(RoleMessages.INVALID_PERMISSIONS, 400));
             }
             for (const pid of permissions) {
-                const idStr = typeof pid === "object" && pid !== null && "_id" in pid ? String((pid as any)._id) : String(pid);
+                const idStr =
+                    typeof pid === "object" && pid !== null && "_id" in pid
+                        ? String((pid as any)._id)
+                        : String(pid);
                 if (!Types.ObjectId.isValid(idStr)) {
                     return next(new AppError(RoleMessages.INVALID_PERMISSION, 400));
                 }

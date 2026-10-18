@@ -39,9 +39,7 @@ export class PermissionController {
                 this.getAuditContext(req),
             );
 
-            return res.status(201).json(
-                ResponseUtil.created(PermissionMessages.CREATED, permission),
-            );
+            return res.status(201).json(ResponseUtil.created(PermissionMessages.CREATED, permission));
         } catch (error) {
             next(error);
         }
@@ -49,13 +47,9 @@ export class PermissionController {
 
     getPermissionById = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const permission = await this.permissionService.getPermissionById(
-                this.resolveId(req),
-            );
+            const permission = await this.permissionService.getPermissionById(this.resolveId(req));
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.FETCHED, permission),
-            );
+            return res.status(200).json(ResponseUtil.success(PermissionMessages.FETCHED, permission));
         } catch (error) {
             next(error);
         }
@@ -63,13 +57,9 @@ export class PermissionController {
 
     getPermissionByCode = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const permission = await this.permissionService.getPermissionByCode(
-                this.resolveCode(req),
-            );
+            const permission = await this.permissionService.getPermissionByCode(this.resolveCode(req));
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.FETCHED, permission),
-            );
+            return res.status(200).json(ResponseUtil.success(PermissionMessages.FETCHED, permission));
         } catch (error) {
             next(error);
         }
@@ -99,15 +89,17 @@ export class PermissionController {
 
             const permissions = await this.permissionService.getPermissions(filters);
 
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    PermissionMessages.FETCHED_ALL,
-                    permissions.data,
-                    permissions.pagination.page,
-                    permissions.pagination.limit,
-                    permissions.pagination.total,
-                ),
-            );
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        PermissionMessages.FETCHED_ALL,
+                        permissions.data,
+                        permissions.pagination.page,
+                        permissions.pagination.limit,
+                        permissions.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
@@ -117,9 +109,9 @@ export class PermissionController {
         try {
             const permissions = await this.permissionService.getGroupedPermissions();
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.FETCHED_GROUPED, permissions),
-            );
+            return res
+                .status(200)
+                .json(ResponseUtil.success(PermissionMessages.FETCHED_GROUPED, permissions));
         } catch (error) {
             next(error);
         }
@@ -137,9 +129,7 @@ export class PermissionController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.UPDATED, permission),
-            );
+            return res.status(200).json(ResponseUtil.success(PermissionMessages.UPDATED, permission));
         } catch (error) {
             next(error);
         }
@@ -153,9 +143,7 @@ export class PermissionController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.DELETED),
-            );
+            return res.status(200).json(ResponseUtil.success(PermissionMessages.DELETED));
         } catch (error) {
             next(error);
         }
@@ -170,9 +158,7 @@ export class PermissionController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(PermissionMessages.UPDATED, permission),
-            );
+            return res.status(200).json(ResponseUtil.success(PermissionMessages.UPDATED, permission));
         } catch (error) {
             next(error);
         }

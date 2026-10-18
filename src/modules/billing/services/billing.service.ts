@@ -58,16 +58,13 @@ export class BillingService {
                 .sort({ type: 1, name: 1 })
                 .lean()
                 .exec(),
-            PlanPriceModel.find({ isActive: true })
-                .populate("currencyId", "code symbol name")
-                .lean()
-                .exec(),
+            PlanPriceModel.find({ isActive: true }).populate("currencyId", "code symbol name").lean().exec(),
         ]);
 
-        const mappedPlans = plans.map(plan => {
+        const mappedPlans = plans.map((plan) => {
             const planPrices = prices
-                .filter(p => p.planId.toString() === plan._id.toString())
-                .map(price => ({
+                .filter((p) => p.planId.toString() === plan._id.toString())
+                .map((price) => ({
                     _id: price._id,
                     billingInterval: price.billingInterval,
                     amountMinor: price.amountMinor,
@@ -119,7 +116,9 @@ export class BillingService {
             user: new Types.ObjectId(userId),
             isActive: true,
             status: UserSubscriptionStatus.ACTIVE,
-        }).lean().exec();
+        })
+            .lean()
+            .exec();
 
         if (
             currentSub &&
@@ -187,9 +186,10 @@ export class BillingService {
         }
 
         // Create subscription on Razorpay
-        const totalCount = planPrice.billingInterval === "YEARLY"
-            ? BILLING_CONSTANTS.DEFAULT_TOTAL_CYCLES_YEARLY
-            : BILLING_CONSTANTS.DEFAULT_TOTAL_CYCLES_MONTHLY;
+        const totalCount =
+            planPrice.billingInterval === "YEARLY"
+                ? BILLING_CONSTANTS.DEFAULT_TOTAL_CYCLES_YEARLY
+                : BILLING_CONSTANTS.DEFAULT_TOTAL_CYCLES_MONTHLY;
 
         const checkoutIntentId = crypto.randomUUID();
 
@@ -250,11 +250,7 @@ export class BillingService {
         };
     }
 
-    async verifyCheckoutCallback(
-        userId: string,
-        input: IVerifyCheckoutInput,
-        context?: IAuditLogContext,
-    ) {
+    async verifyCheckoutCallback(userId: string, input: IVerifyCheckoutInput, context?: IAuditLogContext) {
         const intent = await this.repository.findCheckoutIntentById(input.checkoutIntentId);
         if (!intent || intent.user.toString() !== userId) {
             throw new AppError(BillingMessages.CHECKOUT_INTENT_NOT_FOUND, 404);
@@ -305,27 +301,33 @@ export class BillingService {
         const planPriceId = (intent.planPriceId as any)?._id ?? intent.planPriceId;
 
         // Apply verified billing event to user subscription
-        const updatedSubscription = await this.userSubscriptionService.applyVerifiedBillingEvent({
-            user: userId,
-            plan: planId,
-            planPriceId: planPriceId,
-            billingInterval: intent.billingInterval,
-            status: UserSubscriptionStatus.ACTIVE,
-            isActive: true,
-            startDate: currentStart,
-            currentPeriodStart: currentStart,
-            currentPeriodEnd: currentEnd,
-            endDate: currentEnd,
-            autoRenew: true,
-            cancelAtPeriodEnd: false,
-            paymentId: input.razorpayPaymentId,
-            paymentProvider: BillingProviderName.RAZORPAY,
-            providerSubscriptionId: input.razorpaySubscriptionId,
-            action: AuditLogAction.UPDATE,
-            reason: "Checkout callback verified successfully",
-        }, context);
+        const updatedSubscription = await this.userSubscriptionService.applyVerifiedBillingEvent(
+            {
+                user: userId,
+                plan: planId,
+                planPriceId: planPriceId,
+                billingInterval: intent.billingInterval,
+                status: UserSubscriptionStatus.ACTIVE,
+                isActive: true,
+                startDate: currentStart,
+                currentPeriodStart: currentStart,
+                currentPeriodEnd: currentEnd,
+                endDate: currentEnd,
+                autoRenew: true,
+                cancelAtPeriodEnd: false,
+                paymentId: input.razorpayPaymentId,
+                paymentProvider: BillingProviderName.RAZORPAY,
+                providerSubscriptionId: input.razorpaySubscriptionId,
+                action: AuditLogAction.UPDATE,
+                reason: "Checkout callback verified successfully",
+            },
+            context,
+        );
 
-        await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.COMPLETED);
+        await this.repository.updateCheckoutIntentStatus(
+            intent.checkoutIntentId,
+            CheckoutIntentStatus.COMPLETED,
+        );
 
         return {
             verified: true,
@@ -343,15 +345,14 @@ export class BillingService {
         };
     }
 
-    async cancelSubscription(
-        userId: string,
-        input: ICancelBillingInput,
-        context?: IAuditLogContext,
-    ) {
+    async cancelSubscription(userId: string, input: ICancelBillingInput, context?: IAuditLogContext) {
         const sub = await UserSubscriptionModel.findOne({
             user: new Types.ObjectId(userId),
             isActive: true,
-        }).select("+paymentProvider +providerSubscriptionId").lean().exec();
+        })
+            .select("+paymentProvider +providerSubscriptionId")
+            .lean()
+            .exec();
 
         if (!sub) {
             throw new AppError("No active subscription found to cancel.", 404);
@@ -379,37 +380,40 @@ export class BillingService {
         const now = new Date();
         const effectiveAt = cancelAtCycleEnd ? (sub.currentPeriodEnd ?? sub.endDate ?? now) : now;
 
-        const updated = await this.userSubscriptionService.applyVerifiedBillingEvent({
-            user: userId,
-            plan: sub.plan,
-            planPriceId: sub.planPriceId,
-            billingInterval: sub.billingInterval,
-            status: cancelAtCycleEnd ? UserSubscriptionStatus.ACTIVE : UserSubscriptionStatus.CANCELED,
-            isActive: cancelAtCycleEnd,
-            cancelAtPeriodEnd: cancelAtCycleEnd,
-            cancellationEffectiveAt: effectiveAt,
-            cancellationReason: input.reason ?? "User requested cancellation",
-            canceledAt: now,
-            autoRenew: false,
-            providerSubscriptionId: sub.providerSubscriptionId,
-            paymentProvider: BillingProviderName.RAZORPAY,
-            action: AuditLogAction.UPDATE,
-            reason: input.reason ?? "Subscription cancellation requested",
-        }, context);
+        const updated = await this.userSubscriptionService.applyVerifiedBillingEvent(
+            {
+                user: userId,
+                plan: sub.plan,
+                planPriceId: sub.planPriceId,
+                billingInterval: sub.billingInterval,
+                status: cancelAtCycleEnd ? UserSubscriptionStatus.ACTIVE : UserSubscriptionStatus.CANCELED,
+                isActive: cancelAtCycleEnd,
+                cancelAtPeriodEnd: cancelAtCycleEnd,
+                cancellationEffectiveAt: effectiveAt,
+                cancellationReason: input.reason ?? "User requested cancellation",
+                canceledAt: now,
+                autoRenew: false,
+                providerSubscriptionId: sub.providerSubscriptionId,
+                paymentProvider: BillingProviderName.RAZORPAY,
+                action: AuditLogAction.UPDATE,
+                reason: input.reason ?? "Subscription cancellation requested",
+            },
+            context,
+        );
 
         return updated;
     }
 
-    async changePlan(
-        userId: string,
-        input: ChangePlanBillingInput,
-        context?: IAuditLogContext,
-    ) {
+    async changePlan(userId: string, input: ChangePlanBillingInput, context?: IAuditLogContext) {
         if (input.targetPlanId) {
             const plan = await PlanModel.findOne({ _id: input.targetPlanId, isActive: true }).lean().exec();
             if (!plan) throw new AppError(BillingMessages.PLAN_INACTIVE, 404);
             if (plan.type === PlanType.FREE) {
-                return this.cancelSubscription(userId, { reason: "Downgrade to Free plan", immediate: false }, context);
+                return this.cancelSubscription(
+                    userId,
+                    { reason: "Downgrade to Free plan", immediate: false },
+                    context,
+                );
             }
         }
 
@@ -433,7 +437,11 @@ export class BillingService {
 
         // If changing to Free, schedule cancellation of paid subscription at period end
         if (targetPlan.type === PlanType.FREE) {
-            return this.cancelSubscription(userId, { reason: "Downgrade to Free plan", immediate: false }, context);
+            return this.cancelSubscription(
+                userId,
+                { reason: "Downgrade to Free plan", immediate: false },
+                context,
+            );
         }
 
         // Paid upgrade / downgrade: initialize checkout for the new target plan

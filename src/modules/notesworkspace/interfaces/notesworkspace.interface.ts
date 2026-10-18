@@ -1,12 +1,8 @@
 import type { Document, Types } from "mongoose";
 
-export type NotesWorkspaceVisibility =
-    | "private"
-    | "team"
-    | "public";
+export type NotesWorkspaceVisibility = "private" | "team" | "public";
 
 export interface INotesWorkspaceDocument extends Document {
-
     title: string;
     description?: string;
     owner: Types.ObjectId;
@@ -22,7 +18,6 @@ export interface INotesWorkspaceDocument extends Document {
 }
 
 export interface INotesWorkspaceCreatePayload {
-
     title: string;
     description?: string;
     visibility?: NotesWorkspaceVisibility;
@@ -33,7 +28,6 @@ export interface INotesWorkspaceCreatePayload {
 }
 
 export interface INotesWorkspaceUpdatePayload {
-
     title?: string;
     description?: string;
     visibility?: NotesWorkspaceVisibility;
@@ -46,7 +40,6 @@ export interface INotesWorkspaceUpdatePayload {
 }
 
 export interface INotesWorkspaceFilterPayload {
-
     search?: string;
     owner?: string;
     visibility?: NotesWorkspaceVisibility;
@@ -54,10 +47,7 @@ export interface INotesWorkspaceFilterPayload {
     isActive?: boolean;
     page?: number;
     limit?: number;
-    sortBy?:
-    | "title"
-    | "createdAt"
-    | "updatedAt";
+    sortBy?: "title" | "createdAt" | "updatedAt";
 
     sortOrder?: "asc" | "desc";
 }

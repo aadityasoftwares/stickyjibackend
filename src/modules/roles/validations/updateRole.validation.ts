@@ -3,14 +3,7 @@ import { Types } from "mongoose";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { RoleMessages } from "../constants/role.messages.js";
 
-const IMMUTABLE_FIELDS = [
-    "type",
-    "scope",
-    "workspaceId",
-    "isSystem",
-    "isDefault",
-    "priority",
-] as const;
+const IMMUTABLE_FIELDS = ["type", "scope", "workspaceId", "isSystem", "isDefault", "priority"] as const;
 
 export const updateRoleValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
@@ -23,13 +16,13 @@ export const updateRoleValidation = (req: Request, _res: Response, next: NextFun
             return next(new AppError(RoleMessages.UPDATE_REQUIRED, 400));
         }
 
-        const bodyKeys = Object.keys(req.body).filter(k => k !== "id");
+        const bodyKeys = Object.keys(req.body).filter((k) => k !== "id");
         if (bodyKeys.length === 0) {
             return next(new AppError(RoleMessages.UPDATE_REQUIRED, 400));
         }
 
-        const containsImmutable = IMMUTABLE_FIELDS.some(field =>
-            Object.prototype.hasOwnProperty.call(req.body, field)
+        const containsImmutable = IMMUTABLE_FIELDS.some((field) =>
+            Object.prototype.hasOwnProperty.call(req.body, field),
         );
 
         if (containsImmutable) {
@@ -42,7 +35,10 @@ export const updateRoleValidation = (req: Request, _res: Response, next: NextFun
             return next(new AppError(RoleMessages.NAME_REQUIRED, 400));
         }
 
-        if (displayName !== undefined && (typeof displayName !== "string" || displayName.trim().length === 0)) {
+        if (
+            displayName !== undefined &&
+            (typeof displayName !== "string" || displayName.trim().length === 0)
+        ) {
             return next(new AppError(RoleMessages.DISPLAY_NAME_REQUIRED, 400));
         }
 
@@ -59,7 +55,10 @@ export const updateRoleValidation = (req: Request, _res: Response, next: NextFun
                 return next(new AppError(RoleMessages.INVALID_PERMISSIONS, 400));
             }
             for (const pid of permissions) {
-                const idStr = typeof pid === "object" && pid !== null && "_id" in pid ? String((pid as any)._id) : String(pid);
+                const idStr =
+                    typeof pid === "object" && pid !== null && "_id" in pid
+                        ? String((pid as any)._id)
+                        : String(pid);
                 if (!Types.ObjectId.isValid(idStr)) {
                     return next(new AppError(RoleMessages.INVALID_PERMISSION, 400));
                 }

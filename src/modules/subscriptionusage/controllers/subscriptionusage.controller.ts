@@ -6,9 +6,7 @@ import { SubscriptionUsageService } from "../services/subscriptionusage.service.
 import { BillingScopeType } from "../constants/subscriptionusage.enums.js";
 
 export class SubscriptionUsageController {
-    constructor(
-        private readonly usageService = new SubscriptionUsageService(),
-    ) {}
+    constructor(private readonly usageService = new SubscriptionUsageService()) {}
 
     getMyUsage = async (req: Request, res: Response, next: NextFunction) => {
         try {
@@ -33,7 +31,9 @@ export class SubscriptionUsageController {
             const actorId = RequestUtil.getUserId(req);
 
             const result = await this.usageService.getWorkspaceFolderUsage(workspaceId, actorId);
-            return res.status(200).json(ResponseUtil.success(SubscriptionUsageMessages.WORKSPACE_USAGE_FETCHED, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(SubscriptionUsageMessages.WORKSPACE_USAGE_FETCHED, result));
         } catch (error) {
             next(error);
         }
@@ -43,13 +43,17 @@ export class SubscriptionUsageController {
         try {
             const actorId = RequestUtil.getUserId(req);
             const result = await this.usageService.getAdminUsageList(actorId, req.body);
-            return res.status(200).json(ResponseUtil.paginated(
-                SubscriptionUsageMessages.FETCHED_ALL,
-                result.data,
-                result.pagination.page,
-                result.pagination.limit,
-                result.pagination.total,
-            ));
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        SubscriptionUsageMessages.FETCHED_ALL,
+                        result.data,
+                        result.pagination.page,
+                        result.pagination.limit,
+                        result.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
@@ -63,11 +67,15 @@ export class SubscriptionUsageController {
                     id: req.body.scopeId as string,
                 };
                 const report = await this.usageService.reconcileUsage(scope, req.body.reason);
-                return res.status(200).json(ResponseUtil.success(SubscriptionUsageMessages.RECONCILED, report));
+                return res
+                    .status(200)
+                    .json(ResponseUtil.success(SubscriptionUsageMessages.RECONCILED, report));
             }
 
             const batchReport = await this.usageService.reconcileAll(req.body);
-            return res.status(200).json(ResponseUtil.success(SubscriptionUsageMessages.RECONCILED, batchReport));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(SubscriptionUsageMessages.RECONCILED, batchReport));
         } catch (error) {
             next(error);
         }

@@ -1,11 +1,10 @@
-import type { ILocalization, ILocalizationFilter, } from "../interfaces/localization.interface.js";
+import type { ILocalization, ILocalizationFilter } from "../interfaces/localization.interface.js";
 import { LocalizationRepository } from "../repositories/localization.repository.js";
 import { LocalizationMessages } from "../constants/localization.messages.js";
 import { StringHelper } from "../../../utils/helpers/string.helper.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 
 export class LocalizationService {
-
     private localizationRepository: LocalizationRepository;
 
     constructor() {
@@ -13,7 +12,6 @@ export class LocalizationService {
     }
 
     async createLocalization(data: ILocalization) {
-
         data.language = data.language;
 
         data.languageCode = StringHelper.normalize(data.languageCode).toLowerCase();
@@ -31,40 +29,30 @@ export class LocalizationService {
         const exists = await this.localizationRepository.existsByKey(data.key, data.locale);
 
         if (exists) {
-            throw new AppError(
-                LocalizationMessages.ALREADY_EXISTS,
-                409
-            );
+            throw new AppError(LocalizationMessages.ALREADY_EXISTS, 409);
         }
 
-        return this.localizationRepository.create(
-            data
-        );
+        return this.localizationRepository.create(data);
     }
 
     async getLocalizationById(id: string) {
-
         const localization = await this.localizationRepository.findById(id);
 
         if (!localization) {
-            throw new AppError(
-                LocalizationMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(LocalizationMessages.NOT_FOUND, 404);
         }
 
         return localization;
     }
 
     async getLocalizationByKey(key: string, locale: string) {
-
-        const localization = await this.localizationRepository.findByKey(StringHelper.normalize(key), StringHelper.normalize(locale));
+        const localization = await this.localizationRepository.findByKey(
+            StringHelper.normalize(key),
+            StringHelper.normalize(locale),
+        );
 
         if (!localization) {
-            throw new AppError(
-                LocalizationMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(LocalizationMessages.NOT_FOUND, 404);
         }
 
         return localization;
@@ -75,14 +63,10 @@ export class LocalizationService {
     }
 
     async updateLocalization(id: string, data: Partial<ILocalization>) {
-
         const localization = await this.localizationRepository.findById(id);
 
         if (!localization) {
-            throw new AppError(
-                LocalizationMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(LocalizationMessages.NOT_FOUND, 404);
         }
 
         if (data.languageCode) {
@@ -110,7 +94,6 @@ export class LocalizationService {
         }
 
         if (data.key || data.locale) {
-
             const key = data.key ?? localization.key;
 
             const locale = data.locale ?? localization.locale;
@@ -118,10 +101,7 @@ export class LocalizationService {
             const existingLocalization = await this.localizationRepository.findByKey(key, locale);
 
             if (existingLocalization && existingLocalization._id.toString() !== id) {
-                throw new AppError(
-                    LocalizationMessages.ALREADY_EXISTS,
-                    409
-                );
+                throw new AppError(LocalizationMessages.ALREADY_EXISTS, 409);
             }
         }
 
@@ -129,30 +109,22 @@ export class LocalizationService {
     }
 
     async deleteLocalization(id: string) {
-
         const localization = await this.localizationRepository.findById(id);
 
         if (!localization) {
-            throw new AppError(
-                LocalizationMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(LocalizationMessages.NOT_FOUND, 404);
         }
 
         return this.localizationRepository.deleteById(id);
     }
 
     async changeLocalizationStatus(id: string, isActive: boolean) {
-
         const localization = await this.localizationRepository.findById(id);
 
         if (!localization) {
-            throw new AppError(
-                LocalizationMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(LocalizationMessages.NOT_FOUND, 404);
         }
 
-        return this.localizationRepository.updateById(id, { isActive, });
+        return this.localizationRepository.updateById(id, { isActive });
     }
 }

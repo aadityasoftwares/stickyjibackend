@@ -1,15 +1,7 @@
 import type { Document, Types } from "mongoose";
-import type {
-    UserPreferenceCategory,
-    UserPreferenceValueType,
-} from "../constants/userPreference.enums.js";
+import type { UserPreferenceCategory, UserPreferenceValueType } from "../constants/userPreference.enums.js";
 
-export type UserPreferenceValue =
-    | string
-    | number
-    | boolean
-    | Record<string, unknown>
-    | unknown[];
+export type UserPreferenceValue = string | number | boolean | Record<string, unknown> | unknown[];
 
 export interface IUserPreference {
     _id?: Types.ObjectId;

@@ -1,11 +1,10 @@
-import type { Request, Response, NextFunction, } from "express";
-import { TimezoneService, } from "../services/timezone.service.js";
-import { TimezoneMessages, } from "../constants/timezone.messages.js";
-import { ResponseUtil, } from "../../../utils/response.util.js";
-import { RequestUtil, } from "../../../utils/request.util.js";
+import type { Request, Response, NextFunction } from "express";
+import { TimezoneService } from "../services/timezone.service.js";
+import { TimezoneMessages } from "../constants/timezone.messages.js";
+import { ResponseUtil } from "../../../utils/response.util.js";
+import { RequestUtil } from "../../../utils/request.util.js";
 
 export class TimezoneController {
-
     private timezoneService: TimezoneService;
 
     constructor() {
@@ -15,58 +14,32 @@ export class TimezoneController {
     createTimezone = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const timezone = await this.timezoneService.createTimezone(req.body);
-            return res.status(201).json(
-                ResponseUtil.created(
-                    TimezoneMessages.CREATED,
-                    timezone
-                )
-            );
+            return res.status(201).json(ResponseUtil.created(TimezoneMessages.CREATED, timezone));
         } catch (error) {
             next(error);
         }
     };
-
 
     getTimezoneById = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-            const timezone = await this.timezoneService.getTimezoneById(
-                RequestUtil.getParam(
-                    req.params.id
-                )
-            );
+            const timezone = await this.timezoneService.getTimezoneById(RequestUtil.getParam(req.params.id));
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.FETCHED,
-                    timezone
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.FETCHED, timezone));
         } catch (error) {
             next(error);
         }
     };
 
-
     getTimezoneByCode = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const timezone = await this.timezoneService.getTimezoneByCode(req.query.code as string);
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.FETCHED,
-                    timezone
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.FETCHED, timezone));
         } catch (error) {
             next(error);
         }
     };
 
     getTimezones = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
             const timezones = await this.timezoneService.getTimezones({
                 page: Number(req.query.page) || 1,
@@ -79,107 +52,68 @@ export class TimezoneController {
                 isSystem: req.query.isSystem !== undefined ? req.query.isSystem === "true" : undefined,
                 isActive: req.query.isActive !== undefined ? req.query.isActive === "true" : undefined,
                 sortBy: req.query.sortBy as string,
-                sortOrder: req.query.sortOrder as | "asc" | "desc",
+                sortOrder: req.query.sortOrder as "asc" | "desc",
             });
 
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    TimezoneMessages.FETCHED_ALL,
-                    timezones.data,
-                    timezones.pagination.page,
-                    timezones.pagination.limit,
-                    timezones.pagination.total
-                )
-            );
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        TimezoneMessages.FETCHED_ALL,
+                        timezones.data,
+                        timezones.pagination.page,
+                        timezones.pagination.limit,
+                        timezones.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
     };
-
 
     getTimezonesByCountry = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const timezones = await this.timezoneService.getTimezonesByCountry(
-                RequestUtil.getParam(
-                    req.params.countryCode
-                )
+                RequestUtil.getParam(req.params.countryCode),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.FETCHED_BY_COUNTRY,
-                    timezones
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.FETCHED_BY_COUNTRY, timezones));
         } catch (error) {
             next(error);
         }
     };
-
 
     updateTimezone = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const timezone = await this.timezoneService.updateTimezone(
-                RequestUtil.getParam(
-                    req.params.id
-                ),
-                req.body
+                RequestUtil.getParam(req.params.id),
+                req.body,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.UPDATED,
-                    timezone
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.UPDATED, timezone));
         } catch (error) {
             next(error);
         }
     };
-
 
     deleteTimezone = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
+            await this.timezoneService.deleteTimezone(RequestUtil.getParam(req.params.id));
 
-            await this.timezoneService.deleteTimezone(
-                RequestUtil.getParam(
-                    req.params.id
-                )
-            );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.DELETED
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.DELETED));
         } catch (error) {
             next(error);
         }
     };
 
-
     changeTimezoneStatus = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const timezone = await this.timezoneService.changeTimezoneStatus(
-                RequestUtil.getParam(
-                    req.params.id
-                ),
-                req.body.isActive
+                RequestUtil.getParam(req.params.id),
+                req.body.isActive,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    TimezoneMessages.UPDATED,
-                    timezone
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(TimezoneMessages.UPDATED, timezone));
         } catch (error) {
             next(error);
         }

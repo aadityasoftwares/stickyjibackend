@@ -16,10 +16,7 @@ const permissionController = new PermissionController();
 
 permissionRoutes.use(authMiddleware);
 
-permissionRoutes.get(
-    "/grouped",
-    permissionController.getGroupedPermissions,
-);
+permissionRoutes.get("/grouped", permissionController.getGroupedPermissions);
 
 permissionRoutes.post(
     ["/", "/getall"],
@@ -28,35 +25,15 @@ permissionRoutes.post(
     permissionController.getPermissions,
 );
 
-permissionRoutes.get(
-    ["/", "/getall"],
-    getPermissionsValidation,
-    permissionController.getPermissions,
-);
+permissionRoutes.get(["/", "/getall"], getPermissionsValidation, permissionController.getPermissions);
 
-permissionRoutes.get(
-    "/get",
-    getPermissionValidation,
-    permissionController.getPermissionById,
-);
+permissionRoutes.get("/get", getPermissionValidation, permissionController.getPermissionById);
 
-permissionRoutes.get(
-    "/get/:id",
-    getPermissionValidation,
-    permissionController.getPermissionById,
-);
+permissionRoutes.get("/get/:id", getPermissionValidation, permissionController.getPermissionById);
 
-permissionRoutes.get(
-    "/get/code",
-    getPermissionValidation,
-    permissionController.getPermissionByCode,
-);
+permissionRoutes.get("/get/code", getPermissionValidation, permissionController.getPermissionByCode);
 
-permissionRoutes.get(
-    "/get/code/:code",
-    getPermissionValidation,
-    permissionController.getPermissionByCode,
-);
+permissionRoutes.get("/get/code/:code", getPermissionValidation, permissionController.getPermissionByCode);
 
 permissionRoutes.post(
     "/create",

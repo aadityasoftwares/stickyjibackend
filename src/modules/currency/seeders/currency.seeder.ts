@@ -1,8 +1,5 @@
 import { CurrencyModel } from "../models/currency.model.js";
-import {
-    CurrencyCode,
-    CurrencyType,
-} from "../constants/currency.enums.js";
+import { CurrencyCode, CurrencyType } from "../constants/currency.enums.js";
 
 const CURRENCY_SEED_DATA = [
     {

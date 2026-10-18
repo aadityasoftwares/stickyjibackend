@@ -1,4 +1,7 @@
-import type { INotesWorkspaceDocument, INotesWorkspaceFilterPayload, } from "../interfaces/notesworkspace.interface.js";
+import type {
+    INotesWorkspaceDocument,
+    INotesWorkspaceFilterPayload,
+} from "../interfaces/notesworkspace.interface.js";
 import { NotesWorkspaceRepository } from "../repositories/notesworkspace.repository.js";
 import { NotesWorkspaceUtil } from "../utils/notesworkspace.util.js";
 
@@ -46,8 +49,7 @@ export class NotesWorkspaceService {
             throw new Error("Owner is required");
         }
 
-        if (data.visibility && !NotesWorkspaceUtil.isValidVisibility(data.visibility)
-        ) {
+        if (data.visibility && !NotesWorkspaceUtil.isValidVisibility(data.visibility)) {
             throw new Error("Invalid workspace visibility");
         }
 
@@ -55,16 +57,11 @@ export class NotesWorkspaceService {
             ...data,
             title,
             owner: data.owner,
-            description:
-                data.description?.trim() || "",
-            visibility:
-                data.visibility || "private",
-            backgroundColor:
-                data.backgroundColor || "#F8F9FA",
-            backgroundImage:
-                data.backgroundImage || undefined,
-            backgroundImageUrl:
-                data.backgroundImageUrl || "",
+            description: data.description?.trim() || "",
+            visibility: data.visibility || "private",
+            backgroundColor: data.backgroundColor || "#F8F9FA",
+            backgroundImage: data.backgroundImage || undefined,
+            backgroundImageUrl: data.backgroundImageUrl || "",
             members: NotesWorkspaceUtil.normalizeMembers(data.members),
             isArchived: false,
             isActive: true,
@@ -88,7 +85,7 @@ export class NotesWorkspaceService {
     async updateWorkspace(id: string, owner: string, data: Partial<INotesWorkspaceDocument>) {
         await this.getAuthorizedWorkspace(id, owner);
 
-        const payload: Record<string, any> = { ...data, };
+        const payload: Record<string, any> = { ...data };
 
         delete payload._id;
         delete payload.owner;
@@ -207,7 +204,7 @@ export class NotesWorkspaceService {
 
         const limit = Number(payload.limit) > 0 && Number(payload.limit) <= 100 ? Number(payload.limit) : 10;
 
-        const filter: Record<string, any> = { owner, };
+        const filter: Record<string, any> = { owner };
 
         if (typeof payload.isActive === "boolean") {
             filter.isActive = payload.isActive;
@@ -218,9 +215,13 @@ export class NotesWorkspaceService {
         }
 
         if (payload.visibility) {
-            const visibilities = Array.isArray(payload.visibility) ? payload.visibility : [payload.visibility];
+            const visibilities = Array.isArray(payload.visibility)
+                ? payload.visibility
+                : [payload.visibility];
 
-            const invalidVisibility = visibilities.find((visibility) => !NotesWorkspaceUtil.isValidVisibility(visibility));
+            const invalidVisibility = visibilities.find(
+                (visibility) => !NotesWorkspaceUtil.isValidVisibility(visibility),
+            );
 
             if (invalidVisibility) {
                 throw new Error(`Invalid workspace visibility: ${invalidVisibility}`);
@@ -246,26 +247,20 @@ export class NotesWorkspaceService {
             ];
         }
 
-        const allowedSortFields = [
-            "title",
-            "visibility",
-            "createdAt",
-            "updatedAt",
-        ];
+        const allowedSortFields = ["title", "visibility", "createdAt", "updatedAt"];
 
-        const sortBy = payload.sortBy && allowedSortFields.includes(payload.sortBy) ? payload.sortBy : "updatedAt";
+        const sortBy =
+            payload.sortBy && allowedSortFields.includes(payload.sortBy) ? payload.sortBy : "updatedAt";
 
         const sortOrder: 1 | -1 = payload.sortOrder === "asc" ? 1 : -1;
 
-        const sort: Record<string, 1 | -1> = { [sortBy]: sortOrder, createdAt: -1, };
+        const sort: Record<string, 1 | -1> = { [sortBy]: sortOrder, createdAt: -1 };
 
-        return await this.repository.filterMyWorkspaces(
-            {
-                filter,
-                page,
-                limit,
-                sort,
-            }
-        );
+        return await this.repository.filterMyWorkspaces({
+            filter,
+            page,
+            limit,
+            sort,
+        });
     }
 }

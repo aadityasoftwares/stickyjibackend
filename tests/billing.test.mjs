@@ -26,7 +26,11 @@ import { BillingService } from "../src/modules/billing/services/billing.service.
 import { BillingWebhookService } from "../src/modules/billing/services/billing-webhook.service.ts";
 import { BillingReconciliationService } from "../src/modules/billing/services/billing-reconciliation.service.ts";
 import { BillingRepository } from "../src/modules/billing/repositories/billing.repository.ts";
-import { BillingProviderName, CheckoutIntentStatus, BillingEventProcessingStatus } from "../src/modules/billing/constants/billing.enums.ts";
+import {
+    BillingProviderName,
+    CheckoutIntentStatus,
+    BillingEventProcessingStatus,
+} from "../src/modules/billing/constants/billing.enums.ts";
 import { errorMiddleware } from "../src/middlewares/error/error.middleware.ts";
 
 process.env.JWT_ACCESS_SECRET = "billing-test-access-secret";
@@ -126,7 +130,8 @@ class MockRazorpayProvider {
     }
 
     verifyWebhookSignature(rawBody, signature) {
-        const expected = crypto.createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+        const expected = crypto
+            .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
             .update(rawBody)
             .digest("hex");
         const expBuf = Buffer.from(expected, "utf8");
@@ -136,7 +141,8 @@ class MockRazorpayProvider {
     }
 
     verifySubscriptionCheckoutSignature(paymentId, subscriptionId, signature) {
-        const expected = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        const expected = crypto
+            .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
             .update(paymentId + "|" + subscriptionId)
             .digest("hex");
         if (Buffer.from(expected).length !== Buffer.from(signature).length) return false;
@@ -150,8 +156,12 @@ let webhookService;
 let reconciliationService;
 let billingRepo;
 
-async function request(path, { body, user = ownerId, method = body === undefined ? "GET" : "POST", headers = {} } = {}) {
-    const rawBodyBuffer = body !== undefined ? Buffer.from(typeof body === "string" ? body : JSON.stringify(body)) : undefined;
+async function request(
+    path,
+    { body, user = ownerId, method = body === undefined ? "GET" : "POST", headers = {} } = {},
+) {
+    const rawBodyBuffer =
+        body !== undefined ? Buffer.from(typeof body === "string" ? body : JSON.stringify(body)) : undefined;
     const response = await fetch(url + path, {
         method,
         headers: {
@@ -169,22 +179,35 @@ before(async () => {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(r => socket.close(r));
+    await new Promise((r) => socket.close(r));
 
     directory = await mkdtemp(join(tmpdir(), "billing-test-"));
-    mongo = spawn(process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"),
-    ], { windowsHide: true, stdio: "ignore" });
+    mongo = spawn(
+        process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
 
     let startupError;
-    mongo.on("error", err => { startupError = err; });
+    mongo.on("error", (err) => {
+        startupError = err;
+    });
 
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
             await mongoose.connect("mongodb://127.0.0.1:" + port + "/billing_test", {
-                serverSelectionTimeoutMS: 500, autoIndex: false,
+                serverSelectionTimeoutMS: 500,
+                autoIndex: false,
             });
             break;
         } catch (err) {
@@ -206,7 +229,12 @@ before(async () => {
 
     billingService = new BillingService(mockProvider, billingRepo, paymentService, userSubService);
     webhookService = new BillingWebhookService(mockProvider, billingRepo, paymentService, userSubService);
-    reconciliationService = new BillingReconciliationService(mockProvider, billingRepo, userSubService, webhookService);
+    reconciliationService = new BillingReconciliationService(
+        mockProvider,
+        billingRepo,
+        userSubService,
+        webhookService,
+    );
 
     // Seed Currencies
     currencyINR = await CurrencyModel.create({
@@ -220,49 +248,83 @@ before(async () => {
 
     // Seed Plans
     freePlan = await PlanModel.create({
-        name: "Free", code: "FREE", type: "FREE", description: "Free plan",
-        isActive: true, visibility: "PUBLIC", pricingModel: "FIXED",
+        name: "Free",
+        code: "FREE",
+        type: "FREE",
+        description: "Free plan",
+        isActive: true,
+        visibility: "PUBLIC",
+        pricingModel: "FIXED",
     });
     proPlan = await PlanModel.create({
-        name: "Pro", code: "PRO", type: "PAID", description: "Pro plan",
-        isActive: true, visibility: "PUBLIC", pricingModel: "FIXED",
+        name: "Pro",
+        code: "PRO",
+        type: "PAID",
+        description: "Pro plan",
+        isActive: true,
+        visibility: "PUBLIC",
+        pricingModel: "FIXED",
     });
 
     // Seed PlanPrices (freePrice tests that even if a price exists pointing to a FREE plan, checkout is rejected)
     freePrice = await PlanPriceModel.create({
-        planId: freePlan._id, currencyId: currencyINR._id, billingInterval: "MONTHLY", amountMinor: 100, isActive: true,
+        planId: freePlan._id,
+        currencyId: currencyINR._id,
+        billingInterval: "MONTHLY",
+        amountMinor: 100,
+        isActive: true,
     });
     proMonthlyPrice = await PlanPriceModel.create({
-        planId: proPlan._id, currencyId: currencyINR._id, billingInterval: "MONTHLY", amountMinor: 9900, isActive: true,
+        planId: proPlan._id,
+        currencyId: currencyINR._id,
+        billingInterval: "MONTHLY",
+        amountMinor: 9900,
+        isActive: true,
     });
     proYearlyPrice = await PlanPriceModel.create({
-        planId: proPlan._id, currencyId: currencyINR._id, billingInterval: "YEARLY", amountMinor: 99000, isActive: true,
+        planId: proPlan._id,
+        currencyId: currencyINR._id,
+        billingInterval: "YEARLY",
+        amountMinor: 99000,
+        isActive: true,
     });
 
     const ownerUser = await UserModel.create({
-        email: "owner@test.com", status: "ACTIVE", isDeleted: false, globalRoleId: new Types.ObjectId(),
+        email: "owner@test.com",
+        status: "ACTIVE",
+        isDeleted: false,
+        globalRoleId: new Types.ObjectId(),
     });
     ownerId = ownerUser._id.toString();
 
     const strangerUser = await UserModel.create({
-        email: "stranger@test.com", status: "ACTIVE", isDeleted: false, globalRoleId: new Types.ObjectId(),
+        email: "stranger@test.com",
+        status: "ACTIVE",
+        isDeleted: false,
+        globalRoleId: new Types.ObjectId(),
     });
     strangerId = strangerUser._id.toString();
 
     // Default owner has active free subscription
     await UserSubscriptionModel.create({
-        user: ownerUser._id, plan: freePlan._id, status: "active", isActive: true,
-        startDate: new Date(), autoRenew: true,
+        user: ownerUser._id,
+        plan: freePlan._id,
+        status: "active",
+        isActive: true,
+        startDate: new Date(),
+        autoRenew: true,
     });
 
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "test-session" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test-session" }));
 
     const app = express();
-    app.use(express.json({
-        verify: (req, _res, buf) => {
-            req.rawBody = buf;
-        },
-    }));
+    app.use(
+        express.json({
+            verify: (req, _res, buf) => {
+                req.rawBody = buf;
+            },
+        }),
+    );
     app.use(express.urlencoded({ extended: true }));
 
     // Inject our mocked services into routes
@@ -294,7 +356,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (server) await new Promise(r => server.close(r));
+    if (server) await new Promise((r) => server.close(r));
     mock.restoreAll();
     await mongoose.disconnect();
     if (mongo?.pid && mongo.exitCode === null) {
@@ -309,10 +371,10 @@ test("1. GET /billing/plans returns public plans and resolved currency pricing w
     const res = await request("/plans", { user: null });
     assert.equal(res.status, 200);
     assert.ok(res.body.success);
-    const pro = res.body.data.plans.find(p => p.code === "PRO");
+    const pro = res.body.data.plans.find((p) => p.code === "PRO");
     assert.ok(pro);
     assert.equal(pro.prices.length, 2);
-    const monthly = pro.prices.find(p => p.billingInterval === "MONTHLY");
+    const monthly = pro.prices.find((p) => p.billingInterval === "MONTHLY");
     assert.equal(monthly.amountMinor, 9900);
     assert.equal(monthly.currency, "INR");
 });
@@ -339,7 +401,9 @@ test("3. Paid checkout creates gateway plan mapping, checkout intent, and return
     assert.equal(mockProvider.createPlanCalls, 1);
 
     // Verify payment attempt recorded in subscription payment ledger
-    const attempt = await SubscriptionPaymentModel.findOne({ providerSubscriptionId: res.body.data.subscriptionId });
+    const attempt = await SubscriptionPaymentModel.findOne({
+        providerSubscriptionId: res.body.data.subscriptionId,
+    });
     assert.ok(attempt);
     assert.equal(attempt.status, "INITIATED");
     assert.equal(attempt.amountMinor, 9900);
@@ -354,7 +418,10 @@ test("4. Concurrent or duplicate checkout request returns existing pending inten
 
 test("5. Different user subscribing to same PlanPrice reuses cached Gateway Plan ID", async () => {
     const initialPlanCalls = mockProvider.createPlanCalls;
-    const res = await request("/subscribe", { user: strangerId, body: { planPriceId: String(proMonthlyPrice._id) } });
+    const res = await request("/subscribe", {
+        user: strangerId,
+        body: { planPriceId: String(proMonthlyPrice._id) },
+    });
     assert.equal(res.status, 201);
     // Provider createPlan was not called again
     assert.equal(mockProvider.createPlanCalls, initialPlanCalls);
@@ -389,7 +456,8 @@ test("8. Checkout callback verification: valid signature activates paid subscrip
     const paymentId = "pay_valid_" + new Types.ObjectId();
 
     // Generate valid HMAC signature
-    const validSignature = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    const validSignature = crypto
+        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
         .update(paymentId + "|" + subId)
         .digest("hex");
 
@@ -460,7 +528,8 @@ test("10. Webhook signature verification: valid signature is processed, invalid 
     assert.equal(resInvalid.status, 400);
 
     // Valid signature
-    const validSig = crypto.createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+    const validSig = crypto
+        .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
         .update(Buffer.from(rawPayload))
         .digest("hex");
 
@@ -479,17 +548,22 @@ test("11. Webhook idempotency: repeated delivery of identical event is acknowled
         event_id: "evt_idempotent_test_202",
         payload: { subscription: { entity: { id: "sub_idempotent" } } },
     });
-    const validSig = crypto.createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
+    const validSig = crypto
+        .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
         .update(Buffer.from(rawPayload))
         .digest("hex");
 
     const res1 = await request("/webhooks/razorpay", {
-        user: null, body: rawPayload, headers: { "x-razorpay-signature": validSig, "x-razorpay-event-id": "evt_idempotent_test_202" },
+        user: null,
+        body: rawPayload,
+        headers: { "x-razorpay-signature": validSig, "x-razorpay-event-id": "evt_idempotent_test_202" },
     });
     assert.equal(res1.status, 200);
 
     const res2 = await request("/webhooks/razorpay", {
-        user: null, body: rawPayload, headers: { "x-razorpay-signature": validSig, "x-razorpay-event-id": "evt_idempotent_test_202" },
+        user: null,
+        body: rawPayload,
+        headers: { "x-razorpay-signature": validSig, "x-razorpay-event-id": "evt_idempotent_test_202" },
     });
     assert.equal(res2.status, 200);
     assert.equal(res2.body.data.duplicate, true);
@@ -515,7 +589,10 @@ test("13. Downgrading to Free plan schedules cancellation at period end to preve
 });
 
 test("14. Cross-user access denial: User cannot verify an intent belonging to someone else", async () => {
-    const subRes = await request("/subscribe", { user: strangerId, body: { planPriceId: String(proYearlyPrice._id) } });
+    const subRes = await request("/subscribe", {
+        user: strangerId,
+        body: { planPriceId: String(proYearlyPrice._id) },
+    });
     const strangerIntentId = subRes.body.data.checkoutIntentId;
     const strangerSubId = subRes.body.data.subscriptionId;
 

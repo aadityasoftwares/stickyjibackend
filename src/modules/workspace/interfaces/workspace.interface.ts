@@ -5,11 +5,13 @@ import type { IWorkspaceMember } from "../../workspaceMember/interfaces/workspac
 
 export type WorkspaceListRecord = IWorkspace & {
     _id: Types.ObjectId;
-    membership?: (Pick<IWorkspaceMember, "roleId" | "status" | "joinedAt"> & {
-        _id: Types.ObjectId;
-        roleName?: string;
-        permissions?: IResolvedPermission[];
-    }) | null;
+    membership?:
+        | (Pick<IWorkspaceMember, "roleId" | "status" | "joinedAt"> & {
+              _id: Types.ObjectId;
+              roleName?: string;
+              permissions?: IResolvedPermission[];
+          })
+        | null;
 };
 
 export interface WorkspaceStatusCounts {

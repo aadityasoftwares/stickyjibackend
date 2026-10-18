@@ -5,14 +5,8 @@ import type {
     IUserPreferenceResponse,
     UserPreferenceValue,
 } from "../interfaces/userPreference.interface.js";
-import {
-    USER_PREFERENCE_DEFINITIONS,
-    USER_PREFERENCE_KEYS,
-} from "../constants/userPreference.constants.js";
-import {
-    UserPreferenceCategory,
-    WorkspaceAccessFilter,
-} from "../constants/userPreference.enums.js";
+import { USER_PREFERENCE_DEFINITIONS, USER_PREFERENCE_KEYS } from "../constants/userPreference.constants.js";
+import { UserPreferenceCategory, WorkspaceAccessFilter } from "../constants/userPreference.enums.js";
 import { UserPreferenceValidation } from "../validations/userPreference.validation.js";
 import { UserPreferenceRepository } from "../repositories/userPreference.repository.js";
 import { UserPreferenceMessages } from "../constants/userPreference.messages.js";
@@ -38,7 +32,6 @@ export class UserPreferenceService {
         },
         context?: IAuditLogContext,
     ): Promise<IUserPreferenceResponse> {
-
         this.validateUserId(userId);
 
         const canonicalKey = this.getCanonicalKey(data.key);
@@ -96,24 +89,20 @@ export class UserPreferenceService {
     }
 
     async provisionMissingPreferences(userId: string): Promise<void> {
-
         this.validateUserId(userId);
 
-        const definitions = Object.entries(USER_PREFERENCE_DEFINITIONS).map(
-            ([key, definition]) => ({
-                key: UserPreferenceValidation.getStorageKey(key),
-                value: definition.defaultValue as UserPreferenceValue,
-                valueType: definition.type,
-                category: definition.category,
-            }),
-        );
+        const definitions = Object.entries(USER_PREFERENCE_DEFINITIONS).map(([key, definition]) => ({
+            key: UserPreferenceValidation.getStorageKey(key),
+            value: definition.defaultValue as UserPreferenceValue,
+            valueType: definition.type,
+            category: definition.category,
+        }));
 
         await this.userPreferenceRepository.provisionMissingPreferences(userId, definitions);
         await this.migrateLegacyWorkspaceFilters(userId);
     }
 
     async getUserPreference(userId: string, key: string): Promise<IUserPreferenceResponse> {
-
         this.validateUserId(userId);
 
         const canonicalKey = this.getCanonicalKey(key);
@@ -134,7 +123,6 @@ export class UserPreferenceService {
         userId: string,
         filters: IUserPreferenceFilter = {},
     ): Promise<IUserPreferenceResponse[]> {
-
         this.validateUserId(userId);
 
         let canonicalFilterKey: string | undefined;
@@ -155,8 +143,7 @@ export class UserPreferenceService {
         const preferences = await this.userPreferenceRepository.findAllByUserId(userId, filters);
 
         return preferences.map((preference) => {
-            const canonicalKey =
-                UserPreferenceValidation.getCanonicalKey(preference.key) ?? preference.key;
+            const canonicalKey = UserPreferenceValidation.getCanonicalKey(preference.key) ?? preference.key;
             return this.toResponse(preference, canonicalKey);
         });
     }
@@ -167,7 +154,6 @@ export class UserPreferenceService {
         data: { value: unknown },
         context?: IAuditLogContext,
     ): Promise<IUserPreferenceResponse> {
-
         this.validateUserId(userId);
 
         const canonicalKey = this.getCanonicalKey(key);
@@ -206,7 +192,8 @@ export class UserPreferenceService {
         const oldValue = preference.value;
 
         // Skip DB write if normalized value is unchanged (avoids noisy audit logs)
-        if (String(oldValue) === String(normalizedValue) &&
+        if (
+            String(oldValue) === String(normalizedValue) &&
             JSON.stringify(oldValue) === JSON.stringify(normalizedValue)
         ) {
             return this.toResponse(preference, canonicalKey);
@@ -230,11 +217,13 @@ export class UserPreferenceService {
                 resourceName: canonicalKey,
             },
             `User preference ${canonicalKey} was updated successfully.`,
-            [{
-                field: "value",
-                oldValue,
-                newValue: normalizedValue,
-            }],
+            [
+                {
+                    field: "value",
+                    oldValue,
+                    newValue: normalizedValue,
+                },
+            ],
         );
 
         return this.toResponse(updatedPreference, canonicalKey);
@@ -245,7 +234,6 @@ export class UserPreferenceService {
         key: string,
         context?: IAuditLogContext,
     ): Promise<IUserPreferenceResponse> {
-
         this.validateUserId(userId);
 
         const canonicalKey = this.getCanonicalKey(key);
@@ -274,7 +262,6 @@ export class UserPreferenceService {
         key: string,
         context?: IAuditLogContext,
     ): Promise<IUserPreferenceResponse | null> {
-
         this.validateUserId(userId);
 
         const canonicalKey = this.getCanonicalKey(key);
@@ -316,11 +303,13 @@ export class UserPreferenceService {
                 resourceName: canonicalKey,
             },
             `User preference ${canonicalKey} was reset successfully.`,
-            [{
-                field: "value",
-                oldValue,
-                newValue: defaultValue,
-            }],
+            [
+                {
+                    field: "value",
+                    oldValue,
+                    newValue: defaultValue,
+                },
+            ],
         );
 
         return this.toResponse(updatedPreference, canonicalKey);
@@ -330,7 +319,6 @@ export class UserPreferenceService {
         userId: string,
         context?: IAuditLogContext,
     ): Promise<IUserPreferenceResponse[]> {
-
         this.validateUserId(userId);
 
         const preferences = await this.userPreferenceRepository.findAllByUserId(userId);
@@ -406,14 +394,10 @@ export class UserPreferenceService {
      * Designed for consumption by a bootstrap/session-context endpoint.
      * Only includes keys that have been provisioned (i.e. exist in DB).
      */
-    async getLocalizationPreferences(
-        userId: string,
-    ): Promise<Record<string, UserPreferenceValue>> {
+    async getLocalizationPreferences(userId: string): Promise<Record<string, UserPreferenceValue>> {
         this.validateUserId(userId);
 
-        const { UserPreferenceCategory } = await import(
-            "../constants/userPreference.enums.js"
-        );
+        const { UserPreferenceCategory } = await import("../constants/userPreference.enums.js");
 
         const preferences = await this.userPreferenceRepository.findAllByUserId(userId, {
             category: UserPreferenceCategory.LOCALIZATION,
@@ -422,8 +406,7 @@ export class UserPreferenceService {
         const result: Record<string, UserPreferenceValue> = {};
 
         for (const preference of preferences) {
-            const canonicalKey =
-                UserPreferenceValidation.getCanonicalKey(preference.key) ?? preference.key;
+            const canonicalKey = UserPreferenceValidation.getCanonicalKey(preference.key) ?? preference.key;
             result[canonicalKey] = preference.value;
         }
 
@@ -452,29 +435,34 @@ export class UserPreferenceService {
             category: UserPreferenceCategory.WORKSPACE,
         });
         const statusPreference = preferences.find((preference) => preference.key === statusKey);
-        const legacyAccess = statusPreference?.value === WorkspaceAccessFilter.OWNED ||
+        const legacyAccess =
+            statusPreference?.value === WorkspaceAccessFilter.OWNED ||
             statusPreference?.value === WorkspaceAccessFilter.SHARED
-            ? statusPreference.value
-            : null;
+                ? statusPreference.value
+                : null;
 
         if (!legacyAccess) {
             return;
         }
 
         const accessPreference = preferences.find((preference) => preference.key === accessKey);
-        const updates: Array<{ key: string; value: UserPreferenceValue }> = [{
-            key: statusKey,
-            value: USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER].defaultValue,
-        }];
+        const updates: Array<{ key: string; value: UserPreferenceValue }> = [
+            {
+                key: statusKey,
+                value: USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER].defaultValue,
+            },
+        ];
 
         if (!accessPreference) {
             const definition = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER];
-            await this.userPreferenceRepository.provisionMissingPreferences(userId, [{
-                key: accessKey,
-                value: legacyAccess,
-                valueType: definition.type,
-                category: definition.category,
-            }]);
+            await this.userPreferenceRepository.provisionMissingPreferences(userId, [
+                {
+                    key: accessKey,
+                    value: legacyAccess,
+                    valueType: definition.type,
+                    category: definition.category,
+                },
+            ]);
         } else if (accessPreference.value === WorkspaceAccessFilter.ALL) {
             updates.push({ key: accessKey, value: legacyAccess });
         }
@@ -483,8 +471,10 @@ export class UserPreferenceService {
     }
 
     private isWorkspaceFilterKey(key: string): boolean {
-        return key === USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER ||
-            key === USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER;
+        return (
+            key === USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER ||
+            key === USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER
+        );
     }
 
     private getCanonicalKey(key: string): string {

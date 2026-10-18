@@ -103,11 +103,7 @@ export class BillingController {
         try {
             const userId = req.user?.id as string;
             const parsed = changePlanBillingSchema.parse(req.body);
-            const data = await this.billingService.changePlan(
-                userId,
-                parsed,
-                this.getAuditContext(req),
-            );
+            const data = await this.billingService.changePlan(userId, parsed, this.getAuditContext(req));
             return res.status(200).json(ResponseUtil.success(BillingMessages.PLAN_CHANGE_SCHEDULED, data));
         } catch (error) {
             next(error);
@@ -143,7 +139,9 @@ export class BillingController {
         try {
             const batchSize = req.body?.batchSize ? Number(req.body.batchSize) : 50;
             const result = await this.reconciliationService.reconcile(batchSize);
-            return res.status(200).json(ResponseUtil.success(BillingMessages.RECONCILIATION_COMPLETED, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(BillingMessages.RECONCILIATION_COMPLETED, result));
         } catch (error) {
             next(error);
         }

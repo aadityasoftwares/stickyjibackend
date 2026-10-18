@@ -1,6 +1,4 @@
-import type {
-    INotesWorkspaceDocument,
-} from "../interfaces/notesworkspace.interface.js";
+import type { INotesWorkspaceDocument } from "../interfaces/notesworkspace.interface.js";
 import { NotesWorkspaceModel } from "../models/notesworkspace.model.js";
 
 interface IFilterNotesWorkspaceRepositoryPayload {
@@ -62,7 +60,7 @@ export class NotesWorkspaceRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate(this.populateOptions);
     }
 
@@ -87,7 +85,7 @@ export class NotesWorkspaceRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate(this.populateOptions);
     }
 
@@ -105,7 +103,7 @@ export class NotesWorkspaceRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate(this.populateOptions);
     }
 
@@ -123,7 +121,7 @@ export class NotesWorkspaceRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate(this.populateOptions);
     }
 
@@ -141,23 +139,21 @@ export class NotesWorkspaceRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate(this.populateOptions);
     }
 
-    async filterMyWorkspaces({ filter, page, limit, sort, }: IFilterNotesWorkspaceRepositoryPayload) {
+    async filterMyWorkspaces({ filter, page, limit, sort }: IFilterNotesWorkspaceRepositoryPayload) {
         const skip = (page - 1) * limit;
 
-        const [workspaces, totalRecords,] = await Promise.all([
+        const [workspaces, totalRecords] = await Promise.all([
             NotesWorkspaceModel.find(filter)
                 .populate(this.populateOptions)
                 .sort(sort)
                 .skip(skip)
                 .limit(limit),
 
-            NotesWorkspaceModel.countDocuments(
-                filter
-            ),
+            NotesWorkspaceModel.countDocuments(filter),
         ]);
 
         const totalPages = totalRecords === 0 ? 0 : Math.ceil(totalRecords / limit);
@@ -169,10 +165,8 @@ export class NotesWorkspaceRepository {
                 limit,
                 totalRecords,
                 totalPages,
-                hasNextPage:
-                    page < totalPages,
-                hasPreviousPage:
-                    page > 1,
+                hasNextPage: page < totalPages,
+                hasPreviousPage: page > 1,
             },
         };
     }

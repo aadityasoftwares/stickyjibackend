@@ -8,7 +8,8 @@ export const WorkspaceMessages = {
     TRASHED: "Workspace moved to trash successfully.",
     ALREADY_TRASHED: "Workspace is already in trash.",
     RESTORE_ONLY_TRASHED: "Only trashed workspaces can be restored.",
-    RESTORE_WINDOW_EXPIRED: "This workspace has passed its 60-day restore window and can no longer be restored.",
+    RESTORE_WINDOW_EXPIRED:
+        "This workspace has passed its 60-day restore window and can no longer be restored.",
     PERMANENT_DELETE_REQUIRES_TRASH: "Only workspaces in trash can be permanently deleted.",
     PERMANENTLY_DELETED: "Workspace permanently deleted successfully.",
     SHARED_ROLES: "Workspace roles are still referenced outside this workspace.",

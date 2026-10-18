@@ -1,21 +1,15 @@
 import mongoose, { Types } from "mongoose";
-import type { NotesWorkspaceVisibility, } from "../interfaces/notesworkspace.interface.js";
+import type { NotesWorkspaceVisibility } from "../interfaces/notesworkspace.interface.js";
 
 export class NotesWorkspaceUtil {
-    static allowedVisibilities: NotesWorkspaceVisibility[] = [
-        "private",
-        "team",
-        "public",
-    ];
+    static allowedVisibilities: NotesWorkspaceVisibility[] = ["private", "team", "public"];
 
     static isValidObjectId(id: string) {
         return mongoose.Types.ObjectId.isValid(id);
     }
 
     static isValidVisibility(visibility: string): visibility is NotesWorkspaceVisibility {
-        return this.allowedVisibilities.includes(
-            visibility as NotesWorkspaceVisibility
-        );
+        return this.allowedVisibilities.includes(visibility as NotesWorkspaceVisibility);
     }
 
     static normalizeMembers(members: unknown): Types.ObjectId[] {
@@ -48,10 +42,7 @@ export class NotesWorkspaceUtil {
     }
 
     static normalizeBackgroundColor(color: unknown): string {
-        if (
-            typeof color !== "string" ||
-            !color.trim()
-        ) {
+        if (typeof color !== "string" || !color.trim()) {
             return "#F8F9FA";
         }
 
@@ -67,10 +58,7 @@ export class NotesWorkspaceUtil {
     }
 
     static escapeRegex(value: string) {
-        return value.replace(
-            /[.*+?^${}()|[\]\\]/g,
-            "\\$&"
-        );
+        return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }
 
     static createSearchRegex(value: string) {

@@ -1,12 +1,6 @@
-import type {
-    Document,
-    Types,
-} from "mongoose";
+import type { Document, Types } from "mongoose";
 
-import type {
-    UserProfileType,
-} from "../constants/userProfile.enums.js";
-
+import type { UserProfileType } from "../constants/userProfile.enums.js";
 
 export interface IUserProfile {
     userId: Types.ObjectId;
@@ -33,17 +27,10 @@ export interface IUserProfile {
     updatedAt?: Date;
 }
 
-
-export interface IUserProfileDocument
-    extends IUserProfile,
-    Document {
-}
-
+export interface IUserProfileDocument extends IUserProfile, Document {}
 
 export interface IUserProfileCreate {
-    userId:
-    | Types.ObjectId
-    | string;
+    userId: Types.ObjectId | string;
 
     firstName: string;
     lastName: string;
@@ -58,27 +45,14 @@ export interface IUserProfileCreate {
     education?: string | null;
     interests?: string[];
 
-    countryId?:
-    | Types.ObjectId
-    | string
-    | null;
+    countryId?: Types.ObjectId | string | null;
 
-    timezoneId?:
-    | Types.ObjectId
-    | string
-    | null;
+    timezoneId?: Types.ObjectId | string | null;
 
-    languageId?:
-    | Types.ObjectId
-    | string
-    | null;
+    languageId?: Types.ObjectId | string | null;
 
-    currencyId?:
-    | Types.ObjectId
-    | string
-    | null;
+    currencyId?: Types.ObjectId | string | null;
 }
-
 
 export interface IUserProfileUpdate {
     firstName?: string;
@@ -94,50 +68,27 @@ export interface IUserProfileUpdate {
     education?: string | null;
     interests?: string[];
 
-    countryId?:
-    | Types.ObjectId
-    | string
-    | null;
+    countryId?: Types.ObjectId | string | null;
 
-    timezoneId?:
-    | Types.ObjectId
-    | string
-    | null;
+    timezoneId?: Types.ObjectId | string | null;
 
-    languageId?:
-    | Types.ObjectId
-    | string
-    | null;
+    languageId?: Types.ObjectId | string | null;
 
-    currencyId?:
-    | Types.ObjectId
-    | string
-    | null;
+    currencyId?: Types.ObjectId | string | null;
 }
 
-
 export interface IUserProfileFilter {
-    userId?:
-    | Types.ObjectId
-    | string;
+    userId?: Types.ObjectId | string;
 
     profileType?: UserProfileType;
 
-    countryId?:
-    | Types.ObjectId
-    | string;
+    countryId?: Types.ObjectId | string;
 
-    timezoneId?:
-    | Types.ObjectId
-    | string;
+    timezoneId?: Types.ObjectId | string;
 
-    languageId?:
-    | Types.ObjectId
-    | string;
+    languageId?: Types.ObjectId | string;
 
-    currencyId?:
-    | Types.ObjectId
-    | string;
+    currencyId?: Types.ObjectId | string;
 
     search?: string;
 
@@ -146,11 +97,8 @@ export interface IUserProfileFilter {
 
     sortBy?: string;
 
-    sortOrder?:
-    | "asc"
-    | "desc";
+    sortOrder?: "asc" | "desc";
 }
-
 
 /*
  * Exact response Angular receives.

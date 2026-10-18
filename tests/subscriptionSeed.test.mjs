@@ -9,7 +9,10 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 import { SubscriptionSeedService } from "../src/seeders/subscription/services/subscription-seed.service.ts";
-import { SubscriptionSeedRepository, SUBSCRIPTION_REQUIRED_INDEXES } from "../src/seeders/subscription/repositories/subscription-seed.repository.ts";
+import {
+    SubscriptionSeedRepository,
+    SUBSCRIPTION_REQUIRED_INDEXES,
+} from "../src/seeders/subscription/repositories/subscription-seed.repository.ts";
 import { DEFAULT_SUBSCRIPTION_PLANS } from "../src/seeders/subscription/constants/default-plans.constants.ts";
 import { DEFAULT_SUBSCRIPTION_FEATURES } from "../src/seeders/subscription/constants/default-features.constants.ts";
 import { DEFAULT_SUBSCRIPTION_LIMITS } from "../src/seeders/subscription/constants/default-limits.constants.ts";
@@ -36,16 +39,29 @@ async function startMongo(replicaSet = false) {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
     const directory = await mkdtemp(join(tmpdir(), "subscription-seed-test-"));
-    const process = spawn(globalThis.process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"), ...(replicaSet ? ["--replSet", "subscription-seed"] : []),
-    ], { windowsHide: true, stdio: "ignore" });
+    const process = spawn(
+        globalThis.process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+            ...(replicaSet ? ["--replSet", "subscription-seed"] : []),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
     const result = { process, directory, base: "mongodb://127.0.0.1:" + port };
     processes.push(result);
     let startupError;
-    process.on("error", error => { startupError = error; });
+    process.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
@@ -70,7 +86,9 @@ async function startMongo(replicaSet = false) {
     return result;
 }
 
-before(async () => { mongo = await startMongo(); });
+before(async () => {
+    mongo = await startMongo();
+});
 beforeEach(async () => {
     uri = mongo.base + "/seed_" + new Types.ObjectId();
     await connect(uri);
@@ -111,14 +129,22 @@ async function snapshotAll() {
 }
 
 async function command(args, environment = {}) {
-    const child = spawn(process.execPath, ["--import", "tsx", "src/scripts/seed-default-subscriptions.ts", ...args], {
-        windowsHide: true,
-        env: { ...process.env, MONGO_URI: uri, ...environment },
-        stdio: ["ignore", "pipe", "pipe"],
-    });
+    const child = spawn(
+        process.execPath,
+        ["--import", "tsx", "src/scripts/seed-default-subscriptions.ts", ...args],
+        {
+            windowsHide: true,
+            env: { ...process.env, MONGO_URI: uri, ...environment },
+            stdio: ["ignore", "pipe", "pipe"],
+        },
+    );
     let output = "";
-    child.stdout.on("data", chunk => { output += chunk; });
-    child.stderr.on("data", chunk => { output += chunk; });
+    child.stdout.on("data", (chunk) => {
+        output += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+        output += chunk;
+    });
     const [code] = await once(child, "exit");
     return { code, output };
 }
@@ -133,7 +159,10 @@ test("empty database seeds three plans, equal capabilities, six quotas and four 
     assert.equal(report.counts.planPrices.skipped, 2);
     assert.equal(await PlanModel.countDocuments({ isDefault: true }), 1);
     assert.equal((await PlanModel.findOne({ isDefault: true })).code, "FREE");
-    assert.deepEqual((await PlanPriceModel.find().sort({ amountMinor: 1 }).lean()).map(row => row.amountMinor), [4900, 9900, 49000, 99000]);
+    assert.deepEqual(
+        (await PlanPriceModel.find().sort({ amountMinor: 1 }).lean()).map((row) => row.amountMinor),
+        [4900, 9900, 49000, 99000],
+    );
     assert.equal((await service.run({ mode: "verify" })).valid, true);
 });
 
@@ -150,7 +179,12 @@ test("rerunning is a real no-op, preserving ObjectIds and all timestamps", async
 
 test("existing matching plan retains its ID, name, description and manual ownership", async () => {
     await repository.createMissingIndexes(SUBSCRIPTION_REQUIRED_INDEXES);
-    const existing = await PlanModel.create({ ...DEFAULT_SUBSCRIPTION_PLANS[0], name: "Our Free plan", description: "Admin copy", isSystem: false });
+    const existing = await PlanModel.create({
+        ...DEFAULT_SUBSCRIPTION_PLANS[0],
+        name: "Our Free plan",
+        description: "Admin copy",
+        isSystem: false,
+    });
     await seed();
     const stored = await PlanModel.findById(existing._id).lean();
     assert.equal(stored.name, "Our Free plan");
@@ -161,9 +195,17 @@ test("existing matching plan retains its ID, name, description and manual owners
 test("existing feature and relationship IDs survive partial-catalog completion", async () => {
     await repository.createMissingIndexes(SUBSCRIPTION_REQUIRED_INDEXES);
     const plan = await PlanModel.create(DEFAULT_SUBSCRIPTION_PLANS[0]);
-    const feature = await FeatureModel.create({ ...DEFAULT_SUBSCRIPTION_FEATURES[0], description: "Custom workspace description" });
+    const feature = await FeatureModel.create({
+        ...DEFAULT_SUBSCRIPTION_FEATURES[0],
+        description: "Custom workspace description",
+    });
     const relation = await PlanFeatureModel.create({
-        planId: plan._id, featureId: feature._id, isEnabled: true, limit: 0, limitType: "NONE", isUnlimited: false,
+        planId: plan._id,
+        featureId: feature._id,
+        isEnabled: true,
+        limit: 0,
+        limitType: "NONE",
+        isUnlimited: false,
     });
     const report = await seed();
     assert.equal(report.counts.planFeatures.created, 62);
@@ -173,7 +215,9 @@ test("existing feature and relationship IDs survive partial-catalog completion",
 });
 
 test("legacy duplicate stable codes abort before indexes or writes", async () => {
-    await PlanModel.collection.insertMany([0, 1].map(() => ({ ...DEFAULT_SUBSCRIPTION_PLANS[0], _id: new Types.ObjectId(), isDefault: false })));
+    await PlanModel.collection.insertMany(
+        [0, 1].map(() => ({ ...DEFAULT_SUBSCRIPTION_PLANS[0], _id: new Types.ObjectId(), isDefault: false })),
+    );
     const before = await snapshotAll();
     const report = await service.run({ mode: "apply", ensureIndexes: true });
     assert.equal(report.valid, false);
@@ -182,10 +226,13 @@ test("legacy duplicate stable codes abort before indexes or writes", async () =>
 });
 
 test("legacy duplicate PlanFeature keys are never merged or deleted", async () => {
-    const plan = new Types.ObjectId(), feature = new Types.ObjectId();
+    const plan = new Types.ObjectId(),
+        feature = new Types.ObjectId();
     await PlanModel.collection.insertOne({ ...DEFAULT_SUBSCRIPTION_PLANS[0], _id: plan });
     await FeatureModel.collection.insertOne({ ...DEFAULT_SUBSCRIPTION_FEATURES[0], _id: feature });
-    await PlanFeatureModel.collection.insertMany([0, 1].map(() => ({ planId: plan, featureId: feature, isEnabled: true })));
+    await PlanFeatureModel.collection.insertMany(
+        [0, 1].map(() => ({ planId: plan, featureId: feature, isEnabled: true })),
+    );
     const before = await snapshotAll();
     const report = await service.run({ mode: "apply", ensureIndexes: true, syncDefaults: true });
     assert.equal(report.valid, false);
@@ -197,7 +244,10 @@ test("historical prices are immutable even with explicit policy synchronization"
     const price = await PlanPriceModel.findOne({ amountMinor: 9900 });
     await PlanPriceModel.collection.updateOne({ _id: price._id }, { $set: { amountMinor: 7900 } });
     await mongoose.connection.db.collection("usersubscriptions").insertOne({
-        _id: new Types.ObjectId(), plan: price.planId, planPriceId: price._id, status: "active",
+        _id: new Types.ObjectId(),
+        plan: price.planId,
+        planPriceId: price._id,
+        status: "active",
     });
     const before = await snapshotAll();
     const report = await service.run({ mode: "apply", syncDefaults: true, ensureIndexes: true });
@@ -209,7 +259,12 @@ test("historical prices are immutable even with explicit policy synchronization"
 
 test("unrelated default plan is preserved and conflicts with the Free default requirement", async () => {
     await repository.createMissingIndexes(SUBSCRIPTION_REQUIRED_INDEXES);
-    await PlanModel.create({ ...DEFAULT_SUBSCRIPTION_PLANS[2], code: "TEAM", isDefault: true, isSystem: false });
+    await PlanModel.create({
+        ...DEFAULT_SUBSCRIPTION_PLANS[2],
+        code: "TEAM",
+        isDefault: true,
+        isSystem: false,
+    });
     const before = await snapshotAll();
     const report = await service.run({ mode: "apply", syncDefaults: true });
     assert.equal(report.valid, false);
@@ -220,17 +275,22 @@ test("unrelated default plan is preserved and conflicts with the Free default re
 test("all active default plans have identical functional feature enablement", async () => {
     await seed();
     const snapshot = await repository.snapshot();
-    const functions = snapshot.features.filter(feature => feature.type === "BOOLEAN");
-    const matrix = snapshot.plans.map(plan => functions.map(feature => {
-        const relation = snapshot.planFeatures.find(row => String(row.planId) === String(plan._id) && String(row.featureId) === String(feature._id));
-        assert.ok(relation);
-        return [feature.code, relation.isEnabled, relation.limitType, relation.limit];
-    }));
+    const functions = snapshot.features.filter((feature) => feature.type === "BOOLEAN");
+    const matrix = snapshot.plans.map((plan) =>
+        functions.map((feature) => {
+            const relation = snapshot.planFeatures.find(
+                (row) =>
+                    String(row.planId) === String(plan._id) && String(row.featureId) === String(feature._id),
+            );
+            assert.ok(relation);
+            return [feature.code, relation.isEnabled, relation.limitType, relation.limit];
+        }),
+    );
     assert.deepEqual(matrix[0], matrix[1]);
     assert.deepEqual(matrix[1], matrix[2]);
-    assert.equal(functions.filter(row => row.isActive).length, 11);
+    assert.equal(functions.filter((row) => row.isActive).length, 11);
     for (const code of ["REMINDERS", "EXPORT", "NOTE_HISTORY", "ADS_FREE"]) {
-        assert.equal(functions.find(row => row.code === code).isActive, false);
+        assert.equal(functions.find((row) => row.code === code).isActive, false);
     }
 });
 
@@ -238,17 +298,25 @@ test("quota values and byte units are exact for each billing scope", async () =>
     await seed();
     const snapshot = await repository.snapshot();
     for (const definition of DEFAULT_SUBSCRIPTION_LIMITS) {
-        const feature = snapshot.features.find(row => row.code === definition.code);
+        const feature = snapshot.features.find((row) => row.code === definition.code);
         for (const plan of snapshot.plans) {
-            const relation = snapshot.planFeatures.find(row => String(row.planId) === String(plan._id) && String(row.featureId) === String(feature._id));
+            const relation = snapshot.planFeatures.find(
+                (row) =>
+                    String(row.planId) === String(plan._id) && String(row.featureId) === String(feature._id),
+            );
             assert.equal(relation.limit, definition.limits[plan.code]);
             assert.ok(Number.isSafeInteger(relation.limit));
             assert.equal(relation.isUnlimited, false);
         }
     }
-    assert.deepEqual(DEFAULT_SUBSCRIPTION_LIMITS.find(row => row.code === "MAX_STORAGE_BYTES").values,
-        [104857600, 1073741824, 10737418240]);
-    assert.equal(DEFAULT_SUBSCRIPTION_LIMITS.find(row => row.code === "MAX_FOLDERS_PER_WORKSPACE").scope, "WORKSPACE");
+    assert.deepEqual(
+        DEFAULT_SUBSCRIPTION_LIMITS.find((row) => row.code === "MAX_STORAGE_BYTES").values,
+        [104857600, 1073741824, 10737418240],
+    );
+    assert.equal(
+        DEFAULT_SUBSCRIPTION_LIMITS.find((row) => row.code === "MAX_FOLDERS_PER_WORKSPACE").scope,
+        "WORKSPACE",
+    );
 });
 
 test("globally disabled functionality stays disabled even during explicit synchronization", async () => {
@@ -270,7 +338,10 @@ test("legacy numeric capability rules require explicit synchronization into sepa
     assert.deepEqual(await snapshotAll(), before);
     await seed({ syncDefaults: true });
     assert.equal((await FeatureModel.findById(feature._id)).type, "BOOLEAN");
-    assert.equal(await PlanFeatureModel.countDocuments({ featureId: feature._id, limit: 0, limitType: "NONE" }), 3);
+    assert.equal(
+        await PlanFeatureModel.countDocuments({ featureId: feature._id, limit: 0, limitType: "NONE" }),
+        3,
+    );
 });
 
 test("dry-run never creates collections, indexes or documents", async () => {
@@ -304,24 +375,37 @@ test("missing constraints on a populated collection fail safely unless explicitl
 
 test("standalone interruptions preserve completed inserts and can resume idempotently", async () => {
     const original = repository.execute.bind(repository);
-    const failing = mock.method(repository, "execute", async operations => {
-        await original(operations.filter(operation => operation.collection === "plans"));
+    const failing = mock.method(repository, "execute", async (operations) => {
+        await original(operations.filter((operation) => operation.collection === "plans"));
         throw new Error("simulated interruption");
     });
     const result = await service.run({ mode: "apply" });
     failing.mock.restore();
     assert.equal(result.valid, false);
     assert.equal(result.partialWritesPossible, true);
-    const ids = (await PlanModel.find().lean()).map(row => String(row._id));
+    const ids = (await PlanModel.find().lean()).map((row) => String(row._id));
     assert.equal(ids.length, 3);
     await seed();
-    assert.deepEqual((await PlanModel.find().lean()).map(row => String(row._id)), ids);
+    assert.deepEqual(
+        (await PlanModel.find().lean()).map((row) => String(row._id)),
+        ids,
+    );
 });
 
 test("subscriptions, payments, workspaces, folders, notes and user data are untouched", async () => {
-    const protectedCollections = ["usersubscriptions", "subscriptionpayments", "subscriptioninvoices", "users", "workspaces", "workspacefolders", "stickynotes"];
+    const protectedCollections = [
+        "usersubscriptions",
+        "subscriptionpayments",
+        "subscriptioninvoices",
+        "users",
+        "workspaces",
+        "workspacefolders",
+        "stickynotes",
+    ];
     for (const name of protectedCollections) {
-        await mongoose.connection.db.collection(name).insertOne({ _id: new Types.ObjectId(), sentinel: name, updatedAt: new Date("2025-01-01") });
+        await mongoose.connection.db
+            .collection(name)
+            .insertOne({ _id: new Types.ObjectId(), sentinel: name, updatedAt: new Date("2025-01-01") });
     }
     const before = await snapshotAll();
     await seed();
@@ -331,7 +415,11 @@ test("subscriptions, payments, workspaces, folders, notes and user data are unto
 
 test("seeded Free integrates with idempotent user provisioning without activating paid access", async () => {
     await seed();
-    const user = await UserModel.create({ email: "seed-test@example.test", globalRoleId: new Types.ObjectId(), status: "ACTIVE" });
+    const user = await UserModel.create({
+        email: "seed-test@example.test",
+        globalRoleId: new Types.ObjectId(),
+        status: "ACTIVE",
+    });
     const subscriptions = new UserSubscriptionService();
     const first = await subscriptions.ensureFreeSubscription(String(user._id));
     const second = await subscriptions.ensureFreeSubscription(String(user._id));
@@ -361,7 +449,12 @@ test("production CLI is read-only by default and rejects ambiguous or unsafe fla
 
 test("unrelated active plans are not silently changed to achieve feature parity", async () => {
     await seed();
-    await PlanModel.create({ ...DEFAULT_SUBSCRIPTION_PLANS[2], code: "TEAM", isSystem: false, description: "Admin-controlled team policy" });
+    await PlanModel.create({
+        ...DEFAULT_SUBSCRIPTION_PLANS[2],
+        code: "TEAM",
+        isSystem: false,
+        description: "Admin-controlled team policy",
+    });
     const before = await snapshotAll();
     const report = await service.run({ mode: "apply", syncDefaults: true });
     assert.equal(report.valid, false);
@@ -371,7 +464,10 @@ test("unrelated active plans are not silently changed to achieve feature parity"
 
 test("noncanonical codes and orphaned relationships require reviewed migration", async () => {
     await PlanModel.collection.insertOne({ code: "free", name: "Legacy", isDefault: false });
-    await PlanFeatureModel.collection.insertOne({ planId: new Types.ObjectId(), featureId: new Types.ObjectId() });
+    await PlanFeatureModel.collection.insertOne({
+        planId: new Types.ObjectId(),
+        featureId: new Types.ObjectId(),
+    });
     const before = await snapshotAll();
     const result = await service.run({ mode: "apply", ensureIndexes: true });
     assert.equal(result.valid, false);
@@ -386,7 +482,9 @@ test("invalid quota configuration is rejected before any database operation", as
     definition.limits.FREE = 1.5;
     try {
         assert.throws(() => service.validateConfiguration(), /configuration is invalid/);
-    } finally { definition.limits.FREE = previous; }
+    } finally {
+        definition.limits.FREE = previous;
+    }
 });
 
 test("legacy standalone seeder entry points cannot overwrite the new catalog", async () => {
@@ -414,7 +512,10 @@ test("replica-set execution uses transactions and rolls back an interrupted docu
     const original = repository.execute.bind(repository);
     const failing = mock.method(repository, "execute", async (operations, session) => {
         assert.ok(session);
-        await original(operations.filter(operation => operation.collection === "plans"), session);
+        await original(
+            operations.filter((operation) => operation.collection === "plans"),
+            session,
+        );
         throw new Error("transaction interrupted");
     });
     const failed = await service.run({ mode: "apply" });

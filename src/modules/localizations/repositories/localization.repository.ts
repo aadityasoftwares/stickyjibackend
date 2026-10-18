@@ -1,8 +1,7 @@
 import { LocalizationModel } from "../models/localization.model.js";
-import type { ILocalization, ILocalizationFilter, } from "../interfaces/localization.interface.js";
+import type { ILocalization, ILocalizationFilter } from "../interfaces/localization.interface.js";
 
 export class LocalizationRepository {
-
     async create(data: Partial<ILocalization>) {
         return LocalizationModel.create(data);
     }
@@ -19,7 +18,6 @@ export class LocalizationRepository {
     }
 
     async findAll(filters: ILocalizationFilter = {}) {
-
         const {
             page = 1,
             limit = 10,
@@ -70,20 +68,15 @@ export class LocalizationRepository {
         }
 
         if (languageCode) {
-            query.languageCode =
-                languageCode
-                    .toLowerCase()
-                    .trim();
+            query.languageCode = languageCode.toLowerCase().trim();
         }
 
         if (locale) {
-            query.locale =
-                locale.trim();
+            query.locale = locale.trim();
         }
 
         if (module) {
-            query.module =
-                module.toUpperCase().trim();
+            query.module = module.toUpperCase().trim();
         }
 
         if (isActive !== undefined) {
@@ -96,22 +89,16 @@ export class LocalizationRepository {
 
         const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
-                LocalizationModel.find(query)
-                    .sort({
-                        [sortBy]:
-                            sortOrder === "asc"
-                                ? 1
-                                : -1,
-                    })
-                    .skip(skip)
-                    .limit(limit),
+        const [data, total] = await Promise.all([
+            LocalizationModel.find(query)
+                .sort({
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                })
+                .skip(skip)
+                .limit(limit),
 
-                LocalizationModel.countDocuments(
-                    query
-                ),
-            ]);
+            LocalizationModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -120,39 +107,28 @@ export class LocalizationRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(
-                        total / limit
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
     async existsByKey(key: string, locale: string): Promise<boolean> {
-
-        const exists =
-            await LocalizationModel.exists({
-                key: key.trim(),
-                locale: locale.trim(),
-            });
+        const exists = await LocalizationModel.exists({
+            key: key.trim(),
+            locale: locale.trim(),
+        });
 
         return !!exists;
     }
 
     async updateById(id: string, data: Partial<ILocalization>) {
-        return LocalizationModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        return LocalizationModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
 
     async deleteById(id: string) {
-        return LocalizationModel.findByIdAndDelete(
-            id
-        );
+        return LocalizationModel.findByIdAndDelete(id);
     }
 }

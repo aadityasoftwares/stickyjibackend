@@ -1,15 +1,13 @@
 import { Router } from "express";
-
 import { AuthController } from "../controllers/auth.controller.js";
-
 import { registerValidation } from "../validations/register.validation.js";
 import { loginValidation } from "../validations/login.validation.js";
 import { refreshTokenValidation } from "../validations/refreshToken.validation.js";
 import { verifyEmailValidation } from "../validations/verifyEmail.validation.js";
+import { resendVerificationValidation } from "../validations/resendVerification.validation.js";
 import { forgotPasswordValidation } from "../validations/forgotPassword.validation.js";
 import { resetPasswordValidation } from "../validations/resetPassword.validation.js";
 import { changePasswordValidation } from "../validations/changePassword.validation.js";
-
 import { requireBodyFields } from "../../../utils/validations/validateBody.validation.js";
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
@@ -22,7 +20,7 @@ authRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("email", "password"),
     registerValidation,
-    authController.register
+    authController.register,
 );
 
 authRoutes.post(
@@ -30,20 +28,25 @@ authRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("email", "password"),
     loginValidation,
-    authController.login
+    authController.login,
 );
 
-authRoutes.post(
-    "/refreshtoken",
-    authController.refreshToken,
-);
+authRoutes.post("/refreshtoken", authController.refreshToken);
 
 authRoutes.post(
     "/verifyemail",
     validateContentType("application/json"),
     requireBodyFields("token"),
     verifyEmailValidation,
-    authController.verifyEmail
+    authController.verifyEmail,
+);
+
+authRoutes.post(
+    "/resendverification",
+    validateContentType("application/json"),
+    requireBodyFields("email"),
+    resendVerificationValidation,
+    authController.resendVerificationEmail,
 );
 
 authRoutes.post(
@@ -51,7 +54,7 @@ authRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("email"),
     forgotPasswordValidation,
-    authController.forgotPassword
+    authController.forgotPassword,
 );
 
 authRoutes.post(
@@ -59,7 +62,7 @@ authRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("token", "password"),
     resetPasswordValidation,
-    authController.resetPassword
+    authController.resetPassword,
 );
 
 authRoutes.post(
@@ -68,25 +71,13 @@ authRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("currentPassword", "newPassword"),
     changePasswordValidation,
-    authController.changePassword
+    authController.changePassword,
 );
 
-authRoutes.post(
-    "/logout",
-    authMiddleware,
-    authController.logout
-);
+authRoutes.post("/logout", authMiddleware, authController.logout);
 
-authRoutes.post(
-    "/logoutall",
-    authMiddleware,
-    authController.logoutAll
-);
+authRoutes.post("/logoutall", authMiddleware, authController.logoutAll);
 
-authRoutes.get(
-    "/sessions",
-    authMiddleware,
-    authController.getSessions
-);
+authRoutes.get("/sessions", authMiddleware, authController.getSessions);
 
 export default authRoutes;

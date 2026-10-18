@@ -8,14 +8,20 @@ export class WorkspaceAvailabilityService {
     private readonly repository = new WorkspaceRepository();
 
     async assertAvailable(value: unknown): Promise<void> {
-        const id = typeof value === "object" && value !== null && "_id" in value ? String(value._id) : String(value ?? "");
-        if (!Types.ObjectId.isValid(id) || !await this.repository.findById(id)) {
+        const id =
+            typeof value === "object" && value !== null && "_id" in value
+                ? String(value._id)
+                : String(value ?? "");
+        if (!Types.ObjectId.isValid(id) || !(await this.repository.findById(id))) {
             throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         }
     }
 
     async assertNoteWorkspaceAvailable(value: unknown): Promise<void> {
-        const id = typeof value === "object" && value !== null && "_id" in value ? String(value._id) : String(value ?? "");
+        const id =
+            typeof value === "object" && value !== null && "_id" in value
+                ? String(value._id)
+                : String(value ?? "");
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         const note = await this.repository.findNoteWorkspace(id);
         await this.assertAvailable(note?.workspaceId);

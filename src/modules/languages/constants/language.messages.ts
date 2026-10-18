@@ -1,5 +1,4 @@
 export const LanguageMessages = {
-
     CREATED: "Language created successfully.",
     UPDATED: "Language updated successfully.",
     DELETED: "Language deleted successfully.",

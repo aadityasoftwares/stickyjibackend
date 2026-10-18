@@ -4,11 +4,7 @@ import { UserPreferenceMessages } from "../constants/userPreference.messages.js"
 import { UserPreferenceValidation } from "./userPreference.validation.js";
 import type { UserPreferenceValue } from "../interfaces/userPreference.interface.js";
 
-export const updateUserPreferenceValidation = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const updateUserPreferenceValidation = (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.body || Object.keys(req.body).length === 0) {
             return next(new AppError(UserPreferenceMessages.UPDATE_REQUIRED, 400));
@@ -41,7 +37,10 @@ export const updateUserPreferenceValidation = (
         }
 
         // Normalize and domain-validate; write normalized value back to req.body
-        const normalizedValue = UserPreferenceValidation.normalizeValue(canonicalKey, value as UserPreferenceValue);
+        const normalizedValue = UserPreferenceValidation.normalizeValue(
+            canonicalKey,
+            value as UserPreferenceValue,
+        );
         const domainError = UserPreferenceValidation.validateDomainValue(canonicalKey, normalizedValue);
 
         if (domainError) {

@@ -8,9 +8,7 @@ export class SystemSettingRepository {
     }
 
     async findById(id: string) {
-        return SystemSettingModel.findById(id)
-            .populate("createdBy")
-            .populate("updatedBy");
+        return SystemSettingModel.findById(id).populate("createdBy").populate("updatedBy");
     }
 
     async findByKey(key: SystemSettingKey | string) {
@@ -100,7 +98,7 @@ export class SystemSettingRepository {
     async resetById(
         id: string,
         defaultValue: ISystemSetting["defaultValue"],
-        updatedBy?: ISystemSetting["updatedBy"]
+        updatedBy?: ISystemSetting["updatedBy"],
     ) {
         return SystemSettingModel.findByIdAndUpdate(
             id,
@@ -111,7 +109,7 @@ export class SystemSettingRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         )
             .populate("createdBy")
             .populate("updatedBy");

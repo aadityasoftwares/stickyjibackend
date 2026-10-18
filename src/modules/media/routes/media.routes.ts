@@ -19,25 +19,11 @@ mediaRoutes.post(
     mediaController.requestUpload,
 );
 
-mediaRoutes.get(
-    "/getall",
-    authMiddleware,
-    mediaController.getAll,
-);
+mediaRoutes.get("/getall", authMiddleware, mediaController.getAll);
 
-mediaRoutes.post(
-    "/:id/complete",
-    authMiddleware,
-    completeUploadValidation,
-    mediaController.completeUpload,
-);
+mediaRoutes.post("/:id/complete", authMiddleware, completeUploadValidation, mediaController.completeUpload);
 
-mediaRoutes.get(
-    "/get/:id",
-    authMiddleware,
-    getMediaValidation,
-    mediaController.get,
-);
+mediaRoutes.get("/get/:id", authMiddleware, getMediaValidation, mediaController.get);
 
 mediaRoutes.put(
     "/update/:id",
@@ -47,11 +33,6 @@ mediaRoutes.put(
     mediaController.update,
 );
 
-mediaRoutes.delete(
-    "/delete/:id",
-    authMiddleware,
-    deleteMediaValidation,
-    mediaController.delete,
-);
+mediaRoutes.delete("/delete/:id", authMiddleware, deleteMediaValidation, mediaController.delete);
 
 export default mediaRoutes;

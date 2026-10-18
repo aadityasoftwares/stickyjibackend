@@ -95,14 +95,22 @@ export async function verifyDatabaseInitialization(): Promise<IVerificationResul
     const details: IVerificationResult["details"] = {};
 
     // 1. Languages
-    const languageCount = await LanguageModel.countDocuments({ code: LanguageCode.ENGLISH, isDefault: true, isActive: true });
+    const languageCount = await LanguageModel.countDocuments({
+        code: LanguageCode.ENGLISH,
+        isDefault: true,
+        isActive: true,
+    });
     details.languages = { count: languageCount, expected: 1, valid: languageCount >= 1 };
     if (languageCount < 1) {
         errors.push("Default English language record is missing or inactive.");
     }
 
     // 2. Countries
-    const countryCount = await CountryModel.countDocuments({ code: CountryCode.INDIA, isDefault: true, isActive: true });
+    const countryCount = await CountryModel.countDocuments({
+        code: CountryCode.INDIA,
+        isDefault: true,
+        isActive: true,
+    });
     details.countries = { count: countryCount, expected: 1, valid: countryCount >= 1 };
     if (countryCount < 1) {
         errors.push("Default India country record is missing or inactive.");
@@ -125,7 +133,11 @@ export async function verifyDatabaseInitialization(): Promise<IVerificationResul
     // 5. System Settings
     const expectedSettingsCount = SYSTEM_SETTING_DEFAULTS.length;
     const settingCount = await SystemSettingModel.countDocuments();
-    details.systemSettings = { count: settingCount, expected: expectedSettingsCount, valid: settingCount >= expectedSettingsCount };
+    details.systemSettings = {
+        count: settingCount,
+        expected: expectedSettingsCount,
+        valid: settingCount >= expectedSettingsCount,
+    };
     if (settingCount < expectedSettingsCount) {
         errors.push(`Expected at least ${expectedSettingsCount} system settings, found ${settingCount}.`);
     }
@@ -133,15 +145,25 @@ export async function verifyDatabaseInitialization(): Promise<IVerificationResul
     // 6. Permissions
     const expectedPermissionsCount = PERMISSION_DEFINITIONS.length;
     const permissionCount = await PermissionModel.countDocuments({ isActive: true, isSystem: true });
-    details.permissions = { count: permissionCount, expected: expectedPermissionsCount, valid: permissionCount >= expectedPermissionsCount };
+    details.permissions = {
+        count: permissionCount,
+        expected: expectedPermissionsCount,
+        valid: permissionCount >= expectedPermissionsCount,
+    };
     if (permissionCount < expectedPermissionsCount) {
-        errors.push(`Expected at least ${expectedPermissionsCount} system permissions, found ${permissionCount}.`);
+        errors.push(
+            `Expected at least ${expectedPermissionsCount} system permissions, found ${permissionCount}.`,
+        );
     }
 
     // 7. Roles
     const requiredRoleCodes = Object.values(SYSTEM_ROLE_CODES) as string[];
-    const existingRoles = await RoleModel.find({ code: { $in: requiredRoleCodes }, isSystem: true }).select("code permissions").lean();
-    const missingRoles = requiredRoleCodes.filter(code => !existingRoles.some(role => role.code === code));
+    const existingRoles = await RoleModel.find({ code: { $in: requiredRoleCodes }, isSystem: true })
+        .select("code permissions")
+        .lean();
+    const missingRoles = requiredRoleCodes.filter(
+        (code) => !existingRoles.some((role) => role.code === code),
+    );
     const rolesValid = missingRoles.length === 0;
     details.roles = { count: existingRoles.length, expected: requiredRoleCodes.length, valid: rolesValid };
     if (!rolesValid) {
@@ -149,7 +171,7 @@ export async function verifyDatabaseInitialization(): Promise<IVerificationResul
     }
 
     // Check roles have permission IDs
-    const superAdminRole = existingRoles.find(role => role.code === SYSTEM_ROLE_CODES.SUPER_ADMIN);
+    const superAdminRole = existingRoles.find((role) => role.code === SYSTEM_ROLE_CODES.SUPER_ADMIN);
     if (superAdminRole && (!superAdminRole.permissions || superAdminRole.permissions.length === 0)) {
         errors.push("SUPER_ADMIN role has no associated permissions.");
     }
@@ -162,7 +184,9 @@ export async function verifyDatabaseInitialization(): Promise<IVerificationResul
     const planCount = await PlanModel.countDocuments({ isActive: true });
     details.plans = { count: planCount, expected: 3, valid: plansValid };
     if (!plansValid) {
-        errors.push("One or more default subscription plans (FREE, INDIVIDUAL, PRO) are missing or inactive.");
+        errors.push(
+            "One or more default subscription plans (FREE, INDIVIDUAL, PRO) are missing or inactive.",
+        );
     }
 
     const featureCount = await FeatureModel.countDocuments();

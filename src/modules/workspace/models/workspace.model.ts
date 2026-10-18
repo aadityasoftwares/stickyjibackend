@@ -20,9 +20,19 @@ const WorkspaceSchema = new Schema<IWorkspaceDocument>(
             minlength: WORKSPACE_CONSTANTS.SLUG.MIN_LENGTH,
             maxlength: WORKSPACE_CONSTANTS.SLUG.MAX_LENGTH,
         },
-        description: { type: String, trim: true, maxlength: WORKSPACE_CONSTANTS.DESCRIPTION.MAX_LENGTH, default: null },
+        description: {
+            type: String,
+            trim: true,
+            maxlength: WORKSPACE_CONSTANTS.DESCRIPTION.MAX_LENGTH,
+            default: null,
+        },
         ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-        status: { type: String, enum: Object.values(WorkspaceStatus), required: true, default: WorkspaceStatus.ACTIVE },
+        status: {
+            type: String,
+            enum: Object.values(WorkspaceStatus),
+            required: true,
+            default: WorkspaceStatus.ACTIVE,
+        },
         deletedAt: { type: Date, default: null },
         deletedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
         purgeAfter: { type: Date, default: null },
@@ -32,7 +42,11 @@ const WorkspaceSchema = new Schema<IWorkspaceDocument>(
             required: true,
             default: WORKSPACE_CONSTANTS.DEFAULT_VISIBILITY,
         },
-        isPersonal: { type: Boolean, required: true, default: WORKSPACE_CONSTANTS.DEFAULT_PERSONAL_WORKSPACE },
+        isPersonal: {
+            type: Boolean,
+            required: true,
+            default: WORKSPACE_CONSTANTS.DEFAULT_PERSONAL_WORKSPACE,
+        },
         createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
         updatedBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     },
@@ -46,7 +60,11 @@ WorkspaceSchema.index({ status: 1, purgeAfter: 1 }, { name: "workspace_status_pu
 WorkspaceSchema.index({ visibility: 1, status: 1, createdAt: -1 });
 WorkspaceSchema.index(
     { ownerId: 1 },
-    { unique: true, partialFilterExpression: { isPersonal: true }, name: "uniq_personal_workspace_per_owner" },
+    {
+        unique: true,
+        partialFilterExpression: { isPersonal: true },
+        name: "uniq_personal_workspace_per_owner",
+    },
 );
 
 export const WorkspaceModel: Model<IWorkspaceDocument> = mongoose.model<IWorkspaceDocument>(

@@ -22,7 +22,6 @@ export enum FeatureCode {
     ADS_FREE = "ADS_FREE",
 }
 
-
 export enum FeatureCategory {
     CORE = "CORE",
     PRODUCTIVITY = "PRODUCTIVITY",
@@ -30,7 +29,6 @@ export enum FeatureCategory {
     COLLABORATION = "COLLABORATION",
     MONETIZATION = "MONETIZATION",
 }
-
 
 export enum FeatureType {
     BOOLEAN = "BOOLEAN",

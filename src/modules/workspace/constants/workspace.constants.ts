@@ -1,4 +1,9 @@
-import { WorkspaceAccessFilter, WorkspaceStatus, WorkspaceType, WorkspaceVisibility } from "./workspace.enums.js";
+import {
+    WorkspaceAccessFilter,
+    WorkspaceStatus,
+    WorkspaceType,
+    WorkspaceVisibility,
+} from "./workspace.enums.js";
 
 export const WORKSPACE_ACCESS_FILTER_LABELS = {
     [WorkspaceAccessFilter.ALL]: "All spaces",
@@ -13,7 +18,10 @@ export const WORKSPACE_STATUS_FILTER_LABELS = {
     [WorkspaceStatus.TRASHED]: "Trash",
 } as const;
 
-export const WORKSPACE_TYPE_LABELS = { [WorkspaceType.PERSONAL]: "Personal", [WorkspaceType.TEAM]: "Team" } as const;
+export const WORKSPACE_TYPE_LABELS = {
+    [WorkspaceType.PERSONAL]: "Personal",
+    [WorkspaceType.TEAM]: "Team",
+} as const;
 export const WORKSPACE_ACCESS_LABELS = { OWNER: "Owner", MEMBER: "Member" } as const;
 
 export const WORKSPACE_CONSTANTS = {

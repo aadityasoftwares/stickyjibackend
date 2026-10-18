@@ -68,7 +68,7 @@ const SystemSettingSchema = new Schema<ISystemSettingDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 SystemSettingSchema.index({ key: 1 }, { unique: true });
@@ -79,5 +79,7 @@ SystemSettingSchema.index({ isPublic: 1 });
 SystemSettingSchema.index({ category: 1, isPublic: 1 });
 SystemSettingSchema.index({ category: 1, isEditable: 1 });
 
-export const SystemSettingModel: Model<ISystemSettingDocument> =
-    mongoose.model<ISystemSettingDocument>("SystemSetting", SystemSettingSchema);
+export const SystemSettingModel: Model<ISystemSettingDocument> = mongoose.model<ISystemSettingDocument>(
+    "SystemSetting",
+    SystemSettingSchema,
+);

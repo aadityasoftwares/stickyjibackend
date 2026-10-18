@@ -13,9 +13,18 @@ import { getAllWorkspacesValidation } from "../validations/getAllWorkspaces.vali
 
 const workspaceRoutes = Router();
 const workspaceController = new WorkspaceController();
-const workspacePermission = (action: PermissionAction | PermissionAction[], allowTrashedWorkspace = false, allowInactiveWorkspace = false) => requirePermission({
-    module: PermissionModule.WORKSPACE, action, resource: "workspace", allowTrashedWorkspace, allowInactiveWorkspace,
-});
+const workspacePermission = (
+    action: PermissionAction | PermissionAction[],
+    allowTrashedWorkspace = false,
+    allowInactiveWorkspace = false,
+) =>
+    requirePermission({
+        module: PermissionModule.WORKSPACE,
+        action,
+        resource: "workspace",
+        allowTrashedWorkspace,
+        allowInactiveWorkspace,
+    });
 
 workspaceRoutes.use(authMiddleware);
 
@@ -23,11 +32,20 @@ workspaceRoutes.post(
     "/create",
     validateContentType("application/json"),
     createWorkspaceValidation,
-    requirePermission({ module: PermissionModule.WORKSPACE, action: PermissionAction.CREATE, scope: "global" }),
+    requirePermission({
+        module: PermissionModule.WORKSPACE,
+        action: PermissionAction.CREATE,
+        scope: "global",
+    }),
     workspaceController.createWorkspace,
 );
 
-workspaceRoutes.get("/get/:id", getWorkspaceValidation, workspacePermission(PermissionAction.READ, true, true), workspaceController.getWorkspaceById);
+workspaceRoutes.get(
+    "/get/:id",
+    getWorkspaceValidation,
+    workspacePermission(PermissionAction.READ, true, true),
+    workspaceController.getWorkspaceById,
+);
 
 workspaceRoutes.post(
     "/getall",
@@ -56,10 +74,30 @@ workspaceRoutes.put(
     workspaceController.updateWorkspaceStatus,
 );
 
-workspaceRoutes.put("/trash/:id", getWorkspaceValidation, workspacePermission(PermissionAction.DELETE, true), workspaceController.deleteWorkspace);
-workspaceRoutes.delete("/delete/:id", getWorkspaceValidation, workspacePermission(PermissionAction.DELETE, true), workspaceController.deleteWorkspace);
+workspaceRoutes.put(
+    "/trash/:id",
+    getWorkspaceValidation,
+    workspacePermission(PermissionAction.DELETE, true),
+    workspaceController.deleteWorkspace,
+);
+workspaceRoutes.delete(
+    "/delete/:id",
+    getWorkspaceValidation,
+    workspacePermission(PermissionAction.DELETE, true),
+    workspaceController.deleteWorkspace,
+);
 
-workspaceRoutes.put("/restore/:id", getWorkspaceValidation, workspacePermission(PermissionAction.UPDATE, true), workspaceController.restoreWorkspace);
-workspaceRoutes.delete("/permanent/:id", getWorkspaceValidation, workspacePermission(PermissionAction.DELETE, true), workspaceController.permanentlyDeleteWorkspace);
+workspaceRoutes.put(
+    "/restore/:id",
+    getWorkspaceValidation,
+    workspacePermission(PermissionAction.UPDATE, true),
+    workspaceController.restoreWorkspace,
+);
+workspaceRoutes.delete(
+    "/permanent/:id",
+    getWorkspaceValidation,
+    workspacePermission(PermissionAction.DELETE, true),
+    workspaceController.permanentlyDeleteWorkspace,
+);
 
 export default workspaceRoutes;

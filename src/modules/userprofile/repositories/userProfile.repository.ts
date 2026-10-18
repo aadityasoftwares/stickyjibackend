@@ -47,12 +47,8 @@ const USER_PROFILE_PUBLIC_FIELDS = [
 ].join(" ");
 
 export class UserProfileRepository {
-
-    async create(
-        data: IUserProfileCreate
-    ) {
-        const profile =
-            await UserProfileModel.create(data);
+    async create(data: IUserProfileCreate) {
+        const profile = await UserProfileModel.create(data);
 
         /*
          * Model.create() returns the complete mongoose
@@ -61,66 +57,41 @@ export class UserProfileRepository {
          * Re-fetch using our public projection so every
          * API uses the same response structure.
          */
-        return this.findById(
-            profile._id.toString()
-        );
+        return this.findById(profile._id.toString());
     }
 
-    async findById(
-        id: string
-    ) {
-        return UserProfileModel
-            .findById(id)
-            .select(USER_PROFILE_PUBLIC_FIELDS);
+    async findById(id: string) {
+        return UserProfileModel.findById(id).select(USER_PROFILE_PUBLIC_FIELDS);
     }
 
-    async findByUserId(
-        userId: string
-    ) {
-        return UserProfileModel
-            .findOne({
-                userId:
-                    new Types.ObjectId(userId),
-            })
-            .select(USER_PROFILE_PUBLIC_FIELDS);
+    async findByUserId(userId: string) {
+        return UserProfileModel.findOne({
+            userId: new Types.ObjectId(userId),
+        }).select(USER_PROFILE_PUBLIC_FIELDS);
     }
 
-    async existsByUserId(
-        userId: string
-    ): Promise<boolean> {
-
-        const exists =
-            await UserProfileModel.exists({
-                userId:
-                    new Types.ObjectId(userId),
-            });
+    async existsByUserId(userId: string): Promise<boolean> {
+        const exists = await UserProfileModel.exists({
+            userId: new Types.ObjectId(userId),
+        });
 
         return !!exists;
     }
 
-    async updateByUserId(
-        userId: string,
-        data: IUserProfileUpdate
-    ) {
-        return UserProfileModel
-            .findOneAndUpdate(
-                {
-                    userId:
-                        new Types.ObjectId(userId),
-                },
-                data,
-                {
-                    new: true,
-                    runValidators: true,
-                }
-            )
-            .select(USER_PROFILE_PUBLIC_FIELDS);
+    async updateByUserId(userId: string, data: IUserProfileUpdate) {
+        return UserProfileModel.findOneAndUpdate(
+            {
+                userId: new Types.ObjectId(userId),
+            },
+            data,
+            {
+                new: true,
+                runValidators: true,
+            },
+        ).select(USER_PROFILE_PUBLIC_FIELDS);
     }
 
-    async findAll(
-        filters: IUserProfileFilter = {}
-    ) {
-
+    async findAll(filters: IUserProfileFilter = {}) {
         const {
             userId,
             profileType,
@@ -139,47 +110,30 @@ export class UserProfileRepository {
             sortOrder = "desc",
         } = filters;
 
-        const query:
-            Record<string, unknown> = {};
+        const query: Record<string, unknown> = {};
 
         if (userId) {
-            query.userId =
-                new Types.ObjectId(
-                    userId.toString()
-                );
+            query.userId = new Types.ObjectId(userId.toString());
         }
 
         if (profileType) {
-            query.profileType =
-                profileType;
+            query.profileType = profileType;
         }
 
         if (countryId) {
-            query.countryId =
-                new Types.ObjectId(
-                    countryId.toString()
-                );
+            query.countryId = new Types.ObjectId(countryId.toString());
         }
 
         if (timezoneId) {
-            query.timezoneId =
-                new Types.ObjectId(
-                    timezoneId.toString()
-                );
+            query.timezoneId = new Types.ObjectId(timezoneId.toString());
         }
 
         if (languageId) {
-            query.languageId =
-                new Types.ObjectId(
-                    languageId.toString()
-                );
+            query.languageId = new Types.ObjectId(languageId.toString());
         }
 
         if (currencyId) {
-            query.currencyId =
-                new Types.ObjectId(
-                    currencyId.toString()
-                );
+            query.currencyId = new Types.ObjectId(currencyId.toString());
         }
 
         if (search) {
@@ -211,29 +165,19 @@ export class UserProfileRepository {
             ];
         }
 
-        const skip =
-            (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
+        const [data, total] = await Promise.all([
+            UserProfileModel.find(query)
+                .select(USER_PROFILE_PUBLIC_FIELDS)
+                .sort({
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                })
+                .skip(skip)
+                .limit(limit),
 
-                UserProfileModel
-                    .find(query)
-                    .select(
-                        USER_PROFILE_PUBLIC_FIELDS
-                    )
-                    .sort({
-                        [sortBy]:
-                            sortOrder === "asc"
-                                ? 1
-                                : -1,
-                    })
-                    .skip(skip)
-                    .limit(limit),
-
-                UserProfileModel
-                    .countDocuments(query),
-            ]);
+            UserProfileModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -243,10 +187,7 @@ export class UserProfileRepository {
                 limit,
                 total,
 
-                totalPages:
-                    Math.ceil(
-                        total / limit
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }

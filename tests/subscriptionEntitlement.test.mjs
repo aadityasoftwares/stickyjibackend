@@ -39,20 +39,47 @@ import { MediaService } from "../src/modules/media/services/media.service.ts";
 
 import { FeatureCode } from "../src/modules/feature/constants/feature.enums.js";
 import { BillingScopeType } from "../src/modules/subscriptionusage/constants/subscriptionusage.enums.js";
-import { ReservationStatus, EntitlementErrorCode, EntitlementDecisionReason } from "../src/modules/subscriptionentitlement/constants/subscriptionentitlement.enums.js";
+import {
+    ReservationStatus,
+    EntitlementErrorCode,
+    EntitlementDecisionReason,
+} from "../src/modules/subscriptionentitlement/constants/subscriptionentitlement.enums.js";
 import { WorkspaceStatus } from "../src/modules/workspace/constants/workspace.enums.js";
 import { WorkspaceFolderStatus } from "../src/modules/workspaceFolders/constants/workspaceFolder.enums.js";
-import { StickyNoteStatus, StickyNoteColor, StickyNotePriority, StickyNoteShape, StickyNoteVariant, StickyNoteBackgroundPattern } from "../src/modules/stickynotes/constants/stickyNote.enums.js";
-import { MediaStatus, MediaPurpose, MediaResourceType, MediaType, MediaStorageProvider } from "../src/modules/media/constants/media.enums.js";
+import {
+    StickyNoteStatus,
+    StickyNoteColor,
+    StickyNotePriority,
+    StickyNoteShape,
+    StickyNoteVariant,
+    StickyNoteBackgroundPattern,
+} from "../src/modules/stickynotes/constants/stickyNote.enums.js";
+import {
+    MediaStatus,
+    MediaPurpose,
+    MediaResourceType,
+    MediaType,
+    MediaStorageProvider,
+} from "../src/modules/media/constants/media.enums.js";
 import { UserSubscriptionStatus } from "../src/modules/usersubscription/constants/usersubscription.enums.js";
 import { errorMiddleware } from "../src/middlewares/error/error.middleware.ts";
 
 process.env.JWT_ACCESS_SECRET = "entitlement-test-secret";
 process.env.JWT_REFRESH_SECRET = "entitlement-test-refresh-secret";
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
-const { default: entitlementRoutes } = await import("../src/modules/subscriptionentitlement/routes/subscriptionentitlement.routes.ts");
+const { default: entitlementRoutes } =
+    await import("../src/modules/subscriptionentitlement/routes/subscriptionentitlement.routes.ts");
 
-let mongo, directory, server, url, freePlan, individualPlan, proPlan, globalRoleId, workspaceMemberRoleId, test17UserId;
+let mongo,
+    directory,
+    server,
+    url,
+    freePlan,
+    individualPlan,
+    proPlan,
+    globalRoleId,
+    workspaceMemberRoleId,
+    test17UserId;
 const entitlementService = new SubscriptionEntitlementService();
 const entitlementRepo = new SubscriptionEntitlementRepository();
 const usageService = new SubscriptionUsageService();
@@ -117,21 +144,34 @@ before(async () => {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
 
     directory = await mkdtemp(join(tmpdir(), "entitlement-test-"));
-    mongo = spawn(process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"),
-    ], { windowsHide: true, stdio: "ignore" });
+    mongo = spawn(
+        process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
 
     let startupError;
-    mongo.on("error", error => { startupError = error; });
+    mongo.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
             await mongoose.connect("mongodb://127.0.0.1:" + port + "/entitlement_test", {
-                serverSelectionTimeoutMS: 500, autoIndex: false,
+                serverSelectionTimeoutMS: 500,
+                autoIndex: false,
             });
             break;
         } catch (error) {
@@ -167,18 +207,114 @@ before(async () => {
     proPlan = await PlanModel.findOne({ code: "PRO" });
 
     const permissions = await PermissionModel.create([
-        { name: "ws_create", displayName: "Create WS", code: "WORKSPACE_CREATE", module: "WORKSPACE", action: "CREATE", access: "GENERAL", isActive: true },
-        { name: "ws_read", displayName: "Read WS", code: "WORKSPACE_READ", module: "WORKSPACE", action: "READ", access: "GENERAL", isActive: true },
-        { name: "ws_update", displayName: "Update WS", code: "WORKSPACE_UPDATE", module: "WORKSPACE", action: "UPDATE", access: "GENERAL", isActive: true },
-        { name: "ws_delete", displayName: "Delete WS", code: "WORKSPACE_DELETE", module: "WORKSPACE", action: "DELETE", access: "GENERAL", isActive: true },
-        { name: "note_create", displayName: "Create Note", code: "NOTES_CREATE", module: "NOTES", action: "CREATE", access: "GENERAL", isActive: true },
-        { name: "note_read", displayName: "Read Note", code: "NOTES_READ", module: "NOTES", action: "READ", access: "GENERAL", isActive: true },
-        { name: "note_update", displayName: "Update Note", code: "NOTES_UPDATE", module: "NOTES", action: "UPDATE", access: "GENERAL", isActive: true },
-        { name: "note_delete", displayName: "Delete Note", code: "NOTES_DELETE", module: "NOTES", action: "DELETE", access: "GENERAL", isActive: true },
-        { name: "folder_create", displayName: "Create Folder", code: "FOLDERS_CREATE", module: "FOLDERS", action: "CREATE", access: "GENERAL", isActive: true },
-        { name: "folder_read", displayName: "Read Folder", code: "FOLDERS_READ", module: "FOLDERS", action: "READ", access: "GENERAL", isActive: true },
-        { name: "folder_update", displayName: "Update Folder", code: "FOLDERS_UPDATE", module: "FOLDERS", action: "UPDATE", access: "GENERAL", isActive: true },
-        { name: "folder_delete", displayName: "Delete Folder", code: "FOLDERS_DELETE", module: "FOLDERS", action: "DELETE", access: "GENERAL", isActive: true },
+        {
+            name: "ws_create",
+            displayName: "Create WS",
+            code: "WORKSPACE_CREATE",
+            module: "WORKSPACE",
+            action: "CREATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "ws_read",
+            displayName: "Read WS",
+            code: "WORKSPACE_READ",
+            module: "WORKSPACE",
+            action: "READ",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "ws_update",
+            displayName: "Update WS",
+            code: "WORKSPACE_UPDATE",
+            module: "WORKSPACE",
+            action: "UPDATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "ws_delete",
+            displayName: "Delete WS",
+            code: "WORKSPACE_DELETE",
+            module: "WORKSPACE",
+            action: "DELETE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "note_create",
+            displayName: "Create Note",
+            code: "NOTES_CREATE",
+            module: "NOTES",
+            action: "CREATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "note_read",
+            displayName: "Read Note",
+            code: "NOTES_READ",
+            module: "NOTES",
+            action: "READ",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "note_update",
+            displayName: "Update Note",
+            code: "NOTES_UPDATE",
+            module: "NOTES",
+            action: "UPDATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "note_delete",
+            displayName: "Delete Note",
+            code: "NOTES_DELETE",
+            module: "NOTES",
+            action: "DELETE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "folder_create",
+            displayName: "Create Folder",
+            code: "FOLDERS_CREATE",
+            module: "FOLDERS",
+            action: "CREATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "folder_read",
+            displayName: "Read Folder",
+            code: "FOLDERS_READ",
+            module: "FOLDERS",
+            action: "READ",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "folder_update",
+            displayName: "Update Folder",
+            code: "FOLDERS_UPDATE",
+            module: "FOLDERS",
+            action: "UPDATE",
+            access: "GENERAL",
+            isActive: true,
+        },
+        {
+            name: "folder_delete",
+            displayName: "Delete Folder",
+            code: "FOLDERS_DELETE",
+            module: "FOLDERS",
+            action: "DELETE",
+            access: "GENERAL",
+            isActive: true,
+        },
     ]);
 
     const role = await RoleModel.create({
@@ -188,7 +324,7 @@ before(async () => {
         scope: "GLOBAL",
         workspaceId: null,
         description: "Standard user",
-        permissions: permissions.map(p => p._id),
+        permissions: permissions.map((p) => p._id),
         isSystem: true,
         isActive: true,
     });
@@ -201,13 +337,13 @@ before(async () => {
         scope: "WORKSPACE",
         workspaceId: null,
         description: "Workspace member role",
-        permissions: permissions.map(p => p._id),
+        permissions: permissions.map((p) => p._id),
         isSystem: true,
         isActive: true,
     });
     workspaceMemberRoleId = wsMemberRole._id;
 
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "test" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test" }));
 
     const app = express();
     app.use(express.json());
@@ -220,7 +356,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) await new Promise((resolve) => server.close(resolve));
     await mongoose.disconnect();
     if (mongo) {
         mongo.kill();
@@ -255,7 +391,11 @@ test("2. Free user at workspace limit (3 workspaces) is blocked", async () => {
     await workspaceService.createWorkspace({ name: "WS 3", slug: `ws-lim-3-${new Types.ObjectId()}` }, user);
 
     await assert.rejects(
-        () => workspaceService.createWorkspace({ name: "WS 4", slug: `ws-lim-4-${new Types.ObjectId()}` }, user),
+        () =>
+            workspaceService.createWorkspace(
+                { name: "WS 4", slug: `ws-lim-4-${new Types.ObjectId()}` },
+                user,
+            ),
         (err) => {
             assert.equal(err.statusCode, 403);
             assert.equal(err.code, EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED);
@@ -267,7 +407,10 @@ test("2. Free user at workspace limit (3 workspaces) is blocked", async () => {
 
 test("3. Individual user at folder limit (10 folders per workspace) is blocked for that workspace", async () => {
     const { userId } = await createPaidUser(individualPlan);
-    const ws = await workspaceService.createWorkspace({ name: "WS Indiv", slug: `ws-indiv-${new Types.ObjectId()}` }, userId);
+    const ws = await workspaceService.createWorkspace(
+        { name: "WS Indiv", slug: `ws-indiv-${new Types.ObjectId()}` },
+        userId,
+    );
     const wsId = ws.id;
 
     for (let i = 1; i <= 10; i++) {
@@ -278,10 +421,11 @@ test("3. Individual user at folder limit (10 folders per workspace) is blocked f
     }
 
     await assert.rejects(
-        () => folderService.createWorkspaceFolder(
-            { workspaceId: wsId, name: "Folder 11", slug: `fld-11-${new Types.ObjectId()}` },
-            userId,
-        ),
+        () =>
+            folderService.createWorkspaceFolder(
+                { workspaceId: wsId, name: "Folder 11", slug: `fld-11-${new Types.ObjectId()}` },
+                userId,
+            ),
         (err) => {
             assert.equal(err.statusCode, 403);
             assert.equal(err.code, EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED);
@@ -293,7 +437,10 @@ test("3. Individual user at folder limit (10 folders per workspace) is blocked f
 
 test("4. User reaching active sticky note quota is blocked from creating more notes", async () => {
     const user = await createUser("note-limit");
-    const ws = await workspaceService.createWorkspace({ name: "WS Notes", slug: `ws-notes-${new Types.ObjectId()}` }, user);
+    const ws = await workspaceService.createWorkspace(
+        { name: "WS Notes", slug: `ws-notes-${new Types.ObjectId()}` },
+        user,
+    );
     const wsId = ws.id;
     const folder = await folderService.createWorkspaceFolder(
         { workspaceId: wsId, name: "Folder N", slug: `fld-n-${new Types.ObjectId()}` },
@@ -319,21 +466,40 @@ test("4. User reaching active sticky note quota is blocked from creating more no
     };
 
     try {
-        await noteService.createStickyNote({
-            workspaceId: wsId, workspaceFolderId: folderId, columnId: String(col._id),
-            title: "Note 1", content: "Content 1",
-        }, user);
+        await noteService.createStickyNote(
+            {
+                workspaceId: wsId,
+                workspaceFolderId: folderId,
+                columnId: String(col._id),
+                title: "Note 1",
+                content: "Content 1",
+            },
+            user,
+        );
 
-        await noteService.createStickyNote({
-            workspaceId: wsId, workspaceFolderId: folderId, columnId: String(col._id),
-            title: "Note 2", content: "Content 2",
-        }, user);
+        await noteService.createStickyNote(
+            {
+                workspaceId: wsId,
+                workspaceFolderId: folderId,
+                columnId: String(col._id),
+                title: "Note 2",
+                content: "Content 2",
+            },
+            user,
+        );
 
         await assert.rejects(
-            () => noteService.createStickyNote({
-                workspaceId: wsId, workspaceFolderId: folderId, columnId: String(col._id),
-                title: "Note 3", content: "Content 3",
-            }, user),
+            () =>
+                noteService.createStickyNote(
+                    {
+                        workspaceId: wsId,
+                        workspaceFolderId: folderId,
+                        columnId: String(col._id),
+                        title: "Note 3",
+                        content: "Content 3",
+                    },
+                    user,
+                ),
             (err) => {
                 assert.equal(err.statusCode, 403);
                 assert.equal(err.code, EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED);
@@ -426,8 +592,8 @@ test("8. Concurrent workspace creations respect capacity safely", async () => {
         workspaceService.createWorkspace({ name: "C3-C", slug: `c3c-${new Types.ObjectId()}` }, user),
     ]);
 
-    const successes = results.filter(r => r.status === "fulfilled");
-    const rejections = results.filter(r => r.status === "rejected");
+    const successes = results.filter((r) => r.status === "fulfilled");
+    const rejections = results.filter((r) => r.status === "rejected");
 
     assert.equal(successes.length, 1, "Exactly one concurrent creation must succeed");
     assert.equal(rejections.length, 2, "Other concurrent creations must be rejected");
@@ -438,9 +604,15 @@ test("8. Concurrent workspace creations respect capacity safely", async () => {
 
 test("9. Concurrent note creations respect capacity", async () => {
     const user = await createUser("concurrent-notes");
-    const ws = await workspaceService.createWorkspace({ name: "WS CN", slug: `ws-cn-${new Types.ObjectId()}` }, user);
+    const ws = await workspaceService.createWorkspace(
+        { name: "WS CN", slug: `ws-cn-${new Types.ObjectId()}` },
+        user,
+    );
     const wsId = ws.id;
-    const fld = await folderService.createWorkspaceFolder({ workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` }, user);
+    const fld = await folderService.createWorkspaceFolder(
+        { workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` },
+        user,
+    );
     const fldId = fld.id;
     const col = await StickyNoteColumnModel.create({
         workspaceId: new Types.ObjectId(wsId),
@@ -461,12 +633,30 @@ test("9. Concurrent note creations respect capacity", async () => {
 
     try {
         const results = await Promise.allSettled([
-            noteService.createStickyNote({ workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id), title: "N1", content: "C1" }, user),
-            noteService.createStickyNote({ workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id), title: "N2", content: "C2" }, user),
+            noteService.createStickyNote(
+                {
+                    workspaceId: wsId,
+                    workspaceFolderId: fldId,
+                    columnId: String(col._id),
+                    title: "N1",
+                    content: "C1",
+                },
+                user,
+            ),
+            noteService.createStickyNote(
+                {
+                    workspaceId: wsId,
+                    workspaceFolderId: fldId,
+                    columnId: String(col._id),
+                    title: "N2",
+                    content: "C2",
+                },
+                user,
+            ),
         ]);
 
-        const successes = results.filter(r => r.status === "fulfilled");
-        const rejections = results.filter(r => r.status === "rejected");
+        const successes = results.filter((r) => r.status === "fulfilled");
+        const rejections = results.filter((r) => r.status === "rejected");
         assert.equal(successes.length, 1);
         assert.equal(rejections.length, 1);
     } finally {
@@ -491,8 +681,8 @@ test("10. Concurrent attachment uploads respect storage limit", async () => {
             entitlementService.assertCanUploadAttachment(user, null, null, 1500),
         ]);
 
-        const successes = results.filter(r => r.status === "fulfilled");
-        const rejections = results.filter(r => r.status === "rejected");
+        const successes = results.filter((r) => r.status === "fulfilled");
+        const rejections = results.filter((r) => r.status === "rejected");
         assert.equal(successes.length, 1);
         assert.equal(rejections.length, 1);
     } finally {
@@ -505,12 +695,20 @@ test("11. Failed upload releases pending reservation", async () => {
     const res = await entitlementService.assertCanUploadAttachment(user, null, null, 1000);
     assert.equal(res.amount, 1000);
 
-    const pendingBefore = await entitlementRepo.getPendingReservationAmount(BillingScopeType.USER, new Types.ObjectId(user), FeatureCode.MAX_STORAGE_BYTES);
+    const pendingBefore = await entitlementRepo.getPendingReservationAmount(
+        BillingScopeType.USER,
+        new Types.ObjectId(user),
+        FeatureCode.MAX_STORAGE_BYTES,
+    );
     assert.equal(pendingBefore, 1000);
 
     await entitlementService.releaseReservation(res.reservationId);
 
-    const pendingAfter = await entitlementRepo.getPendingReservationAmount(BillingScopeType.USER, new Types.ObjectId(user), FeatureCode.MAX_STORAGE_BYTES);
+    const pendingAfter = await entitlementRepo.getPendingReservationAmount(
+        BillingScopeType.USER,
+        new Types.ObjectId(user),
+        FeatureCode.MAX_STORAGE_BYTES,
+    );
     assert.equal(pendingAfter, 0);
 });
 
@@ -561,9 +759,18 @@ test("13. Idempotent retry returns existing reservation token", async () => {
 
 test("14. Workspace restoration beyond limit is blocked", async () => {
     const user = await createUser("restore-ws");
-    const ws1 = await workspaceService.createWorkspace({ name: "WS 1", slug: `ws-r-1-${new Types.ObjectId()}` }, user);
-    const ws2 = await workspaceService.createWorkspace({ name: "WS 2", slug: `ws-r-2-${new Types.ObjectId()}` }, user);
-    const ws3 = await workspaceService.createWorkspace({ name: "WS 3", slug: `ws-r-3-${new Types.ObjectId()}` }, user);
+    const ws1 = await workspaceService.createWorkspace(
+        { name: "WS 1", slug: `ws-r-1-${new Types.ObjectId()}` },
+        user,
+    );
+    const ws2 = await workspaceService.createWorkspace(
+        { name: "WS 2", slug: `ws-r-2-${new Types.ObjectId()}` },
+        user,
+    );
+    const ws3 = await workspaceService.createWorkspace(
+        { name: "WS 3", slug: `ws-r-3-${new Types.ObjectId()}` },
+        user,
+    );
 
     // Trash ws1
     await workspaceService.deleteWorkspace(ws1.id, user);
@@ -589,19 +796,31 @@ test("14. Workspace restoration beyond limit is blocked", async () => {
 
 test("15. Folder restoration beyond limit is blocked", async () => {
     const { userId } = await createPaidUser(individualPlan);
-    const ws = await workspaceService.createWorkspace({ name: "WS Folders", slug: `ws-f-${new Types.ObjectId()}` }, userId);
+    const ws = await workspaceService.createWorkspace(
+        { name: "WS Folders", slug: `ws-f-${new Types.ObjectId()}` },
+        userId,
+    );
     const wsId = ws.id;
 
-    const f1 = await folderService.createWorkspaceFolder({ workspaceId: wsId, name: "F1", slug: `f1-${new Types.ObjectId()}` }, userId);
+    const f1 = await folderService.createWorkspaceFolder(
+        { workspaceId: wsId, name: "F1", slug: `f1-${new Types.ObjectId()}` },
+        userId,
+    );
     for (let i = 2; i <= 10; i++) {
-        await folderService.createWorkspaceFolder({ workspaceId: wsId, name: `F${i}`, slug: `f${i}-${new Types.ObjectId()}` }, userId);
+        await folderService.createWorkspaceFolder(
+            { workspaceId: wsId, name: `F${i}`, slug: `f${i}-${new Types.ObjectId()}` },
+            userId,
+        );
     }
 
     // Trash f1
     await folderService.deleteWorkspaceFolder(f1.id, userId);
 
     // Create f11 to refill the 10th slot
-    await folderService.createWorkspaceFolder({ workspaceId: wsId, name: "F11", slug: `f11-${new Types.ObjectId()}` }, userId);
+    await folderService.createWorkspaceFolder(
+        { workspaceId: wsId, name: "F11", slug: `f11-${new Types.ObjectId()}` },
+        userId,
+    );
 
     // Restoring f1 must be blocked
     await assert.rejects(
@@ -616,9 +835,15 @@ test("15. Folder restoration beyond limit is blocked", async () => {
 
 test("16. Note reactivation beyond limit is blocked", async () => {
     const user = await createUser("reactivate-note");
-    const ws = await workspaceService.createWorkspace({ name: "WS Note Act", slug: `ws-na-${new Types.ObjectId()}` }, user);
+    const ws = await workspaceService.createWorkspace(
+        { name: "WS Note Act", slug: `ws-na-${new Types.ObjectId()}` },
+        user,
+    );
     const wsId = ws.id;
-    const fld = await folderService.createWorkspaceFolder({ workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` }, user);
+    const fld = await folderService.createWorkspaceFolder(
+        { workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` },
+        user,
+    );
     const fldId = fld.id;
     const col = await StickyNoteColumnModel.create({
         workspaceId: new Types.ObjectId(wsId),
@@ -629,7 +854,16 @@ test("16. Note reactivation beyond limit is blocked", async () => {
         isDefault: true,
     });
 
-    const n1 = await noteService.createStickyNote({ workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id), title: "N1", content: "C1" }, user);
+    const n1 = await noteService.createStickyNote(
+        {
+            workspaceId: wsId,
+            workspaceFolderId: fldId,
+            columnId: String(col._id),
+            title: "N1",
+            content: "C1",
+        },
+        user,
+    );
 
     // Move n1 to ARCHIVED
     await noteService.updateStickyNoteStatus(n1.id, StickyNoteStatus.ARCHIVED, user);
@@ -645,7 +879,16 @@ test("16. Note reactivation beyond limit is blocked", async () => {
 
     try {
         // Create active note n2 (taking the 1 slot)
-        await noteService.createStickyNote({ workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id), title: "N2", content: "C2" }, user);
+        await noteService.createStickyNote(
+            {
+                workspaceId: wsId,
+                workspaceFolderId: fldId,
+                columnId: String(col._id),
+                title: "N2",
+                content: "C2",
+            },
+            user,
+        );
 
         // Reactivating n1 from ARCHIVED to ACTIVE must be blocked
         await assert.rejects(
@@ -665,7 +908,10 @@ test("17. Downgrade with over-limit usage preserves all resources and allows vie
     const { userId, subscription } = await createPaidUser(proPlan);
     // Create 5 workspaces (which exceeds Free plan limit of 3)
     for (let i = 1; i <= 5; i++) {
-        await workspaceService.createWorkspace({ name: `Pro WS ${i}`, slug: `pws-${i}-${new Types.ObjectId()}` }, userId);
+        await workspaceService.createWorkspace(
+            { name: `Pro WS ${i}`, slug: `pws-${i}-${new Types.ObjectId()}` },
+            userId,
+        );
     }
 
     // Downgrade subscription to Free
@@ -684,7 +930,11 @@ test("17. Downgrade with over-limit usage preserves all resources and allows vie
 
     // Creating another workspace must be blocked
     await assert.rejects(
-        () => workspaceService.createWorkspace({ name: "Pro WS 6", slug: `pws-6-${new Types.ObjectId()}` }, userId),
+        () =>
+            workspaceService.createWorkspace(
+                { name: "Pro WS 6", slug: `pws-6-${new Types.ObjectId()}` },
+                userId,
+            ),
         (err) => {
             assert.equal(err.statusCode, 403);
             return true;
@@ -694,14 +944,21 @@ test("17. Downgrade with over-limit usage preserves all resources and allows vie
 
 test("18. No automatic deletion after downgrade", async () => {
     // Verify that all 5 workspaces still exist in database for this downgraded user
-    const count = await WorkspaceModel.countDocuments({ ownerId: test17UserId, status: WorkspaceStatus.ACTIVE });
+    const count = await WorkspaceModel.countDocuments({
+        ownerId: test17UserId,
+        status: WorkspaceStatus.ACTIVE,
+    });
     assert.equal(count, 5, "Existing resources must never be deleted upon downgrade");
 });
 
 test("19. Missing plan-limit configuration fails safely with configuration error", async () => {
     const user = await createUser("missing-cfg");
     await assert.rejects(
-        () => entitlementService.getResourceLimit({ type: BillingScopeType.USER, id: user }, "NON_EXISTENT_FEATURE_CODE"),
+        () =>
+            entitlementService.getResourceLimit(
+                { type: BillingScopeType.USER, id: user },
+                "NON_EXISTENT_FEATURE_CODE",
+            ),
         (err) => {
             assert.equal(err.statusCode, 500);
             assert.equal(err.code, EntitlementErrorCode.CONFIGURATION_ERROR);
@@ -743,9 +1000,15 @@ test("23. Shared workspace membership enforces workspace owner quota", async () 
     const owner = await createUser("ws-owner");
     const collaborator = await createUser("collaborator");
 
-    const ws = await workspaceService.createWorkspace({ name: "Shared WS", slug: `shared-${new Types.ObjectId()}` }, owner);
+    const ws = await workspaceService.createWorkspace(
+        { name: "Shared WS", slug: `shared-${new Types.ObjectId()}` },
+        owner,
+    );
     const wsId = ws.id;
-    const fld = await folderService.createWorkspaceFolder({ workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` }, owner);
+    const fld = await folderService.createWorkspaceFolder(
+        { workspaceId: wsId, name: "Fld", slug: `fld-${new Types.ObjectId()}` },
+        owner,
+    );
     const fldId = fld.id;
     const col = await StickyNoteColumnModel.create({
         workspaceId: new Types.ObjectId(wsId),
@@ -774,17 +1037,30 @@ test("23. Shared workspace membership enforces workspace owner quota", async () 
 
     try {
         // Owner creates 1 note
-        await noteService.createStickyNote({
-            workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id),
-            title: "Owner note", content: "C",
-        }, owner);
+        await noteService.createStickyNote(
+            {
+                workspaceId: wsId,
+                workspaceFolderId: fldId,
+                columnId: String(col._id),
+                title: "Owner note",
+                content: "C",
+            },
+            owner,
+        );
 
         // Collaborator attempts to create a note in owner's workspace -> must fail because owner is at limit!
         await assert.rejects(
-            () => noteService.createStickyNote({
-                workspaceId: wsId, workspaceFolderId: fldId, columnId: String(col._id),
-                title: "Collab note", content: "C",
-            }, collaborator),
+            () =>
+                noteService.createStickyNote(
+                    {
+                        workspaceId: wsId,
+                        workspaceFolderId: fldId,
+                        columnId: String(col._id),
+                        title: "Collab note",
+                        content: "C",
+                    },
+                    collaborator,
+                ),
             (err) => {
                 assert.equal(err.statusCode, 403);
                 assert.equal(err.code, EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED);
@@ -799,11 +1075,18 @@ test("23. Shared workspace membership enforces workspace owner quota", async () 
 test("24. Permission denial takes precedence over resource mutation", async () => {
     const stranger = await createUser("stranger");
     const owner = await createUser("owner-perm");
-    const ws = await workspaceService.createWorkspace({ name: "Priv WS", slug: `priv-${new Types.ObjectId()}` }, owner);
+    const ws = await workspaceService.createWorkspace(
+        { name: "Priv WS", slug: `priv-${new Types.ObjectId()}` },
+        owner,
+    );
 
     // Stranger has no permissions on owner's private workspace
     await assert.rejects(
-        () => folderService.createWorkspaceFolder({ workspaceId: ws.id, name: "Hack", slug: `hack-${new Types.ObjectId()}` }, stranger),
+        () =>
+            folderService.createWorkspaceFolder(
+                { workspaceId: ws.id, name: "Hack", slug: `hack-${new Types.ObjectId()}` },
+                stranger,
+            ),
         (err) => {
             assert.equal(err.statusCode, 403);
             return true;
@@ -833,7 +1116,10 @@ test("26. No circular service dependencies", async () => {
 
 test("27. Standardized API responses (/me, /summary, /check, /workspace/:id/folders)", async () => {
     const user = await createUser("api-user");
-    const ws = await workspaceService.createWorkspace({ name: "API WS", slug: `api-ws-${new Types.ObjectId()}` }, user);
+    const ws = await workspaceService.createWorkspace(
+        { name: "API WS", slug: `api-ws-${new Types.ObjectId()}` },
+        user,
+    );
 
     const meRes = await request("/subscriptionentitlement/me", { userId: user });
     assert.equal(meRes.status, 200);
@@ -919,7 +1205,10 @@ test("31. Parallel plan downgrade and resource creation handles limits correctly
 
 test("32. Existing functionality regression: assertCanAddMember preserves collaboration", async () => {
     const owner = await createUser("member-owner");
-    const ws = await workspaceService.createWorkspace({ name: "Collab WS", slug: `collab-${new Types.ObjectId()}` }, owner);
+    const ws = await workspaceService.createWorkspace(
+        { name: "Collab WS", slug: `collab-${new Types.ObjectId()}` },
+        owner,
+    );
 
     // assertCanAddMember succeeds for Free user
     await assert.doesNotReject(() => entitlementService.assertCanAddMember(owner, ws.id));

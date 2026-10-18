@@ -73,7 +73,9 @@ export const invitationListSchema = z
         invitedBy: objectId.optional(),
         email: z.string().trim().toLowerCase().max(C.EMAIL.MAX_LENGTH).optional(),
         status: z.enum(WorkspaceInvitationStatus).optional(),
-        sortBy: z.enum(["createdAt", "updatedAt", "expiresAt", "acceptedAt", "email", "status"]).default("createdAt"),
+        sortBy: z
+            .enum(["createdAt", "updatedAt", "expiresAt", "acceptedAt", "email", "status"])
+            .default("createdAt"),
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
     })
     .strict();

@@ -54,7 +54,8 @@ export const ValidationMessages = {
     INVALID_PAGE: "Page must be greater than zero.",
     INVALID_LIMIT: "Limit must be greater than zero.",
     INVALID_PAGINATION_PAGE: "Invalid page parameter. Must be a positive integer.",
-    INVALID_PAGINATION_LIMIT: (maxLimit: number) => `Limit must be a positive integer and not exceed ${maxLimit}.`,
+    INVALID_PAGINATION_LIMIT: (maxLimit: number) =>
+        `Limit must be a positive integer and not exceed ${maxLimit}.`,
     INVALID_SORT_FIELD: (allowedFields: string) => `Invalid sort field. Allowed fields: ${allowedFields}.`,
     INVALID_SORT_ORDER: "Invalid sort order. Use 'asc', 'desc', '1', or '-1'.",
     INVALID_SEARCH: "Invalid search value.",

@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 export const listSortSchema = z.enum([
-    "RECENTLY_UPDATED", "RECENTLY_CREATED", "NAME_ASC", "NAME_DESC", "OLDEST_FIRST",
+    "RECENTLY_UPDATED",
+    "RECENTLY_CREATED",
+    "NAME_ASC",
+    "NAME_DESC",
+    "OLDEST_FIRST",
 ]);
 export type ListSort = z.infer<typeof listSortSchema>;
 

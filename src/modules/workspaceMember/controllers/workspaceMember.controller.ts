@@ -41,7 +41,8 @@ export class WorkspaceMemberController {
 
     getWorkspaceMembers = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const filters = (res.locals.memberFilters ?? (req.method === "POST" ? req.body : req.query)) as IWorkspaceMemberFilter;
+            const filters = (res.locals.memberFilters ??
+                (req.method === "POST" ? req.body : req.query)) as IWorkspaceMemberFilter;
             const members = await this.workspaceMemberService.getWorkspaceMembers(
                 filters,
                 req.user?.id as string,

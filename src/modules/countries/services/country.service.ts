@@ -1,11 +1,10 @@
-import type { ICountry, ICountryFilter, } from "../interfaces/country.interface.js";
-import { CountryRepository, } from "../repositories/country.repository.js";
-import { CountryMessages, } from "../constants/country.messages.js";
-import { StringHelper, } from "../../../utils/helpers/string.helper.js";
-import { AppError, } from "../../../utils/errors/app.error.js";
+import type { ICountry, ICountryFilter } from "../interfaces/country.interface.js";
+import { CountryRepository } from "../repositories/country.repository.js";
+import { CountryMessages } from "../constants/country.messages.js";
+import { StringHelper } from "../../../utils/helpers/string.helper.js";
+import { AppError } from "../../../utils/errors/app.error.js";
 
 export class CountryService {
-
     private countryRepository: CountryRepository;
 
     constructor() {
@@ -26,37 +25,25 @@ export class CountryService {
         const codeExists = await this.countryRepository.existsByCode(data.code);
 
         if (codeExists) {
-            throw new AppError(
-                CountryMessages.CODE_ALREADY_EXISTS,
-                409
-            );
+            throw new AppError(CountryMessages.CODE_ALREADY_EXISTS, 409);
         }
 
         const alpha3Exists = await this.countryRepository.existsByAlpha3Code(data.alpha3Code);
 
         if (alpha3Exists) {
-            throw new AppError(
-                CountryMessages.ALPHA3_CODE_ALREADY_EXISTS,
-                409
-            );
+            throw new AppError(CountryMessages.ALPHA3_CODE_ALREADY_EXISTS, 409);
         }
 
         const numericCodeExists = await this.countryRepository.existsByNumericCode(data.numericCode);
 
         if (numericCodeExists) {
-            throw new AppError(
-                CountryMessages.NUMERIC_CODE_ALREADY_EXISTS,
-                409
-            );
+            throw new AppError(CountryMessages.NUMERIC_CODE_ALREADY_EXISTS, 409);
         }
 
         const localeExists = await this.countryRepository.existsByLocale(data.locale);
 
         if (localeExists) {
-            throw new AppError(
-                CountryMessages.LOCALE_ALREADY_EXISTS,
-                409
-            );
+            throw new AppError(CountryMessages.LOCALE_ALREADY_EXISTS, 409);
         }
 
         return this.countryRepository.create(data);
@@ -66,10 +53,7 @@ export class CountryService {
         const country = await this.countryRepository.findById(id);
 
         if (!country) {
-            throw new AppError(
-                CountryMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(CountryMessages.NOT_FOUND, 404);
         }
 
         return country;
@@ -78,10 +62,7 @@ export class CountryService {
     async getCountryByCode(code: string) {
         const country = await this.countryRepository.findByCode(StringHelper.normalizeCountryCode(code));
         if (!country) {
-            throw new AppError(
-                CountryMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(CountryMessages.NOT_FOUND, 404);
         }
         return country;
     }
@@ -93,17 +74,11 @@ export class CountryService {
     async updateCountry(id: string, data: Partial<ICountry>) {
         const country = await this.countryRepository.findById(id);
         if (!country) {
-            throw new AppError(
-                CountryMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(CountryMessages.NOT_FOUND, 404);
         }
 
         if (country.isSystem) {
-            throw new AppError(
-                CountryMessages.SYSTEM_COUNTRY_UPDATE,
-                403
-            );
+            throw new AppError(CountryMessages.SYSTEM_COUNTRY_UPDATE, 403);
         }
 
         if (data.name) {
@@ -120,10 +95,7 @@ export class CountryService {
             const existingCountry = await this.countryRepository.findByCode(data.code);
 
             if (existingCountry && existingCountry._id.toString() !== id) {
-                throw new AppError(
-                    CountryMessages.CODE_ALREADY_EXISTS,
-                    409
-                );
+                throw new AppError(CountryMessages.CODE_ALREADY_EXISTS, 409);
             }
         }
 
@@ -132,10 +104,7 @@ export class CountryService {
             const existingCountry = await this.countryRepository.findByAlpha3Code(data.alpha3Code);
 
             if (existingCountry && existingCountry._id.toString() !== id) {
-                throw new AppError(
-                    CountryMessages.ALPHA3_CODE_ALREADY_EXISTS,
-                    409
-                );
+                throw new AppError(CountryMessages.ALPHA3_CODE_ALREADY_EXISTS, 409);
             }
         }
 
@@ -145,10 +114,7 @@ export class CountryService {
             const existingCountry = await this.countryRepository.findByNumericCode(data.numericCode);
 
             if (existingCountry && existingCountry._id.toString() !== id) {
-                throw new AppError(
-                    CountryMessages.NUMERIC_CODE_ALREADY_EXISTS,
-                    409
-                );
+                throw new AppError(CountryMessages.NUMERIC_CODE_ALREADY_EXISTS, 409);
             }
         }
 
@@ -157,7 +123,9 @@ export class CountryService {
         }
 
         if (data.currencyCode) {
-            data.currencyCode = StringHelper.normalizeCurrencyCode(data.currencyCode) as ICountry["currencyCode"];;
+            data.currencyCode = StringHelper.normalizeCurrencyCode(
+                data.currencyCode,
+            ) as ICountry["currencyCode"];
         }
 
         if (data.currencySymbol) {
@@ -170,10 +138,7 @@ export class CountryService {
             const existingCountry = await this.countryRepository.findByLocale(data.locale);
 
             if (existingCountry && existingCountry._id.toString() !== id) {
-                throw new AppError(
-                    CountryMessages.LOCALE_ALREADY_EXISTS,
-                    409
-                );
+                throw new AppError(CountryMessages.LOCALE_ALREADY_EXISTS, 409);
             }
         }
 
@@ -184,24 +149,15 @@ export class CountryService {
         const country = await this.countryRepository.findById(id);
 
         if (!country) {
-            throw new AppError(
-                CountryMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(CountryMessages.NOT_FOUND, 404);
         }
 
         if (country.isSystem) {
-            throw new AppError(
-                CountryMessages.SYSTEM_COUNTRY_DELETE,
-                403
-            );
+            throw new AppError(CountryMessages.SYSTEM_COUNTRY_DELETE, 403);
         }
 
         if (country.isDefault) {
-            throw new AppError(
-                CountryMessages.DEFAULT_COUNTRY_DELETE,
-                403
-            );
+            throw new AppError(CountryMessages.DEFAULT_COUNTRY_DELETE, 403);
         }
 
         return this.countryRepository.deleteById(id);
@@ -211,26 +167,17 @@ export class CountryService {
         const country = await this.countryRepository.findById(id);
 
         if (!country) {
-            throw new AppError(
-                CountryMessages.NOT_FOUND,
-                404
-            );
+            throw new AppError(CountryMessages.NOT_FOUND, 404);
         }
 
         if (country.isSystem) {
-            throw new AppError(
-                CountryMessages.SYSTEM_COUNTRY_UPDATE,
-                403
-            );
+            throw new AppError(CountryMessages.SYSTEM_COUNTRY_UPDATE, 403);
         }
 
         if (country.isDefault && !isActive) {
-            throw new AppError(
-                CountryMessages.CANNOT_DEACTIVATE_DEFAULT,
-                403
-            );
+            throw new AppError(CountryMessages.CANNOT_DEACTIVATE_DEFAULT, 403);
         }
 
-        return this.countryRepository.updateById(id, { isActive, });
+        return this.countryRepository.updateById(id, { isActive });
     }
 }

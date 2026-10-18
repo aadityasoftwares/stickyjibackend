@@ -71,7 +71,7 @@ export class RankUtil {
         const rPadded = cleaned.padEnd(len, "0");
         const rNum = RankUtil.parseBase36(rPadded);
         const maxNum = RankUtil.parseBase36(RankUtil.MAX_RANK.padEnd(len, "z"));
-        const stepAtLen = RankUtil.STEP * (36n ** BigInt(Math.max(0, len - RankUtil.BASE_PAD)));
+        const stepAtLen = RankUtil.STEP * 36n ** BigInt(Math.max(0, len - RankUtil.BASE_PAD));
         if (rNum + stepAtLen < maxNum) {
             return RankUtil.toBase36(rNum + stepAtLen, len);
         }
@@ -87,7 +87,7 @@ export class RankUtil {
         const rPadded = cleaned.padEnd(len, "0");
         const rNum = RankUtil.parseBase36(rPadded);
         const minNum = RankUtil.parseBase36(RankUtil.MIN_RANK.padEnd(len, "0"));
-        const stepAtLen = RankUtil.STEP * (36n ** BigInt(Math.max(0, len - RankUtil.BASE_PAD)));
+        const stepAtLen = RankUtil.STEP * 36n ** BigInt(Math.max(0, len - RankUtil.BASE_PAD));
         if (rNum > minNum + stepAtLen) {
             return RankUtil.toBase36(rNum - stepAtLen, len);
         }

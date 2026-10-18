@@ -1,7 +1,4 @@
-import {
-    smtpSender,
-    smtpTransporter,
-} from "../../config/emailmailer.js";
+import { smtpSender, smtpTransporter } from "../../config/emailmailer.js";
 
 export interface SendEmailOptions {
     to: string | string[];
@@ -10,60 +7,40 @@ export interface SendEmailOptions {
     replyTo?: string;
 }
 
-export const sendEmail = async ({
-    to,
-    subject,
-    html,
-    replyTo,
-}: SendEmailOptions) => {
+export const sendEmail = async ({ to, subject, html, replyTo }: SendEmailOptions) => {
     try {
-        const info =
-            await smtpTransporter.sendMail({
-                from:
-                    smtpSender,
+        const info = await smtpTransporter.sendMail({
+            from: smtpSender,
 
-                to,
+            to,
 
-                subject,
+            subject,
 
-                html,
+            html,
 
-                ...(replyTo
-                    ? {
-                        replyTo,
-                    }
-                    : {}),
-            });
+            ...(replyTo
+                ? {
+                      replyTo,
+                  }
+                : {}),
+        });
 
         return {
-            messageId:
-                info.messageId,
+            messageId: info.messageId,
 
-            accepted:
-                info.accepted ?? [],
+            accepted: info.accepted ?? [],
 
-            rejected:
-                info.rejected ?? [],
+            rejected: info.rejected ?? [],
 
-            response:
-                info.response,
+            response: info.response,
         };
     } catch (error) {
-        console.error(
-            "SMTP email error:",
-            error,
-        );
+        console.error("SMTP email error:", error);
 
-        if (
-            error instanceof Error
-        ) {
-            throw new Error(
-                error.message,
-            );
+        if (error instanceof Error) {
+            throw new Error(error.message);
         }
 
-        throw new Error(
-            "Unable to send email.",
-        );
+        throw new Error("Unable to send email.");
     }
 };

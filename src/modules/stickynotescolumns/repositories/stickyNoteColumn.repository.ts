@@ -4,7 +4,8 @@ import type { StickyNoteColumnType } from "../constants/stickyNoteColumn.enums.j
 import { StickyNoteColumnModel } from "../models/stickyNoteColumn.model.js";
 import { RankUtil } from "../../../utils/rank.util.js";
 
-export const COLUMN_SELECT = "_id workspaceId workspaceFolderId name type color position rank isSystem createdBy updatedBy createdAt updatedAt";
+export const COLUMN_SELECT =
+    "_id workspaceId workspaceFolderId name type color position rank isSystem createdBy updatedBy createdAt updatedAt";
 
 export class StickyNoteColumnRepository {
     async create(data: Partial<IStickyNoteColumn>) {
@@ -48,7 +49,9 @@ export class StickyNoteColumnRepository {
             workspaceId: new Types.ObjectId(workspaceId),
             workspaceFolderId: new Types.ObjectId(workspaceFolderId),
             type,
-        }).select("_id").lean();
+        })
+            .select("_id")
+            .lean();
     }
 
     async getHighestPosition(workspaceId: string, workspaceFolderId: string): Promise<number> {
@@ -86,7 +89,9 @@ export class StickyNoteColumnRepository {
             new Types.ObjectId(id),
             { $set: data },
             { new: true, runValidators: true },
-        ).select(COLUMN_SELECT).lean();
+        )
+            .select(COLUMN_SELECT)
+            .lean();
     }
 
     async deleteById(id: string, session?: ClientSession) {

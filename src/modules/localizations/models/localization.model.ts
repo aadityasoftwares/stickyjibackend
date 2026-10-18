@@ -1,84 +1,76 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { ILocalizationDocument, } from "../interfaces/localization.interface.js";
-import { LocalizationLanguage, LocalizationDirection, } from "../constants/localization.enums.js";
-import { DEFAULT_LOCALIZATION_STATUS, } from "../constants/localization.constants.js";
+import mongoose, { Schema, Model } from "mongoose";
+import type { ILocalizationDocument } from "../interfaces/localization.interface.js";
+import { LocalizationLanguage, LocalizationDirection } from "../constants/localization.enums.js";
+import { DEFAULT_LOCALIZATION_STATUS } from "../constants/localization.constants.js";
 
-const LocalizationSchema =
-    new Schema<ILocalizationDocument>(
-        {
-            language: {
-                type: String,
-                enum: Object.values(
-                    LocalizationLanguage
-                ),
-                required: true,
-                trim: true,
-            },
-
-            languageCode: {
-                type: String,
-                required: true,
-                trim: true,
-                lowercase: true,
-            },
-
-            locale: {
-                type: String,
-                required: true,
-                trim: true,
-            },
-
-            direction: {
-                type: String,
-                enum: Object.values(
-                    LocalizationDirection
-                ),
-                required: true,
-                default:
-                    LocalizationDirection.LTR,
-            },
-
-            key: {
-                type: String,
-                required: true,
-                trim: true,
-            },
-
-            value: {
-                type: String,
-                required: true,
-                trim: true,
-            },
-
-            module: {
-                type: String,
-                required: true,
-                uppercase: true,
-                trim: true,
-            },
-
-            description: {
-                type: String,
-                trim: true,
-                default: "",
-            },
-
-            isActive: {
-                type: Boolean,
-                default:
-                    DEFAULT_LOCALIZATION_STATUS,
-            },
-
-            isDefault: {
-                type: Boolean,
-                default: false,
-            },
+const LocalizationSchema = new Schema<ILocalizationDocument>(
+    {
+        language: {
+            type: String,
+            enum: Object.values(LocalizationLanguage),
+            required: true,
+            trim: true,
         },
-        {
-            timestamps: true,
-        }
-    );
 
+        languageCode: {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
+        },
+
+        locale: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        direction: {
+            type: String,
+            enum: Object.values(LocalizationDirection),
+            required: true,
+            default: LocalizationDirection.LTR,
+        },
+
+        key: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        value: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        module: {
+            type: String,
+            required: true,
+            uppercase: true,
+            trim: true,
+        },
+
+        description: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+
+        isActive: {
+            type: Boolean,
+            default: DEFAULT_LOCALIZATION_STATUS,
+        },
+
+        isDefault: {
+            type: Boolean,
+            default: false,
+        },
+    },
+    {
+        timestamps: true,
+    },
+);
 
 LocalizationSchema.index(
     {
@@ -87,7 +79,7 @@ LocalizationSchema.index(
     },
     {
         unique: true,
-    }
+    },
 );
 
 LocalizationSchema.index({
@@ -116,9 +108,7 @@ LocalizationSchema.index({
     isActive: 1,
 });
 
-export const LocalizationModel:
-    Model<ILocalizationDocument> =
-    mongoose.model<ILocalizationDocument>(
-        "Localization",
-        LocalizationSchema
-    );
+export const LocalizationModel: Model<ILocalizationDocument> = mongoose.model<ILocalizationDocument>(
+    "Localization",
+    LocalizationSchema,
+);

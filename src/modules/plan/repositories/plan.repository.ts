@@ -1,11 +1,6 @@
 import { Types, type PipelineStage, type QueryFilter } from "mongoose";
 import { PlanModel } from "../models/plan.model.js";
-import type {
-    IPlan,
-    IPlanDocument,
-    IPlanFilter,
-    PlanStatusCounts,
-} from "../interfaces/plan.interface.js";
+import type { IPlan, IPlanDocument, IPlanFilter, PlanStatusCounts } from "../interfaces/plan.interface.js";
 import { PlanCode, PlanType } from "../constants/plan.enums.js";
 import { PLAN_CONSTANTS, PLAN_STATUS_FILTER_LABELS } from "../constants/plan.constants.js";
 import type { PlanListFilters } from "../validations/planList.schema.js";
@@ -85,13 +80,15 @@ export class PlanRepository {
         if (filters.isDefault !== undefined) match.isDefault = filters.isDefault;
         if (filters.isSystem !== undefined) match.isSystem = filters.isSystem;
 
-        const effectiveStatus = filters.isActive !== undefined
-            ? (filters.isActive ? "ACTIVE" : "INACTIVE")
-            : (filters.status ?? "ACTIVE");
+        const effectiveStatus =
+            filters.isActive !== undefined
+                ? filters.isActive
+                    ? "ACTIVE"
+                    : "INACTIVE"
+                : (filters.status ?? "ACTIVE");
 
-        const statusMatchStages: PipelineStage.Match[] = effectiveStatus === "ALL"
-            ? []
-            : [{ $match: { isActive: effectiveStatus === "ACTIVE" } }];
+        const statusMatchStages: PipelineStage.Match[] =
+            effectiveStatus === "ALL" ? [] : [{ $match: { isActive: effectiveStatus === "ACTIVE" } }];
 
         const sort = planListSort(filters);
 
@@ -100,12 +97,7 @@ export class PlanRepository {
             { $project: PLAN_SELECT },
             {
                 $facet: {
-                    data: [
-                        ...statusMatchStages,
-                        { $sort: sort },
-                        { $skip: skip },
-                        { $limit: limit },
-                    ],
+                    data: [...statusMatchStages, { $sort: sort }, { $skip: skip }, { $limit: limit }],
                     counts: [{ $group: { _id: "$isActive", total: { $sum: 1 } } }],
                 },
             },
@@ -129,11 +121,12 @@ export class PlanRepository {
         }
         counts.all = counts.active + counts.inactive;
 
-        const total = effectiveStatus === "ALL"
-            ? counts.all
-            : effectiveStatus === "ACTIVE"
-              ? counts.active
-              : counts.inactive;
+        const total =
+            effectiveStatus === "ALL"
+                ? counts.all
+                : effectiveStatus === "ACTIVE"
+                  ? counts.active
+                  : counts.inactive;
 
         return {
             data: result?.data ?? [],
@@ -237,10 +230,7 @@ export class PlanRepository {
     }
 
     async deleteById(id: string) {
-        return PlanModel.findByIdAndDelete(new Types.ObjectId(id))
-            .select(PLAN_SELECT)
-            .lean()
-            .exec();
+        return PlanModel.findByIdAndDelete(new Types.ObjectId(id)).select(PLAN_SELECT).lean().exec();
     }
 
     async rollbackById(id: string, data: Record<string, unknown>) {

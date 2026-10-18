@@ -1,5 +1,4 @@
 export enum CountryCode {
-
     // Africa
     ALGERIA = "DZ",
     ANGOLA = "AO",
@@ -207,12 +206,10 @@ export enum CountryCode {
     TONGA = "TO",
     TUVALU = "TV",
     VANUATU = "VU",
-};
-
+}
 
 // ISO 3166-1 Alpha-3
 export enum CountryCodeAlpha3 {
-
     // Africa
     ALGERIA = "DZA",
     ANGOLA = "AGO",
@@ -420,12 +417,10 @@ export enum CountryCodeAlpha3 {
     TONGA = "TON",
     TUVALU = "TUV",
     VANUATU = "VUT",
-};
-
+}
 
 // ISO 3166-1 Numeric
 export enum CountryNumericCode {
-
     INDIA = "356",
     UNITED_STATES = "840",
     UNITED_KINGDOM = "826",
@@ -489,10 +484,8 @@ export enum CountryNumericCode {
     MOROCCO = "504",
 }
 
-
 // Continents
 export enum CountryContinent {
-
     AFRICA = "AFRICA",
     ASIA = "ASIA",
     EUROPE = "EUROPE",
@@ -502,10 +495,8 @@ export enum CountryContinent {
     ANTARCTICA = "ANTARCTICA",
 }
 
-
 // ISO 4217 Currency Codes
 export enum CurrencyCode {
-
     AED = "AED",
     AFN = "AFN",
     ALL = "ALL",
@@ -691,7 +682,6 @@ export enum CurrencyCode {
 
 // ITU-T E.164 International Calling Codes
 export enum CountryDialCode {
-
     // Africa
     ALGERIA = "+213",
     ANGOLA = "+244",
@@ -748,7 +738,6 @@ export enum CountryDialCode {
     ZAMBIA = "+260",
     ZIMBABWE = "+263",
 
-
     // Asia
     AFGHANISTAN = "+93",
     ARMENIA = "+374",
@@ -800,7 +789,6 @@ export enum CountryDialCode {
     VIETNAM = "+84",
     YEMEN = "+967",
 
-
     // Europe
     ALBANIA = "+355",
     ANDORRA = "+376",
@@ -847,7 +835,6 @@ export enum CountryDialCode {
     UKRAINE = "+380",
     UNITED_KINGDOM = "+44",
 
-
     // North America
     ANTIGUA_AND_BARBUDA = "+1",
     BAHAMAS = "+1",
@@ -873,7 +860,6 @@ export enum CountryDialCode {
     TRINIDAD_AND_TOBAGO = "+1",
     UNITED_STATES = "+1",
 
-
     // South America
     ARGENTINA = "+54",
     BOLIVIA = "+591",
@@ -887,7 +873,6 @@ export enum CountryDialCode {
     SURINAME = "+597",
     URUGUAY = "+598",
     VENEZUELA = "+58",
-
 
     // Oceania
     AUSTRALIA = "+61",

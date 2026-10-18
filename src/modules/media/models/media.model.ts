@@ -153,7 +153,4 @@ MediaSchema.index({
 });
 MediaSchema.index({ storageDeletionPending: 1, deletedAt: 1 });
 
-export const MediaModel: Model<IMediaDocument> = mongoose.model<IMediaDocument>(
-    "Media",
-    MediaSchema,
-);
+export const MediaModel: Model<IMediaDocument> = mongoose.model<IMediaDocument>("Media", MediaSchema);

@@ -25,10 +25,7 @@ stickyNoteAssigneeRoutes.get(
     stickyNoteAssigneeController.getAssigneesByStickyNoteId,
 );
 
-stickyNoteAssigneeRoutes.get(
-    "/note/:stickyNoteId",
-    stickyNoteAssigneeController.getAssigneesByStickyNoteId,
-);
+stickyNoteAssigneeRoutes.get("/note/:stickyNoteId", stickyNoteAssigneeController.getAssigneesByStickyNoteId);
 
 stickyNoteAssigneeRoutes.get(
     "/getall",

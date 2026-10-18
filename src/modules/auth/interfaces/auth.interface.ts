@@ -96,20 +96,29 @@ export interface IAuthenticatedUser {
     sessionId: Types.ObjectId;
 }
 
+export interface IAuthUserProfileResponse {
+    firstName: string | null;
+    lastName: string | null;
+    displayName: string | null;
+}
+
 export interface IAuthUserResponse {
-    id: Types.ObjectId;
+    id: string;
     email: string;
-    globalRoleId: Types.ObjectId;
+    globalRoleId: string;
     status: string;
     authProvider: UserAuthProvider;
     isEmailVerified: boolean;
     isPhoneVerified: boolean;
     isMfaEnabled: boolean;
+    profile?: IAuthUserProfileResponse | null;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
 
 export interface IAuthResponse {
     user: IAuthUserResponse;
-    sessionId: Types.ObjectId;
+    sessionId: string;
     tokens: IAuthTokens;
 }
 

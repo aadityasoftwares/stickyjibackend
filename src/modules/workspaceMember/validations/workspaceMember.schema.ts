@@ -19,7 +19,9 @@ export const updateWorkspaceMemberSchema = z.strictObject({
 export const workspaceMemberListSchema = z
     .strictObject({
         ...paginationShape,
-        workspaceId: z.string().regex(objectIdRegex, { message: WorkspaceMemberMessages.INVALID_WORKSPACE_ID }),
+        workspaceId: z
+            .string()
+            .regex(objectIdRegex, { message: WorkspaceMemberMessages.INVALID_WORKSPACE_ID }),
         userId: z
             .string()
             .regex(objectIdRegex, { message: WorkspaceMemberMessages.INVALID_USER_ID })

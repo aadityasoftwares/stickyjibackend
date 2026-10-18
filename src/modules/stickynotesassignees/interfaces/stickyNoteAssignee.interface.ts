@@ -1,16 +1,8 @@
-import type {
-    Document,
-    Types,
-} from "mongoose";
+import type { Document, Types } from "mongoose";
 
-import type {
-    StickyNoteAssigneeStatus,
-} from "../constants/stickyNoteAssignee.enums.js";
+import type { StickyNoteAssigneeStatus } from "../constants/stickyNoteAssignee.enums.js";
 
-export type StickyNoteAssigneeSortField =
-    | "assignedAt"
-    | "createdAt"
-    | "updatedAt";
+export type StickyNoteAssigneeSortField = "assignedAt" | "createdAt" | "updatedAt";
 
 export interface IStickyNoteAssignee {
     workspaceId: Types.ObjectId;
@@ -29,9 +21,7 @@ export interface IStickyNoteAssignee {
     updatedAt?: Date;
 }
 
-export interface IStickyNoteAssigneeDocument
-    extends IStickyNoteAssignee,
-    Document {
+export interface IStickyNoteAssigneeDocument extends IStickyNoteAssignee, Document {
     _id: Types.ObjectId;
 }
 
@@ -41,9 +31,7 @@ export interface IStickyNoteAssigneeCreate {
 }
 
 export interface IStickyNoteAssigneeSync {
-    assigneeIds: Array<
-        Types.ObjectId | string
-    >;
+    assigneeIds: Array<Types.ObjectId | string>;
 }
 
 export interface IStickyNoteAssigneeFilter {

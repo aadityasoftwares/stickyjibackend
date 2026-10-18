@@ -26,7 +26,7 @@ const AuditLogChangeSchema = new Schema(
     },
     {
         _id: false,
-    }
+    },
 );
 
 const AuditLogSchema = new Schema<IAuditLogDocument>(
@@ -115,7 +115,7 @@ const AuditLogSchema = new Schema<IAuditLogDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 AuditLogSchema.index({
@@ -143,8 +143,7 @@ AuditLogSchema.index({
     createdAt: -1,
 });
 
-export const AuditLogModel: Model<IAuditLogDocument> =
-    mongoose.model<IAuditLogDocument>(
-        "AuditLog",
-        AuditLogSchema
-    );
+export const AuditLogModel: Model<IAuditLogDocument> = mongoose.model<IAuditLogDocument>(
+    "AuditLog",
+    AuditLogSchema,
+);

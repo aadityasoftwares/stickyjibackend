@@ -1,21 +1,12 @@
-import mongoose, {
-    Types,
-} from "mongoose";
+import mongoose, { Types } from "mongoose";
 import dotenv from "dotenv";
-import {
-    StickyNoteModel,
-} from "../modules/stickynotes/models/stickyNote.model.js";
-import {
-    StickyNoteColumnModel,
-} from "../modules/stickynotescolumns/models/stickyNoteColumn.model.js";
-import {
-    RankUtil,
-} from "../utils/rank.util.js";
+import { StickyNoteModel } from "../modules/stickynotes/models/stickyNote.model.js";
+import { StickyNoteColumnModel } from "../modules/stickynotescolumns/models/stickyNoteColumn.model.js";
+import { RankUtil } from "../utils/rank.util.js";
 
 dotenv.config();
 
-const MONGO_URI =
-    process.env.MONGO_URI || "mongodb://localhost:27017/mystickynotes";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/mystickynotes";
 
 export async function backfillColumns(): Promise<{
     foldersProcessed: number;
@@ -26,11 +17,7 @@ export async function backfillColumns(): Promise<{
 
     // Find all distinct folder scopes that have columns
     const columnsWithMissingRank = await StickyNoteColumnModel.find({
-        $or: [
-            { rank: { $exists: false } },
-            { rank: null },
-            { rank: "" },
-        ],
+        $or: [{ rank: { $exists: false } }, { rank: null }, { rank: "" }],
     })
         .select({
             workspaceId: 1,
@@ -124,11 +111,7 @@ export async function backfillStickyNotes(): Promise<{
 
     // Find all notes missing rank
     const notesWithMissingRank = await StickyNoteModel.find({
-        $or: [
-            { rank: { $exists: false } },
-            { rank: null },
-            { rank: "" },
-        ],
+        $or: [{ rank: { $exists: false } }, { rank: null }, { rank: "" }],
     })
         .select({
             workspaceId: 1,
@@ -233,6 +216,9 @@ async function run(): Promise<void> {
 }
 
 // Run directly if invoked as entrypoint
-if (import.meta.url === `file://${process.argv[1]}`.replace(/\\/g, "/") || process.argv[1]?.endsWith("backfillRanks.ts")) {
+if (
+    import.meta.url === `file://${process.argv[1]}`.replace(/\\/g, "/") ||
+    process.argv[1]?.endsWith("backfillRanks.ts")
+) {
     run();
 }

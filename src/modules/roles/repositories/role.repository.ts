@@ -35,7 +35,9 @@ export class RoleRepository {
     async findByIdLean(id: string) {
         if (!Types.ObjectId.isValid(id)) return null;
         return RoleModel.findById(id)
-            .select("_id name displayName code description type scope workspaceId isSystem isDefault priority isActive permissions createdAt updatedAt")
+            .select(
+                "_id name displayName code description type scope workspaceId isSystem isDefault priority isActive permissions createdAt updatedAt",
+            )
             .lean()
             .exec();
     }
@@ -108,11 +110,7 @@ export class RoleRepository {
         if (search) {
             const searchRegex = { $regex: search.trim(), $options: "i" };
             andConditions.push({
-                $or: [
-                    { name: searchRegex },
-                    { displayName: searchRegex },
-                    { code: searchRegex },
-                ],
+                $or: [{ name: searchRegex }, { displayName: searchRegex }, { code: searchRegex }],
             });
         }
 
@@ -170,7 +168,9 @@ export class RoleRepository {
 
         const [data, total] = await Promise.all([
             RoleModel.find(query)
-                .select("_id name displayName code description type scope workspaceId isSystem isDefault priority isActive permissions createdAt updatedAt")
+                .select(
+                    "_id name displayName code description type scope workspaceId isSystem isDefault priority isActive permissions createdAt updatedAt",
+                )
                 .sort({ [safeSortBy]: sortOrder === "asc" ? 1 : -1 })
                 .skip(skip)
                 .limit(safeLimit)
@@ -193,7 +193,8 @@ export class RoleRepository {
     async existsByCode(code: string, workspaceId?: string | null, excludeId?: string): Promise<boolean> {
         const query: Record<string, unknown> = {
             code: code.toUpperCase().trim(),
-            workspaceId: (workspaceId && Types.ObjectId.isValid(workspaceId)) ? new Types.ObjectId(workspaceId) : null,
+            workspaceId:
+                workspaceId && Types.ObjectId.isValid(workspaceId) ? new Types.ObjectId(workspaceId) : null,
         };
         if (excludeId && Types.ObjectId.isValid(excludeId)) {
             query._id = { $ne: new Types.ObjectId(excludeId) };
@@ -205,7 +206,8 @@ export class RoleRepository {
     async existsByName(name: string, workspaceId?: string | null, excludeId?: string): Promise<boolean> {
         const query: Record<string, unknown> = {
             name: name.toLowerCase().trim(),
-            workspaceId: (workspaceId && Types.ObjectId.isValid(workspaceId)) ? new Types.ObjectId(workspaceId) : null,
+            workspaceId:
+                workspaceId && Types.ObjectId.isValid(workspaceId) ? new Types.ObjectId(workspaceId) : null,
         };
         if (excludeId && Types.ObjectId.isValid(excludeId)) {
             query._id = { $ne: new Types.ObjectId(excludeId) };
@@ -219,7 +221,7 @@ export class RoleRepository {
         return RoleModel.findByIdAndUpdate(
             id,
             { $set: data },
-            { returnDocument: "after", runValidators: true }
+            { returnDocument: "after", runValidators: true },
         )
             .populate({
                 path: "permissions",

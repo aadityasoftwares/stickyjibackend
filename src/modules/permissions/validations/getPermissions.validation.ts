@@ -3,14 +3,21 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { PermissionMessages } from "../constants/permission.messages.js";
 import { PermissionValidation } from "./permission.validation.js";
 
-export const getPermissionsValidation = (
-    req: Request,
-    _res: Response,
-    next: NextFunction,
-) => {
+export const getPermissionsValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
         const source = (req.method === "POST" ? req.body : req.query) ?? {};
-        const { page, limit, search, module: moduleName, action, access, isActive, isSystem, sortOrder, sortBy } = source;
+        const {
+            page,
+            limit,
+            search,
+            module: moduleName,
+            action,
+            access,
+            isActive,
+            isSystem,
+            sortOrder,
+            sortBy,
+        } = source;
 
         if (page !== undefined) {
             const pageNum = Number(page);

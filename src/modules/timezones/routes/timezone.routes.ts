@@ -15,44 +15,28 @@ const timezoneController = new TimezoneController();
 timezoneRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "name",
-        "code",
-        "countryCode",
-        "utcOffset"
-    ),
+    requireBodyFields("name", "code", "countryCode", "utcOffset"),
     createTimezoneValidation,
-    timezoneController.createTimezone
+    timezoneController.createTimezone,
 );
 
-timezoneRoutes.get(
-    "/getall",
-    timezoneController.getTimezones
-);
+timezoneRoutes.get("/getall", timezoneController.getTimezones);
 
-timezoneRoutes.get(
-    "/get",
-    getTimezoneValidation,
-    timezoneController.getTimezoneById
-);
+timezoneRoutes.get("/get", getTimezoneValidation, timezoneController.getTimezoneById);
 
-timezoneRoutes.get(
-    "/get/code",
-    getTimezoneValidation,
-    timezoneController.getTimezoneByCode
-);
+timezoneRoutes.get("/get/code", getTimezoneValidation, timezoneController.getTimezoneByCode);
 
 timezoneRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getTimezoneValidation,
-    timezoneController.getTimezoneById
+    timezoneController.getTimezoneById,
 );
 
 timezoneRoutes.get(
     "/get/country/:countryCode",
     requireRouteParam("countryCode"),
-    timezoneController.getTimezonesByCountry
+    timezoneController.getTimezonesByCountry,
 );
 
 timezoneRoutes.put(
@@ -60,7 +44,7 @@ timezoneRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateTimezoneValidation,
-    timezoneController.updateTimezone
+    timezoneController.updateTimezone,
 );
 
 timezoneRoutes.put(
@@ -68,18 +52,15 @@ timezoneRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateTimezoneValidation,
-    timezoneController.updateTimezone
+    timezoneController.updateTimezone,
 );
 
 timezoneRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeTimezoneStatusValidation,
-    timezoneController.changeTimezoneStatus
+    timezoneController.changeTimezoneStatus,
 );
 
 timezoneRoutes.patch(
@@ -88,21 +69,21 @@ timezoneRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeTimezoneStatusValidation,
-    timezoneController.changeTimezoneStatus
+    timezoneController.changeTimezoneStatus,
 );
 
 timezoneRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteTimezoneValidation,
-    timezoneController.deleteTimezone
+    timezoneController.deleteTimezone,
 );
 
 timezoneRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteTimezoneValidation,
-    timezoneController.deleteTimezone
+    timezoneController.deleteTimezone,
 );
 
 export default timezoneRoutes;

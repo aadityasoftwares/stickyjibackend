@@ -1,7 +1,10 @@
 import { Types, type ClientSession } from "mongoose";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { SubscriptionUsageRepository } from "../repositories/subscriptionusage.repository.js";
-import { permissionAuthorizationService, type IWorkspaceAuthorizationContext } from "../../permissions/services/permissionAuthorization.service.js";
+import {
+    permissionAuthorizationService,
+    type IWorkspaceAuthorizationContext,
+} from "../../permissions/services/permissionAuthorization.service.js";
 import { BillingScopeType, SubscriptionResource } from "../constants/subscriptionusage.enums.js";
 import { SUBSCRIPTION_USAGE_CONSTANTS } from "../constants/subscriptionusage.constants.js";
 import { SubscriptionUsageMessages } from "../constants/subscriptionusage.messages.js";
@@ -17,9 +20,7 @@ import type {
 } from "../interfaces/subscriptionusage.interface.js";
 
 export class SubscriptionUsageService {
-    constructor(
-        private readonly repository = new SubscriptionUsageRepository(),
-    ) {}
+    constructor(private readonly repository = new SubscriptionUsageRepository()) {}
 
     private validateScope(scope: IBillingScope): Types.ObjectId {
         if (!scope || !scope.type || !Object.values(BillingScopeType).includes(scope.type)) {
@@ -65,7 +66,7 @@ export class SubscriptionUsageService {
                 if (options?.includeFolders) {
                     const ownedWorkspaceIds = await this.repository.findOwnedWorkspaceIds(scopeObjectId);
                     const folderMap = await this.repository.aggregateFoldersByWorkspaceIds(ownedWorkspaceIds);
-                    workspaceFolders = ownedWorkspaceIds.map(wId => ({
+                    workspaceFolders = ownedWorkspaceIds.map((wId) => ({
                         workspaceId: String(wId),
                         foldersUsed: folderMap.get(String(wId)) ?? 0,
                     }));
@@ -89,7 +90,7 @@ export class SubscriptionUsageService {
         if (options?.includeFolders) {
             const ownedWorkspaceIds = await this.repository.findOwnedWorkspaceIds(scopeObjectId);
             const folderMap = await this.repository.aggregateFoldersByWorkspaceIds(ownedWorkspaceIds);
-            calculated.workspaceFolders = ownedWorkspaceIds.map(wId => ({
+            calculated.workspaceFolders = ownedWorkspaceIds.map((wId) => ({
                 workspaceId: String(wId),
                 foldersUsed: folderMap.get(String(wId)) ?? 0,
             }));
@@ -110,9 +111,10 @@ export class SubscriptionUsageService {
             throw new AppError(SubscriptionUsageMessages.UNAUTHORIZED, 401);
         }
 
-        const auth = authorization?.workspaceStatus !== undefined && authorization.workspaceId === workspaceId
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(actorId, workspaceId);
+        const auth =
+            authorization?.workspaceStatus !== undefined && authorization.workspaceId === workspaceId
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(actorId, workspaceId);
 
         permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!);
 
@@ -195,10 +197,7 @@ export class SubscriptionUsageService {
         };
     }
 
-    async reconcileUsage(
-        scope: IBillingScope,
-        _reason?: string,
-    ): Promise<IReconciliationScopeReport> {
+    async reconcileUsage(scope: IBillingScope, _reason?: string): Promise<IReconciliationScopeReport> {
         const scopeObjectId = this.validateScope(scope);
 
         const cached = await this.repository.findByScope(scope.type, scopeObjectId);
@@ -296,9 +295,24 @@ export class SubscriptionUsageService {
                     scopeType: BillingScopeType.USER,
                     scopeId,
                     status: "ERROR",
-                    cached: { workspacesUsed: 0, activeStickyNotesUsed: 0, storageBytesUsed: 0, usersUsed: 0 },
-                    actual: { workspacesUsed: 0, activeStickyNotesUsed: 0, storageBytesUsed: 0, usersUsed: 0 },
-                    discrepancy: { workspacesDiff: 0, activeStickyNotesDiff: 0, storageBytesDiff: 0, usersDiff: 0 },
+                    cached: {
+                        workspacesUsed: 0,
+                        activeStickyNotesUsed: 0,
+                        storageBytesUsed: 0,
+                        usersUsed: 0,
+                    },
+                    actual: {
+                        workspacesUsed: 0,
+                        activeStickyNotesUsed: 0,
+                        storageBytesUsed: 0,
+                        usersUsed: 0,
+                    },
+                    discrepancy: {
+                        workspacesDiff: 0,
+                        activeStickyNotesDiff: 0,
+                        storageBytesDiff: 0,
+                        usersDiff: 0,
+                    },
                     repaired: false,
                     error: err?.message ?? "Reconciliation failed",
                 });
@@ -316,10 +330,7 @@ export class SubscriptionUsageService {
         };
     }
 
-    async getAdminUsageList(
-        _actorId: string,
-        filter: ISubscriptionUsageFilter,
-    ) {
+    async getAdminUsageList(_actorId: string, filter: ISubscriptionUsageFilter) {
         const { data, total } = await this.repository.findAll(filter);
         const page = Math.max(1, filter.page ?? SUBSCRIPTION_USAGE_CONSTANTS.DEFAULT_PAGE);
         const limit = Math.min(
@@ -328,7 +339,7 @@ export class SubscriptionUsageService {
         );
 
         return {
-            data: data.map(item => ({
+            data: data.map((item) => ({
                 id: String(item._id),
                 scopeType: item.scopeType,
                 scopeId: String(item.scopeId),
@@ -349,7 +360,9 @@ export class SubscriptionUsageService {
     }
 
     // Future entitlement reservation interface
-    async reserveUsage(reservation: IUsageReservation): Promise<{ reserved: boolean; reservationId?: string }> {
+    async reserveUsage(
+        reservation: IUsageReservation,
+    ): Promise<{ reserved: boolean; reservationId?: string }> {
         this.validateScope(reservation.scope);
         if (reservation.amount <= 0) {
             throw new AppError("Reservation amount must be positive.", 400);

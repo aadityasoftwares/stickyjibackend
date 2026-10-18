@@ -4,25 +4,41 @@ import { UserSubscriptionModel } from "../models/usersubscription.model.js";
 import { USER_SUBSCRIPTION_CONSTANTS } from "../constants/usersubscription.constants.js";
 import { UserSubscriptionStatus } from "../constants/usersubscription.enums.js";
 import type {
-    IUserSubscription, ISubscriptionAuditEvent, UserSubscriptionRecord, UserSubscriptionUpdate,
+    IUserSubscription,
+    ISubscriptionAuditEvent,
+    UserSubscriptionRecord,
+    UserSubscriptionUpdate,
 } from "../interfaces/usersubscription.interface.js";
 import type { AdminSubscriptionFilters } from "../validations/usersubscription.schema.js";
 import { getPagination, paginationMeta } from "../../../utils/pagination.util.js";
 
 const SUBSCRIPTION_FIELDS = [
-    "_id", "user", "plan", "planPriceId", "billingInterval", "status",
-    "startDate", "endDate", "currentPeriodStart", "currentPeriodEnd",
-    "autoRenew", "autoRenewBeforeCancellation", "cancelAtPeriodEnd", "canceledAt",
-    "cancellationEffectiveAt", "cancellationReason", "pendingChange", "isActive",
-    "revision", "createdAt", "updatedAt",
+    "_id",
+    "user",
+    "plan",
+    "planPriceId",
+    "billingInterval",
+    "status",
+    "startDate",
+    "endDate",
+    "currentPeriodStart",
+    "currentPeriodEnd",
+    "autoRenew",
+    "autoRenewBeforeCancellation",
+    "cancelAtPeriodEnd",
+    "canceledAt",
+    "cancellationEffectiveAt",
+    "cancellationReason",
+    "pendingChange",
+    "isActive",
+    "revision",
+    "createdAt",
+    "updatedAt",
 ].join(" ");
 
 export class UserSubscriptionRepository {
     async findAccount(userId: string) {
-        return UserModel.findOne({ _id: userId, isDeleted: false })
-            .select("_id status")
-            .lean()
-            .exec();
+        return UserModel.findOne({ _id: userId, isDeleted: false }).select("_id status").lean().exec();
     }
 
     async create(data: Partial<IUserSubscription>): Promise<UserSubscriptionRecord> {
@@ -32,14 +48,23 @@ export class UserSubscriptionRepository {
 
     async findCurrentByUser(user: string): Promise<UserSubscriptionRecord | null> {
         return UserSubscriptionModel.findOne({ user, isActive: true })
-            .select(SUBSCRIPTION_FIELDS + " +paymentId +paymentProvider +providerSubscriptionId +providerCustomerId +auditOutbox")
+            .select(
+                SUBSCRIPTION_FIELDS +
+                    " +paymentId +paymentProvider +providerSubscriptionId +providerCustomerId +auditOutbox",
+            )
             .lean<UserSubscriptionRecord>()
             .exec();
     }
 
-    async findByProviderSubscriptionId(provider: string, providerSubscriptionId: string): Promise<UserSubscriptionRecord | null> {
+    async findByProviderSubscriptionId(
+        provider: string,
+        providerSubscriptionId: string,
+    ): Promise<UserSubscriptionRecord | null> {
         return UserSubscriptionModel.findOne({ paymentProvider: provider, providerSubscriptionId })
-            .select(SUBSCRIPTION_FIELDS + " +paymentId +paymentProvider +providerSubscriptionId +providerCustomerId +auditOutbox")
+            .select(
+                SUBSCRIPTION_FIELDS +
+                    " +paymentId +paymentProvider +providerSubscriptionId +providerCustomerId +auditOutbox",
+            )
             .lean<UserSubscriptionRecord>()
             .exec();
     }
@@ -91,19 +116,28 @@ export class UserSubscriptionRepository {
         event: ISubscriptionAuditEvent,
         eligibility: QueryFilter<IUserSubscription> = {},
     ): Promise<UserSubscriptionRecord | null> {
-        return UserSubscriptionModel.findOneAndUpdate({
-            _id: previous._id,
-            user: previous.user,
-            status: previous.status,
-            isActive: previous.isActive,
-            revision: previous.revision ?? { $exists: false },
-            ...eligibility,
-            $expr: { $lt: [{ $size: { $ifNull: ["$auditOutbox", []] } }, USER_SUBSCRIPTION_CONSTANTS.MAX_AUDIT_OUTBOX] },
-        }, {
-            $set: data,
-            $inc: { revision: 1 },
-            $push: { auditOutbox: event },
-        }, { returnDocument: "after", runValidators: true })
+        return UserSubscriptionModel.findOneAndUpdate(
+            {
+                _id: previous._id,
+                user: previous.user,
+                status: previous.status,
+                isActive: previous.isActive,
+                revision: previous.revision ?? { $exists: false },
+                ...eligibility,
+                $expr: {
+                    $lt: [
+                        { $size: { $ifNull: ["$auditOutbox", []] } },
+                        USER_SUBSCRIPTION_CONSTANTS.MAX_AUDIT_OUTBOX,
+                    ],
+                },
+            },
+            {
+                $set: data,
+                $inc: { revision: 1 },
+                $push: { auditOutbox: event },
+            },
+            { returnDocument: "after", runValidators: true },
+        )
             .select(SUBSCRIPTION_FIELDS + " +auditOutbox")
             .lean<UserSubscriptionRecord>()
             .exec();

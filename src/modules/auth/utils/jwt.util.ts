@@ -1,7 +1,7 @@
-import jwt, { type JwtPayload, type SignOptions, } from "jsonwebtoken";
+import jwt, { type JwtPayload, type SignOptions } from "jsonwebtoken";
 import { AUTH_CONSTANTS } from "../constants/auth.constants.js";
 import { AuthTokenType } from "../constants/auth.enums.js";
-import type { IAccessTokenPayload, IRefreshTokenPayload, } from "../interfaces/auth.interface.js";
+import type { IAccessTokenPayload, IRefreshTokenPayload } from "../interfaces/auth.interface.js";
 
 const ACCESS_SECRET: any = process.env.JWT_ACCESS_SECRET;
 const REFRESH_SECRET: any = process.env.JWT_REFRESH_SECRET;
@@ -71,12 +71,8 @@ export class JwtUtil {
             sub: payload.sub,
             sessionId: payload.sessionId,
             tokenType: AuthTokenType.ACCESS,
-            ...(payload.iat !== undefined && {
-                iat: payload.iat,
-            }),
-            ...(payload.exp !== undefined && {
-                exp: payload.exp,
-            }),
+            ...(payload.iat !== undefined && { iat: payload.iat }),
+            ...(payload.exp !== undefined && { exp: payload.exp }),
         };
     }
 
@@ -105,12 +101,8 @@ export class JwtUtil {
             sessionId: payload.sessionId,
             tokenType: AuthTokenType.REFRESH,
             version: payload.version,
-            ...(payload.iat !== undefined && {
-                iat: payload.iat,
-            }),
-            ...(payload.exp !== undefined && {
-                exp: payload.exp,
-            }),
+            ...(payload.iat !== undefined && { iat: payload.iat }),
+            ...(payload.exp !== undefined && { exp: payload.exp }),
         };
     }
 }

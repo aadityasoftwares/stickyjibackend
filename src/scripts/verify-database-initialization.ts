@@ -26,11 +26,15 @@ export async function runVerifyDatabaseInitialization(args = process.argv.slice(
         const isInit = await initializer.isInitialized();
         const verification = await initializer.verify();
 
-        console.log(`[db:init:verify] Initialization state record: ${isInit ? "COMPLETED" : "NOT COMPLETED"}`);
+        console.log(
+            `[db:init:verify] Initialization state record: ${isInit ? "COMPLETED" : "NOT COMPLETED"}`,
+        );
         console.log(`[db:init:verify] Verification status: ${verification.valid ? "PASSED" : "FAILED"}`);
         console.log(`[db:init:verify] Details:`);
         for (const [key, val] of Object.entries(verification.details)) {
-            console.log(`  - ${key}: count=${val.count}, expected=${val.expected ?? "N/A"}, valid=${val.valid ? "YES" : "NO"}`);
+            console.log(
+                `  - ${key}: count=${val.count}, expected=${val.expected ?? "N/A"}, valid=${val.valid ? "YES" : "NO"}`,
+            );
         }
 
         if (verification.errors.length > 0) {

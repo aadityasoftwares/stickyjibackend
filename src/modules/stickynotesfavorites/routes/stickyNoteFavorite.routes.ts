@@ -1,35 +1,22 @@
 import { Router } from "express";
 
-import {
-    StickyNoteFavoriteController,
-} from "../controllers/stickyNoteFavorite.controller.js";
+import { StickyNoteFavoriteController } from "../controllers/stickyNoteFavorite.controller.js";
 
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
-import {
-    validateContentType,
-} from "../../../utils/validations/validateContentType.js";
+import { validateContentType } from "../../../utils/validations/validateContentType.js";
 
-import {
-    createStickyNoteFavoriteValidation,
-} from "../validations/createStickyNoteFavorite.validation.js";
+import { createStickyNoteFavoriteValidation } from "../validations/createStickyNoteFavorite.validation.js";
 
-import {
-    getStickyNoteFavoriteValidation,
-} from "../validations/getStickyNoteFavorite.validation.js";
+import { getStickyNoteFavoriteValidation } from "../validations/getStickyNoteFavorite.validation.js";
 
-import {
-    getStickyNoteFavoritesValidation,
-} from "../validations/getStickyNoteFavorites.validation.js";
+import { getStickyNoteFavoritesValidation } from "../validations/getStickyNoteFavorites.validation.js";
 
-import {
-    updateStickyNoteFavoriteStatusValidation,
-} from "../validations/updateStickyNoteFavoriteStatus.validation.js";
+import { updateStickyNoteFavoriteStatusValidation } from "../validations/updateStickyNoteFavoriteStatus.validation.js";
 
 const stickyNoteFavoriteRoutes = Router();
 
-const stickyNoteFavoriteController =
-    new StickyNoteFavoriteController();
+const stickyNoteFavoriteController = new StickyNoteFavoriteController();
 
 stickyNoteFavoriteRoutes.use(authMiddleware);
 
@@ -46,10 +33,7 @@ stickyNoteFavoriteRoutes.get(
     stickyNoteFavoriteController.getStickyNoteFavoriteById,
 );
 
-stickyNoteFavoriteRoutes.get(
-    "/check/:stickyNoteId",
-    stickyNoteFavoriteController.checkStickyNoteFavorite,
-);
+stickyNoteFavoriteRoutes.get("/check/:stickyNoteId", stickyNoteFavoriteController.checkStickyNoteFavorite);
 
 stickyNoteFavoriteRoutes.get(
     "/getall",

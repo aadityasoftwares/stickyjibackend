@@ -61,10 +61,16 @@ export class WorkspaceMemberInvitationRepository {
     }
 
     async findReadableWorkspaceIds(userId: string) {
-        const memberships = await new WorkspaceRepository().findReadableMemberships(userId, PermissionModule.MEMBERS);
+        const memberships = await new WorkspaceRepository().findReadableMemberships(
+            userId,
+            PermissionModule.MEMBERS,
+        );
         const workspaces = await WorkspaceModel.find({
             status: { $in: [WorkspaceStatus.ACTIVE, WorkspaceStatus.ARCHIVED] },
-            $or: [{ ownerId: new Types.ObjectId(userId) }, { _id: { $in: memberships.map((m) => m.workspaceId) } }],
+            $or: [
+                { ownerId: new Types.ObjectId(userId) },
+                { _id: { $in: memberships.map((m) => m.workspaceId) } },
+            ],
         })
             .select("_id")
             .lean()
@@ -82,7 +88,11 @@ export class WorkspaceMemberInvitationRepository {
         return UserModel.findOne({ email, isDeleted: false }).select("_id email").lean().exec();
     }
     findUserById(id: string, session: ClientSession) {
-        return UserModel.findOne({ _id: id, isDeleted: false }).select("_id email").session(session).lean().exec();
+        return UserModel.findOne({ _id: id, isDeleted: false })
+            .select("_id email")
+            .session(session)
+            .lean()
+            .exec();
     }
     findRolesByIds(ids: string[]) {
         return RoleModel.find({ _id: { $in: ids } })
@@ -104,7 +114,10 @@ export class WorkspaceMemberInvitationRepository {
             .exec();
     }
     findProfile(id: string) {
-        return UserProfileModel.findOne({ userId: id }).select("userId firstName lastName displayName").lean().exec();
+        return UserProfileModel.findOne({ userId: id })
+            .select("userId firstName lastName displayName")
+            .lean()
+            .exec();
     }
     findMemberships(workspaceId: string, ids: Types.ObjectId[]) {
         if (!ids.length) return Promise.resolve([]);
@@ -145,7 +158,9 @@ export class WorkspaceMemberInvitationRepository {
                 .lean()
                 .exec();
         }
-        const [member] = await WorkspaceMemberModel.create([{ ...data, createdBy: data.userId }], { session });
+        const [member] = await WorkspaceMemberModel.create([{ ...data, createdBy: data.userId }], {
+            session,
+        });
         return member;
     }
 
@@ -380,7 +395,9 @@ export class WorkspaceMemberInvitationRepository {
             email: email.trim().toLowerCase(),
             status: WorkspaceInvitationStatus.PENDING,
         })
-            .select("_id workspaceId userId email roleId invitedBy status message expiresAt createdAt updatedAt")
+            .select(
+                "_id workspaceId userId email roleId invitedBy status message expiresAt createdAt updatedAt",
+            )
             .lean()
             .exec();
     }
@@ -503,7 +520,10 @@ export class WorkspaceMemberInvitationRepository {
 
         if (!workspaceId) query.workspaceId = { $in: workspaceIds };
 
-        const safePage = Math.max(Number(page) || WORKSPACE_MEMBER_INVITATION_CONSTANTS.PAGINATION.DEFAULT_PAGE, 1);
+        const safePage = Math.max(
+            Number(page) || WORKSPACE_MEMBER_INVITATION_CONSTANTS.PAGINATION.DEFAULT_PAGE,
+            1,
+        );
 
         const safeLimit = Math.min(
             Math.max(Number(limit) || WORKSPACE_MEMBER_INVITATION_CONSTANTS.PAGINATION.DEFAULT_LIMIT, 1),
@@ -570,7 +590,12 @@ export class WorkspaceMemberInvitationRepository {
             .exec();
     }
 
-    async cancelPendingById(id: string, updatedBy: Types.ObjectId, cancelledAt: Date, session: ClientSession) {
+    async cancelPendingById(
+        id: string,
+        updatedBy: Types.ObjectId,
+        cancelledAt: Date,
+        session: ClientSession,
+    ) {
         return WorkspaceMemberInvitationModel.findOneAndUpdate(
             {
                 _id: id,
@@ -595,7 +620,11 @@ export class WorkspaceMemberInvitationRepository {
             .exec();
     }
 
-    async updateStatus(id: string, status: WorkspaceInvitationStatus, data: Partial<IWorkspaceMemberInvitation> = {}) {
+    async updateStatus(
+        id: string,
+        status: WorkspaceInvitationStatus,
+        data: Partial<IWorkspaceMemberInvitation> = {},
+    ) {
         return WorkspaceMemberInvitationModel.findOneAndUpdate(
             {
                 _id: id,

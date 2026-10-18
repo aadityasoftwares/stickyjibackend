@@ -13,7 +13,8 @@ export interface IBillingConfig {
 }
 
 export function getBillingConfig(): IBillingConfig {
-    const environment = (process.env.RAZORPAY_MODE === "live" ? BillingEnvironment.LIVE : BillingEnvironment.TEST);
+    const environment =
+        process.env.RAZORPAY_MODE === "live" ? BillingEnvironment.LIVE : BillingEnvironment.TEST;
     const provider = BillingProviderName.RAZORPAY;
 
     return {

@@ -8,9 +8,19 @@ export const workspaceListSchema = z
     .strictObject({
         ...paginationShape,
         access: z.enum(WorkspaceAccessFilter).default(WorkspaceAccessFilter.ALL),
-        status: z.enum([WorkspaceStatus.ACTIVE, WorkspaceStatus.ARCHIVED, WorkspaceStatus.TRASHED, WorkspaceStatus.DELETED, "ALL"]).default(WorkspaceStatus.ACTIVE),
+        status: z
+            .enum([
+                WorkspaceStatus.ACTIVE,
+                WorkspaceStatus.ARCHIVED,
+                WorkspaceStatus.TRASHED,
+                WorkspaceStatus.DELETED,
+                "ALL",
+            ])
+            .default(WorkspaceStatus.ACTIVE),
         search: z.string().trim().max(WORKSPACE_CONSTANTS.SEARCH.MAX_LENGTH).optional(),
-        sortBy: z.union([listSortSchema, z.enum(WORKSPACE_CONSTANTS.SORT_FIELDS)]).default("RECENTLY_CREATED"),
+        sortBy: z
+            .union([listSortSchema, z.enum(WORKSPACE_CONSTANTS.SORT_FIELDS)])
+            .default("RECENTLY_CREATED"),
         sortOrder: z.enum(["asc", "desc"]).optional(),
         visibility: z.enum(WorkspaceVisibility).optional(),
         isPersonal: z.boolean().optional(),

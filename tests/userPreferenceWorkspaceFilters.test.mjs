@@ -19,14 +19,17 @@ function preference(key, value) {
 afterEach(() => mock.restoreAll());
 
 test("workspace status and access values are separated", () => {
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER],
-        ["ALL", "ACTIVE", "ARCHIVED", "TRASHED"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER],
-        ["ALL", "OWNED", "SHARED"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER], [
+        "ALL",
+        "ACTIVE",
+        "ARCHIVED",
+        "TRASHED",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER], [
+        "ALL",
+        "OWNED",
+        "SHARED",
+    ]);
 });
 
 test("legacy ownership status migrates to the default access preference", async () => {
@@ -48,10 +51,13 @@ test("legacy ownership status migrates to the default access preference", async 
         { key: statusKey, value: "ALL" },
         { key: accessKey, value: "SHARED" },
     ]);
-    assert.deepEqual(result.map(({ key, value }) => ({ key, value })), [
-        { key: USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER, value: "ALL" },
-        { key: USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER, value: "SHARED" },
-    ]);
+    assert.deepEqual(
+        result.map(({ key, value }) => ({ key, value })),
+        [
+            { key: USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER, value: "ALL" },
+            { key: USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER, value: "SHARED" },
+        ],
+    );
 });
 
 test("legacy migration preserves a newer explicit access preference", async () => {
@@ -73,25 +79,32 @@ test("legacy migration preserves a newer explicit access preference", async () =
 });
 
 test("workspace folder preference keys, defaults, aliases and allowed values are configured", async () => {
-    const { USER_PREFERENCE_DEFINITIONS } = await import(
-        "../src/modules/userpreference/constants/userPreference.constants.ts"
-    );
-    const { UserPreferenceValidation } = await import(
-        "../src/modules/userpreference/validations/userPreference.validation.ts"
-    );
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER],
-        ["ALL", "ACTIVE", "INACTIVE", "ARCHIVED", "TRASHED", "DELETED"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER],
-        ["FOLDER_ORDER", "POSITION", "RECENTLY_UPDATED", "RECENTLY_CREATED", "NAME_ASC", "NAME_DESC", "OLDEST_FIRST"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_VIEW],
-        ["GRID", "LIST"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER], [
+        "ALL",
+        "ACTIVE",
+        "INACTIVE",
+        "ARCHIVED",
+        "TRASHED",
+        "DELETED",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER], [
+        "FOLDER_ORDER",
+        "POSITION",
+        "RECENTLY_UPDATED",
+        "RECENTLY_CREATED",
+        "NAME_ASC",
+        "NAME_DESC",
+        "OLDEST_FIRST",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_VIEW], [
+        "GRID",
+        "LIST",
+    ]);
 
     assert.equal(
         USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER].defaultValue,
@@ -134,11 +147,17 @@ test("workspace folder preference keys, defaults, aliases and allowed values are
 
     // Value normalization to uppercase
     assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER, "active"),
+        UserPreferenceValidation.normalizeValue(
+            USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER,
+            "active",
+        ),
         "ACTIVE",
     );
     assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER, "folder_order"),
+        UserPreferenceValidation.normalizeValue(
+            USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER,
+            "folder_order",
+        ),
         "FOLDER_ORDER",
     );
     assert.equal(
@@ -148,25 +167,31 @@ test("workspace folder preference keys, defaults, aliases and allowed values are
 });
 
 test("workspace member preference keys, defaults, aliases and allowed values are configured", async () => {
-    const { USER_PREFERENCE_DEFINITIONS } = await import(
-        "../src/modules/userpreference/constants/userPreference.constants.ts"
-    );
-    const { UserPreferenceValidation } = await import(
-        "../src/modules/userpreference/validations/userPreference.validation.ts"
-    );
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER],
-        ["ALL", "ACTIVE", "INVITED", "INVITATIONS", "REMOVED"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_SORT_ORDER],
-        ["RECENTLY_UPDATED", "RECENTLY_CREATED", "NAME_ASC", "NAME_DESC", "OLDEST_FIRST", "ROLE", "ROLE_ASC"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_VIEW],
-        ["GRID", "LIST"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER], [
+        "ALL",
+        "ACTIVE",
+        "INVITED",
+        "INVITATIONS",
+        "REMOVED",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_SORT_ORDER], [
+        "RECENTLY_UPDATED",
+        "RECENTLY_CREATED",
+        "NAME_ASC",
+        "NAME_DESC",
+        "OLDEST_FIRST",
+        "ROLE",
+        "ROLE_ASC",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_VIEW], [
+        "GRID",
+        "LIST",
+    ]);
 
     assert.equal(
         USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER].defaultValue,
@@ -209,15 +234,24 @@ test("workspace member preference keys, defaults, aliases and allowed values are
 
     // Value normalization to uppercase
     assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER, "active"),
+        UserPreferenceValidation.normalizeValue(
+            USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER,
+            "active",
+        ),
         "ACTIVE",
     );
     assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER, "invitations"),
+        UserPreferenceValidation.normalizeValue(
+            USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_STATUS_FILTER,
+            "invitations",
+        ),
         "INVITATIONS",
     );
     assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_SORT_ORDER, "recently_updated"),
+        UserPreferenceValidation.normalizeValue(
+            USER_PREFERENCE_KEYS.WORKSPACE_MEMBER_SORT_ORDER,
+            "recently_updated",
+        ),
         "RECENTLY_UPDATED",
     );
     assert.equal(
@@ -231,36 +265,33 @@ test("workspace member preference keys, defaults, aliases and allowed values are
 });
 
 test("workspace role preference keys, defaults, aliases and allowed values are configured", async () => {
-    const { USER_PREFERENCE_DEFINITIONS } = await import(
-        "../src/modules/userpreference/constants/userPreference.constants.ts"
-    );
-    const { UserPreferenceValidation } = await import(
-        "../src/modules/userpreference/validations/userPreference.validation.ts"
-    );
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_STATUS_FILTER],
-        ["ALL", "SYSTEM", "CUSTOM", "INACTIVE"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_SORT_ORDER],
-        [
-            "PRIORITY",
-            "ROLE_LEVEL",
-            "RECENTLY_UPDATED",
-            "UPDATED_AT",
-            "NAME_ASC",
-            "NAME",
-            "RECENTLY_CREATED",
-            "CREATED_AT",
-            "NAME_DESC",
-            "OLDEST_FIRST",
-        ],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_VIEW],
-        ["GRID", "LIST"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_STATUS_FILTER], [
+        "ALL",
+        "SYSTEM",
+        "CUSTOM",
+        "INACTIVE",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_SORT_ORDER], [
+        "PRIORITY",
+        "ROLE_LEVEL",
+        "RECENTLY_UPDATED",
+        "UPDATED_AT",
+        "NAME_ASC",
+        "NAME",
+        "RECENTLY_CREATED",
+        "CREATED_AT",
+        "NAME_DESC",
+        "OLDEST_FIRST",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_VIEW], [
+        "GRID",
+        "LIST",
+    ]);
 
     assert.equal(
         USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_STATUS_FILTER].defaultValue,
@@ -270,10 +301,7 @@ test("workspace role preference keys, defaults, aliases and allowed values are c
         USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_SORT_ORDER].defaultValue,
         "PRIORITY",
     );
-    assert.equal(
-        USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_VIEW].defaultValue,
-        "GRID",
-    );
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.WORKSPACE_ROLE_VIEW].defaultValue, "GRID");
 
     // Canonical key lookup with case insensitivity and aliases
     assert.equal(
@@ -321,32 +349,21 @@ test("workspace role preference keys, defaults, aliases and allowed values are c
 });
 
 test("today view and sticky note view preference keys, defaults, aliases, allowed values, and normalization are configured", async () => {
-    const { USER_PREFERENCE_DEFINITIONS } = await import(
-        "../src/modules/userpreference/constants/userPreference.constants.ts"
-    );
-    const { UserPreferenceValidation } = await import(
-        "../src/modules/userpreference/validations/userPreference.validation.ts"
-    );
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
     // Allowed values
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.TODAY_VIEW],
-        ["KANBAN", "TABLE"],
-    );
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW],
-        ["KANBAN", "TABLE"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.TODAY_VIEW], ["KANBAN", "TABLE"]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW], [
+        "KANBAN",
+        "TABLE",
+    ]);
 
     // Default values
-    assert.equal(
-        USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.TODAY_VIEW].defaultValue,
-        "KANBAN",
-    );
-    assert.equal(
-        USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW].defaultValue,
-        "KANBAN",
-    );
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.TODAY_VIEW].defaultValue, "KANBAN");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW].defaultValue, "KANBAN");
 
     // Key validation
     assert.equal(UserPreferenceValidation.isValidKey("todayView"), true);
@@ -356,18 +373,9 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
     assert.equal(UserPreferenceValidation.isValidKey("stickyNoteView"), true);
 
     // Canonical keys
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("todayView"),
-        USER_PREFERENCE_KEYS.TODAY_VIEW,
-    );
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("todayview"),
-        USER_PREFERENCE_KEYS.TODAY_VIEW,
-    );
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("today_view"),
-        USER_PREFERENCE_KEYS.TODAY_VIEW,
-    );
+    assert.equal(UserPreferenceValidation.getCanonicalKey("todayView"), USER_PREFERENCE_KEYS.TODAY_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("todayview"), USER_PREFERENCE_KEYS.TODAY_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("today_view"), USER_PREFERENCE_KEYS.TODAY_VIEW);
     assert.equal(
         UserPreferenceValidation.getCanonicalKey("todaystickynoteview"),
         USER_PREFERENCE_KEYS.TODAY_VIEW,
@@ -382,10 +390,7 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "kanban"),
         "KANBAN",
     );
-    assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "table"),
-        "TABLE",
-    );
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "table"), "TABLE");
     assert.equal(
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW, "kanban"),
         "KANBAN",
@@ -411,24 +416,16 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
 });
 
 test("overdue view preference keys, defaults, aliases, allowed values, and normalization are configured", async () => {
-    const { USER_PREFERENCE_DEFINITIONS } = await import(
-        "../src/modules/userpreference/constants/userPreference.constants.ts"
-    );
-    const { UserPreferenceValidation } = await import(
-        "../src/modules/userpreference/validations/userPreference.validation.ts"
-    );
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
     // Allowed values
-    assert.deepEqual(
-        USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.OVERDUE_VIEW],
-        ["BAR", "BUTTON"],
-    );
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.OVERDUE_VIEW], ["BAR", "BUTTON"]);
 
     // Default value
-    assert.equal(
-        USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.OVERDUE_VIEW].defaultValue,
-        "BAR",
-    );
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.OVERDUE_VIEW].defaultValue, "BAR");
 
     // Key validation
     assert.equal(UserPreferenceValidation.isValidKey("overdueView"), true);
@@ -437,28 +434,16 @@ test("overdue view preference keys, defaults, aliases, allowed values, and norma
     assert.equal(UserPreferenceValidation.isValidKey("todayoverdueview"), true);
 
     // Canonical keys
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("overdueView"),
-        USER_PREFERENCE_KEYS.OVERDUE_VIEW,
-    );
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("overdueview"),
-        USER_PREFERENCE_KEYS.OVERDUE_VIEW,
-    );
-    assert.equal(
-        UserPreferenceValidation.getCanonicalKey("overdue_view"),
-        USER_PREFERENCE_KEYS.OVERDUE_VIEW,
-    );
+    assert.equal(UserPreferenceValidation.getCanonicalKey("overdueView"), USER_PREFERENCE_KEYS.OVERDUE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("overdueview"), USER_PREFERENCE_KEYS.OVERDUE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("overdue_view"), USER_PREFERENCE_KEYS.OVERDUE_VIEW);
     assert.equal(
         UserPreferenceValidation.getCanonicalKey("todayoverdueview"),
         USER_PREFERENCE_KEYS.OVERDUE_VIEW,
     );
 
     // Value normalization to uppercase
-    assert.equal(
-        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.OVERDUE_VIEW, "bar"),
-        "BAR",
-    );
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.OVERDUE_VIEW, "bar"), "BAR");
     assert.equal(
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.OVERDUE_VIEW, "button"),
         "BUTTON",
@@ -478,6 +463,3 @@ test("overdue view preference keys, defaults, aliases, allowed values, and norma
         null,
     );
 });
-
-
-

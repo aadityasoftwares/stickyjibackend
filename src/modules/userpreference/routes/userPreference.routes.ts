@@ -21,11 +21,7 @@ userPreferenceRoutes.post(
     userPreferenceController.createUserPreference,
 );
 
-userPreferenceRoutes.get(
-    "/my",
-    getUserPreferencesValidation,
-    userPreferenceController.getUserPreferences,
-);
+userPreferenceRoutes.get("/my", getUserPreferencesValidation, userPreferenceController.getUserPreferences);
 
 userPreferenceRoutes.get(
     "/my/:key",

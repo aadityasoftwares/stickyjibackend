@@ -9,9 +9,7 @@ import type { UserPreferenceValue } from "../interfaces/userPreference.interface
 const preferenceKeys = Object.keys(USER_PREFERENCE_DEFINITIONS);
 
 // Build a case-insensitive lookup map: lowercase key -> canonical key
-const preferenceKeyMap = new Map(
-    preferenceKeys.map((key) => [key.toLowerCase(), key]),
-);
+const preferenceKeyMap = new Map(preferenceKeys.map((key) => [key.toLowerCase(), key]));
 preferenceKeyMap.set("folderstatusfilter", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER);
 preferenceKeyMap.set("foldersortorder", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER);
 preferenceKeyMap.set("folderview", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_VIEW);
@@ -60,9 +58,7 @@ export const UserPreferenceValidation = {
             return undefined;
         }
 
-        return USER_PREFERENCE_DEFINITIONS[
-            canonicalKey as keyof typeof USER_PREFERENCE_DEFINITIONS
-        ];
+        return USER_PREFERENCE_DEFINITIONS[canonicalKey as keyof typeof USER_PREFERENCE_DEFINITIONS];
     },
 
     isBoolean(value: unknown): value is boolean {
@@ -81,10 +77,7 @@ export const UserPreferenceValidation = {
         return value !== null && typeof value === "object";
     },
 
-    isValidValue(
-        value: unknown,
-        valueType: UserPreferenceValueType,
-    ): boolean {
+    isValidValue(value: unknown, valueType: UserPreferenceValueType): boolean {
         switch (valueType) {
             case UserPreferenceValueType.STRING:
                 return this.isString(value);
@@ -176,9 +169,8 @@ export const UserPreferenceValidation = {
         }
 
         // Fixed allowed-values keys
-        const allowedValues = USER_PREFERENCE_ALLOWED_VALUES[
-            canonicalKey as keyof typeof USER_PREFERENCE_ALLOWED_VALUES
-        ];
+        const allowedValues =
+            USER_PREFERENCE_ALLOWED_VALUES[canonicalKey as keyof typeof USER_PREFERENCE_ALLOWED_VALUES];
 
         if (allowedValues) {
             if (!allowedValues.includes(value)) {

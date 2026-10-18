@@ -1,5 +1,4 @@
 import type { Request, Response, NextFunction } from "express";
-
 import { AppError } from "../../../utils/errors/app.error.js";
 import { validateEmailValue } from "../../../utils/validations/validateEmail.js";
 import { validatePhoneValue } from "../../../utils/validations/validatePhone.js";
@@ -8,11 +7,7 @@ import { SystemSettingKey } from "../../systemsettings/constants/systemSetting.e
 import { SessionType } from "../constants/session.constants.js";
 import { AuthMessages } from "../constants/auth.messages.js";
 
-export const registerValidation = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+export const registerValidation = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const {
             email,
@@ -37,34 +32,21 @@ export const registerValidation = async (
 
         const systemSettingService = new SystemSettingService();
 
-        const passwordMinLengthSetting =
-            await systemSettingService.getSystemSettingByKey(
-                SystemSettingKey.PASSWORD_MIN_LENGTH
-            );
-
-        const passwordMinLength = Number(
-            passwordMinLengthSetting.value
+        const passwordMinLengthSetting = await systemSettingService.getSystemSettingByKey(
+            SystemSettingKey.PASSWORD_MIN_LENGTH,
         );
 
+        const passwordMinLength = Number(passwordMinLengthSetting.value);
+
         if (!Number.isInteger(passwordMinLength) || passwordMinLength <= 0) {
-            throw new AppError(
-                "Invalid password configuration.",
-                500
-            );
+            throw new AppError("Invalid password configuration.", 500);
         }
 
         if (password.length < passwordMinLength) {
-            throw new AppError(
-                `Password must contain at least ${passwordMinLength} characters.`,
-                400
-            );
+            throw new AppError(`Password must contain at least ${passwordMinLength} characters.`, 400);
         }
 
-        const normalizedPhone = validatePhoneValue(
-            phone,
-            "phone",
-            false
-        );
+        const normalizedPhone = validatePhoneValue(phone, "phone", false);
 
         if (normalizedPhone !== undefined) {
             req.body.phone = normalizedPhone;
@@ -73,25 +55,16 @@ export const registerValidation = async (
         }
 
         if (termsAccepted !== true) {
-            throw new AppError(
-                AuthMessages.TERMS_REQUIRED,
-                400
-            );
+            throw new AppError(AuthMessages.TERMS_REQUIRED, 400);
         }
 
         if (privacyPolicyAccepted !== true) {
-            throw new AppError(
-                AuthMessages.PRIVACY_POLICY_REQUIRED,
-                400
-            );
+            throw new AppError(AuthMessages.PRIVACY_POLICY_REQUIRED, 400);
         }
 
         if (deviceId !== undefined && deviceId !== null) {
             if (typeof deviceId !== "string" || !deviceId.trim()) {
-                throw new AppError(
-                    AuthMessages.DEVICE_ID_INVALID,
-                    400
-                );
+                throw new AppError(AuthMessages.DEVICE_ID_INVALID, 400);
             }
 
             req.body.deviceId = deviceId.trim();
@@ -99,19 +72,13 @@ export const registerValidation = async (
 
         if (deviceName !== undefined && deviceName !== null) {
             if (typeof deviceName !== "string" || !deviceName.trim()) {
-                throw new AppError(
-                    AuthMessages.DEVICE_NAME_INVALID,
-                    400
-                );
+                throw new AppError(AuthMessages.DEVICE_NAME_INVALID, 400);
             }
 
             const normalizedDeviceName = deviceName.trim();
 
             if (normalizedDeviceName.length > 200) {
-                throw new AppError(
-                    "Device name cannot exceed 200 characters.",
-                    400
-                );
+                throw new AppError("Device name cannot exceed 200 characters.", 400);
             }
 
             req.body.deviceName = normalizedDeviceName;
@@ -120,14 +87,9 @@ export const registerValidation = async (
         if (sessionType !== undefined && sessionType !== null) {
             if (
                 typeof sessionType !== "string" ||
-                !Object.values(SessionType).includes(
-                    sessionType as SessionType
-                )
+                !Object.values(SessionType).includes(sessionType as SessionType)
             ) {
-                throw new AppError(
-                    AuthMessages.SESSION_TYPE_INVALID,
-                    400
-                );
+                throw new AppError(AuthMessages.SESSION_TYPE_INVALID, 400);
             }
 
             req.body.sessionType = sessionType;

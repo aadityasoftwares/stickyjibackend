@@ -40,9 +40,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(201).json(
-                ResponseUtil.created(RoleMessages.CREATED, role),
-            );
+            return res.status(201).json(ResponseUtil.created(RoleMessages.CREATED, role));
         } catch (error) {
             next(error);
         }
@@ -57,9 +55,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(RoleMessages.FETCHED, role),
-            );
+            return res.status(200).json(ResponseUtil.success(RoleMessages.FETCHED, role));
         } catch (error) {
             next(error);
         }
@@ -68,11 +64,12 @@ export class RoleController {
     getRoleByCode = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const code = this.resolveCode(req);
-            const workspaceId = typeof req.query.workspaceId === "string"
-                ? req.query.workspaceId
-                : typeof req.body?.workspaceId === "string"
-                    ? req.body.workspaceId
-                    : undefined;
+            const workspaceId =
+                typeof req.query.workspaceId === "string"
+                    ? req.query.workspaceId
+                    : typeof req.body?.workspaceId === "string"
+                      ? req.body.workspaceId
+                      : undefined;
 
             const role = await this.roleService.getRoleByCode(
                 code,
@@ -81,9 +78,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(RoleMessages.FETCHED, role),
-            );
+            return res.status(200).json(ResponseUtil.success(RoleMessages.FETCHED, role));
         } catch (error) {
             next(error);
         }
@@ -117,15 +112,17 @@ export class RoleController {
                 res.locals.workspaceAuth ?? res.locals.globalAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    RoleMessages.FETCHED_ALL,
-                    roles.data,
-                    roles.pagination.page,
-                    roles.pagination.limit,
-                    roles.pagination.total,
-                ),
-            );
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        RoleMessages.FETCHED_ALL,
+                        roles.data,
+                        roles.pagination.page,
+                        roles.pagination.limit,
+                        roles.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
@@ -144,9 +141,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(RoleMessages.UPDATED, role),
-            );
+            return res.status(200).json(ResponseUtil.success(RoleMessages.UPDATED, role));
         } catch (error) {
             next(error);
         }
@@ -163,9 +158,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(RoleMessages.UPDATED, role),
-            );
+            return res.status(200).json(ResponseUtil.success(RoleMessages.UPDATED, role));
         } catch (error) {
             next(error);
         }
@@ -181,9 +174,7 @@ export class RoleController {
                 res.locals.workspaceAuth,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(RoleMessages.DELETED),
-            );
+            return res.status(200).json(ResponseUtil.success(RoleMessages.DELETED));
         } catch (error) {
             next(error);
         }

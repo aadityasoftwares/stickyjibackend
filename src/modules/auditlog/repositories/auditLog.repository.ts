@@ -1,10 +1,6 @@
 import { AuditLogModel } from "../models/auditLog.model.js";
 import type { ClientSession } from "mongoose";
-import type {
-    IAuditLog,
-    IAuditLogDocument,
-    IAuditLogFilter,
-} from "../interfaces/auditLog.interface.js";
+import type { IAuditLog, IAuditLogDocument, IAuditLogFilter } from "../interfaces/auditLog.interface.js";
 
 export class AuditLogRepository {
     async create(data: Partial<IAuditLog>): Promise<IAuditLogDocument> {
@@ -16,9 +12,7 @@ export class AuditLogRepository {
     }
 
     async findById(id: string): Promise<IAuditLogDocument | null> {
-        return AuditLogModel.findById(id)
-            .populate("actorId", "firstName lastName email")
-            .lean();
+        return AuditLogModel.findById(id).populate("actorId", "firstName lastName email").lean();
     }
 
     async findAll(filters: IAuditLogFilter = {}) {

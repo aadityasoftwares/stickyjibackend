@@ -1,6 +1,6 @@
-import { Document, Types, } from "mongoose";
+import { Document, Types } from "mongoose";
 import { CountryCode } from "../../countries/constants/country.enums.js";
-CountryCode
+CountryCode;
 
 export interface ITimezone {
     name: string;
@@ -16,7 +16,6 @@ export interface ITimezone {
     updatedAt?: Date;
 }
 
-
 export interface ITimezoneFilter {
     page?: number;
     limit?: number;
@@ -31,12 +30,7 @@ export interface ITimezoneFilter {
     sortOrder?: "asc" | "desc";
 }
 
-
-export interface ITimezoneDocument
-    extends ITimezone,
-    Document {
-}
-
+export interface ITimezoneDocument extends ITimezone, Document {}
 
 export interface ITimezonePaginatedResult {
     data: ITimezoneDocument[];

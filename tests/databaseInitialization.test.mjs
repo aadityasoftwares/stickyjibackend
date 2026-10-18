@@ -10,8 +10,14 @@ import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 
 import { DatabaseInitializer } from "../src/database/initialization/database-initializer.ts";
-import { InitializationLockManager, InitializationLockModel } from "../src/database/initialization/initialization-lock.ts";
-import { InitializationStateModel, InitializationStatus } from "../src/database/initialization/initialization-state.model.ts";
+import {
+    InitializationLockManager,
+    InitializationLockModel,
+} from "../src/database/initialization/initialization-lock.ts";
+import {
+    InitializationStateModel,
+    InitializationStatus,
+} from "../src/database/initialization/initialization-state.model.ts";
 import { LanguageModel } from "../src/modules/languages/models/language.model.ts";
 import { CountryModel } from "../src/modules/countries/models/country.model.ts";
 import { CurrencyModel } from "../src/modules/currency/models/currency.model.ts";
@@ -40,16 +46,29 @@ async function startMongo(replicaSet = false) {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
     const directory = await mkdtemp(join(tmpdir(), "db-init-test-"));
-    const process = spawn(globalThis.process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"), ...(replicaSet ? ["--replSet", "db-init-set"] : []),
-    ], { windowsHide: true, stdio: "ignore" });
+    const process = spawn(
+        globalThis.process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+            ...(replicaSet ? ["--replSet", "db-init-set"] : []),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
     const result = { process, directory, base: "mongodb://127.0.0.1:" + port };
     processes.push(result);
     let startupError;
-    process.on("error", error => { startupError = error; });
+    process.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
@@ -107,8 +126,12 @@ async function runCli(scriptPath, args = [], environment = {}) {
         stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
-    child.stdout.on("data", chunk => { output += chunk; });
-    child.stderr.on("data", chunk => { output += chunk; });
+    child.stdout.on("data", (chunk) => {
+        output += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+        output += chunk;
+    });
     const [code] = await once(child, "exit");
     return { code, output };
 }
@@ -163,7 +186,7 @@ test("2. all required system records are created correctly", async () => {
     // Roles
     const roles = await RoleModel.find({ isSystem: true }).lean();
     assert.equal(roles.length, Object.keys(SYSTEM_ROLE_CODES).length);
-    const superAdmin = roles.find(r => r.code === "SUPER_ADMIN");
+    const superAdmin = roles.find((r) => r.code === "SUPER_ADMIN");
     assert.ok(superAdmin);
     assert.equal(superAdmin.permissions.length, PERMISSION_DEFINITIONS.length);
 
@@ -272,10 +295,14 @@ test("6. existing paid subscription records remain unchanged", async () => {
     // Rerun initializer with force
     await initializer.initialize({ force: true });
 
-    const subAfter = await mongoose.connection.db.collection("usersubscriptions").findOne({ _id: subscriptionDoc._id });
+    const subAfter = await mongoose.connection.db
+        .collection("usersubscriptions")
+        .findOne({ _id: subscriptionDoc._id });
     assert.deepEqual(subAfter, subscriptionDoc);
 
-    const paymentAfter = await mongoose.connection.db.collection("subscriptionpayments").findOne({ _id: paymentDoc._id });
+    const paymentAfter = await mongoose.connection.db
+        .collection("subscriptionpayments")
+        .findOne({ _id: paymentDoc._id });
     assert.deepEqual(paymentAfter, paymentDoc);
 });
 
@@ -329,10 +356,7 @@ test("8. partial initialization can recover safely and idempotently", async () =
 test("9. missing database connection causes a clear error", async () => {
     await mongoose.disconnect();
     const initializer = new DatabaseInitializer();
-    await assert.rejects(
-        () => initializer.initialize(),
-        /Database connection is not open/
-    );
+    await assert.rejects(() => initializer.initialize(), /Database connection is not open/);
 });
 
 test("10. two backend instances initializing concurrently coordinate via distributed lock", async () => {
@@ -365,19 +389,16 @@ test("11. a failed initialization is marked FAILED and never marked COMPLETED", 
     const { SEED_REGISTRY } = await import("../src/database/initialization/seed-registry.ts");
 
     // Mock a seed step to throw an error
-    const originalRoleExecute = SEED_REGISTRY.find(s => s.id === "roles").execute;
+    const originalRoleExecute = SEED_REGISTRY.find((s) => s.id === "roles").execute;
     const mockedRoleStep = mock.method(
-        SEED_REGISTRY.find(s => s.id === "roles"),
+        SEED_REGISTRY.find((s) => s.id === "roles"),
         "execute",
         async () => {
             throw new Error("Simulated database failure during roles seeding");
-        }
+        },
     );
 
-    await assert.rejects(
-        () => initializer.initialize(),
-        /Simulated database failure/
-    );
+    await assert.rejects(() => initializer.initialize(), /Simulated database failure/);
 
     mockedRoleStep.mock.restore();
 

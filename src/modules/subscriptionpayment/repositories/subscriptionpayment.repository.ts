@@ -49,7 +49,9 @@ export class SubscriptionPaymentRepository {
                 },
             },
             { new: true, upsert: true, runValidators: true },
-        ).lean<SubscriptionPaymentRecord>().exec();
+        )
+            .lean<SubscriptionPaymentRecord>()
+            .exec();
 
         return record as SubscriptionPaymentRecord;
     }
@@ -63,7 +65,9 @@ export class SubscriptionPaymentRepository {
             id,
             { $set: { status, ...extra } },
             { new: true, runValidators: true },
-        ).lean<SubscriptionPaymentRecord>().exec();
+        )
+            .lean<SubscriptionPaymentRecord>()
+            .exec();
     }
 
     async listByUser(userId: string | Types.ObjectId, page = 1, limit = 20) {

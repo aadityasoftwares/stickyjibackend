@@ -67,5 +67,9 @@ export interface IBillingProvider {
     cancelSubscription(input: CancelProviderSubscriptionInput): Promise<ProviderSubscription>;
     getPayment(providerPaymentId: string): Promise<ProviderPayment>;
     verifyWebhookSignature(rawBody: Buffer | string, signature: string): boolean;
-    verifySubscriptionCheckoutSignature(paymentId: string, subscriptionId: string, signature: string): boolean;
+    verifySubscriptionCheckoutSignature(
+        paymentId: string,
+        subscriptionId: string,
+        signature: string,
+    ): boolean;
 }

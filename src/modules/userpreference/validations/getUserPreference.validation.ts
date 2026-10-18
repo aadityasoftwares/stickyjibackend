@@ -1,17 +1,10 @@
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { UserPreferenceMessages } from "../constants/userPreference.messages.js";
-import {
-    UserPreferenceCategory,
-    UserPreferenceValueType,
-} from "../constants/userPreference.enums.js";
+import { UserPreferenceCategory, UserPreferenceValueType } from "../constants/userPreference.enums.js";
 import { UserPreferenceValidation } from "./userPreference.validation.js";
 
-export const getUserPreferencesValidation = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const getUserPreferencesValidation = (req: Request, res: Response, next: NextFunction) => {
     try {
         const paramKey = req.params.key;
         const { key, category, valueType } = req.query;

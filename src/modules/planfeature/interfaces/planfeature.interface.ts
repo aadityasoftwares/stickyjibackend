@@ -1,5 +1,5 @@
-import { Document, Types, } from "mongoose";
-import { PlanFeatureLimitType, } from "../constants/planFeature.enums.js";
+import { Document, Types } from "mongoose";
+import { PlanFeatureLimitType } from "../constants/planFeature.enums.js";
 
 export interface IPlanFeature {
     planId: Types.ObjectId;
@@ -28,10 +28,7 @@ export interface IPlanFeatureFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface IPlanFeatureDocument
-    extends IPlanFeature,
-    Document {
-}
+export interface IPlanFeatureDocument extends IPlanFeature, Document {}
 
 export interface IPlanFeaturePaginatedResult {
     data: IPlanFeatureDocument[];

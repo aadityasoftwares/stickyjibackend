@@ -1,14 +1,8 @@
-import {
-    Types,
-} from "mongoose";
+import { Types } from "mongoose";
 
-import type {
-    QueryFilter,
-} from "mongoose";
+import type { QueryFilter } from "mongoose";
 
-import {
-    PlanPriceModel,
-} from "../models/planPrice.model.js";
+import { PlanPriceModel } from "../models/planPrice.model.js";
 
 import type {
     IPlanPriceCreate,
@@ -17,10 +11,7 @@ import type {
     IPlanPriceUpdate,
 } from "../interfaces/planPrice.interface.js";
 
-import type {
-    BillingInterval,
-} from "../constants/planPrice.enums.js";
-
+import type { BillingInterval } from "../constants/planPrice.enums.js";
 
 const PLAN_PRICE_FIELDS = [
     "_id",
@@ -34,171 +25,81 @@ const PLAN_PRICE_FIELDS = [
     "updatedAt",
 ].join(" ");
 
-
 export class PlanPriceRepository {
-
     async create(
-        data:
-            IPlanPriceCreate & {
-                createdBy?:
-                Types.ObjectId | null;
-            }
+        data: IPlanPriceCreate & {
+            createdBy?: Types.ObjectId | null;
+        },
     ) {
+        const price = await PlanPriceModel.create(data);
 
-        const price =
-            await PlanPriceModel.create(
-                data
-            );
-
-
-        return this.findById(
-            price._id.toString()
-        );
+        return this.findById(price._id.toString());
     }
 
-
-    async findById(
-        id: string
-    ) {
-
-        return PlanPriceModel
-            .findById(
-                id
-            )
-            .select(
-                PLAN_PRICE_FIELDS
-            );
+    async findById(id: string) {
+        return PlanPriceModel.findById(id).select(PLAN_PRICE_FIELDS);
     }
 
+    async findByCombination(planId: string, currencyId: string, billingInterval: BillingInterval) {
+        return PlanPriceModel.findOne({
+            planId: new Types.ObjectId(planId),
 
-    async findByCombination(
-        planId: string,
-        currencyId: string,
-        billingInterval: BillingInterval
-    ) {
+            currencyId: new Types.ObjectId(currencyId),
 
-        return PlanPriceModel
-            .findOne({
-                planId:
-                    new Types.ObjectId(
-                        planId
-                    ),
-
-                currencyId:
-                    new Types.ObjectId(
-                        currencyId
-                    ),
-
-                billingInterval,
-            })
-            .select(
-                PLAN_PRICE_FIELDS
-            );
+            billingInterval,
+        }).select(PLAN_PRICE_FIELDS);
     }
-
 
     async existsByCombination(
         planId: string,
         currencyId: string,
-        billingInterval: BillingInterval
+        billingInterval: BillingInterval,
     ): Promise<boolean> {
+        const exists = await PlanPriceModel.exists({
+            planId: new Types.ObjectId(planId),
 
-        const exists =
-            await PlanPriceModel.exists({
-                planId:
-                    new Types.ObjectId(
-                        planId
-                    ),
+            currencyId: new Types.ObjectId(currencyId),
 
-                currencyId:
-                    new Types.ObjectId(
-                        currencyId
-                    ),
-
-                billingInterval,
-            });
-
+            billingInterval,
+        });
 
         return !!exists;
     }
 
+    async findByPlanId(planId: string) {
+        return PlanPriceModel.find({
+            planId: new Types.ObjectId(planId),
 
-    async findByPlanId(
-        planId: string
-    ) {
-
-        return PlanPriceModel
-            .find({
-                planId:
-                    new Types.ObjectId(
-                        planId
-                    ),
-
-                isActive:
-                    true,
-            })
-            .select(
-                PLAN_PRICE_FIELDS
-            )
+            isActive: true,
+        })
+            .select(PLAN_PRICE_FIELDS)
             .sort({
-                sortOrder:
-                    1,
+                sortOrder: 1,
 
-                amountMinor:
-                    1,
+                amountMinor: 1,
             });
     }
 
-
     async updateById(
         id: string,
-        data:
-            IPlanPriceUpdate & {
-                isActive?:
-                boolean;
+        data: IPlanPriceUpdate & {
+            isActive?: boolean;
 
-                updatedBy?:
-                Types.ObjectId | null;
-            }
+            updatedBy?: Types.ObjectId | null;
+        },
     ) {
+        return PlanPriceModel.findByIdAndUpdate(id, data, {
+            new: true,
 
-        return PlanPriceModel
-            .findByIdAndUpdate(
-                id,
-                data,
-                {
-                    new:
-                        true,
-
-                    runValidators:
-                        true,
-                }
-            )
-            .select(
-                PLAN_PRICE_FIELDS
-            );
+            runValidators: true,
+        }).select(PLAN_PRICE_FIELDS);
     }
 
-
-    async deleteById(
-        id: string
-    ) {
-
-        return PlanPriceModel
-            .findByIdAndDelete(
-                id
-            )
-            .select(
-                PLAN_PRICE_FIELDS
-            );
+    async deleteById(id: string) {
+        return PlanPriceModel.findByIdAndDelete(id).select(PLAN_PRICE_FIELDS);
     }
 
-
-    async findAll(
-        filters:
-            IPlanPriceFilter = {}
-    ) {
-
+    async findAll(filters: IPlanPriceFilter = {}) {
         const {
             planId,
             currencyId,
@@ -208,132 +109,58 @@ export class PlanPriceRepository {
             page = 1,
             limit = 10,
 
-            sortBy =
-            "sortOrder",
+            sortBy = "sortOrder",
 
-            sortOrder =
-            "asc",
+            sortOrder = "asc",
         } = filters;
 
+        const query: QueryFilter<IPlanPriceDocument> = {};
 
-        const query:
-            QueryFilter<IPlanPriceDocument> = {};
-
-
-        if (
-            planId
-        ) {
-            query.planId =
-                new Types.ObjectId(
-                    planId.toString()
-                );
+        if (planId) {
+            query.planId = new Types.ObjectId(planId.toString());
         }
 
-
-        if (
-            currencyId
-        ) {
-            query.currencyId =
-                new Types.ObjectId(
-                    currencyId.toString()
-                );
+        if (currencyId) {
+            query.currencyId = new Types.ObjectId(currencyId.toString());
         }
 
-
-        if (
-            billingInterval !==
-            undefined
-        ) {
-            query.billingInterval =
-                billingInterval;
+        if (billingInterval !== undefined) {
+            query.billingInterval = billingInterval;
         }
 
-
-        if (
-            isActive !==
-            undefined
-        ) {
-            query.isActive =
-                isActive;
+        if (isActive !== undefined) {
+            query.isActive = isActive;
         }
 
+        const safePage = Math.max(1, page);
 
-        const safePage =
-            Math.max(
-                1,
-                page
-            );
+        const safeLimit = Math.max(1, Math.min(limit, 100));
 
+        const skip = (safePage - 1) * safeLimit;
 
-        const safeLimit =
-            Math.max(
-                1,
-                Math.min(
-                    limit,
-                    100
-                )
-            );
+        const [data, total] = await Promise.all([
+            PlanPriceModel.find(query)
+                .select(PLAN_PRICE_FIELDS)
+                .sort({
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                })
+                .skip(skip)
+                .limit(safeLimit),
 
-
-        const skip =
-            (
-                safePage -
-                1
-            ) *
-            safeLimit;
-
-
-        const [
-            data,
-            total,
-        ] =
-            await Promise.all([
-
-                PlanPriceModel
-                    .find(
-                        query
-                    )
-                    .select(
-                        PLAN_PRICE_FIELDS
-                    )
-                    .sort({
-                        [sortBy]:
-                            sortOrder ===
-                                "asc"
-                                ? 1
-                                : -1,
-                    })
-                    .skip(
-                        skip
-                    )
-                    .limit(
-                        safeLimit
-                    ),
-
-                PlanPriceModel
-                    .countDocuments(
-                        query
-                    ),
-            ]);
-
+            PlanPriceModel.countDocuments(query),
+        ]);
 
         return {
             data,
 
             pagination: {
-                page:
-                    safePage,
+                page: safePage,
 
-                limit:
-                    safeLimit,
+                limit: safeLimit,
 
                 total,
 
-                totalPages:
-                    Math.ceil(
-                        total /
-                        safeLimit
-                    ),
+                totalPages: Math.ceil(total / safeLimit),
             },
         };
     }

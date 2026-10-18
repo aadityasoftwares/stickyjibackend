@@ -1,266 +1,125 @@
-import type {
-    Request,
-    Response,
-    NextFunction,
-} from "express";
+import type { Request, Response, NextFunction } from "express";
 
-import {
-    LanguageService,
-} from "../services/language.service.js";
+import { LanguageService } from "../services/language.service.js";
 
-import {
-    LanguageMessages,
-} from "../constants/language.messages.js";
+import { LanguageMessages } from "../constants/language.messages.js";
 
-import {
-    ResponseUtil,
-} from "../../../utils/response.util.js";
+import { ResponseUtil } from "../../../utils/response.util.js";
 
-import {
-    RequestUtil,
-} from "../../../utils/request.util.js";
+import { RequestUtil } from "../../../utils/request.util.js";
 
 export class LanguageController {
-
-    private languageService:
-        LanguageService;
+    private languageService: LanguageService;
 
     constructor() {
-        this.languageService =
-            new LanguageService();
+        this.languageService = new LanguageService();
     }
 
-    createLanguage = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    createLanguage = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const language = await this.languageService.createLanguage(req.body);
 
-            const language =
-                await this.languageService
-                    .createLanguage(
-                        req.body
-                    );
-
-            return res.status(201).json(
-                ResponseUtil.created(
-                    LanguageMessages.CREATED,
-                    language
-                )
-            );
-
+            return res.status(201).json(ResponseUtil.created(LanguageMessages.CREATED, language));
         } catch (error) {
             next(error);
         }
     };
 
-    getLanguageById = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    getLanguageById = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const language = await this.languageService.getLanguageById(RequestUtil.getParam(req.params.id));
 
-            const language =
-                await this.languageService
-                    .getLanguageById(
-                        RequestUtil.getParam(
-                            req.params.id
-                        )
-                    );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    LanguageMessages.FETCHED,
-                    language
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(LanguageMessages.FETCHED, language));
         } catch (error) {
             next(error);
         }
     };
 
-    getLanguageByCode = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    getLanguageByCode = async (req: Request, res: Response, next: NextFunction) => {
         try {
-
-            const language =
-                await this.languageService
-                    .getLanguageByCode(
-                        RequestUtil.getParam(
-                            req.params.code
-                        )
-                    );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    LanguageMessages.FETCHED,
-                    language
-                )
+            const language = await this.languageService.getLanguageByCode(
+                RequestUtil.getParam(req.params.code),
             );
 
+            return res.status(200).json(ResponseUtil.success(LanguageMessages.FETCHED, language));
         } catch (error) {
             next(error);
         }
     };
 
-    getLanguages = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    getLanguages = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const languages = await this.languageService.getLanguages({
+                page: Number(req.query.page) || 1,
 
-            const languages =
-                await this.languageService
-                    .getLanguages({
-                        page:
-                            Number(req.query.page) || 1,
+                limit: Number(req.query.limit) || 10,
 
-                        limit:
-                            Number(req.query.limit) || 10,
+                search: req.query.search as string,
 
-                        search:
-                            req.query.search as string,
+                code: req.query.code as any,
 
-                        code:
-                            req.query.code as any,
+                locale: req.query.locale as string,
 
-                        locale:
-                            req.query.locale as string,
+                direction: req.query.direction as any,
 
-                        direction:
-                            req.query.direction as any,
+                isDefault: req.query.isDefault !== undefined ? req.query.isDefault === "true" : undefined,
 
-                        isDefault:
-                            req.query.isDefault !== undefined
-                                ? req.query.isDefault === "true"
-                                : undefined,
+                isSystem: req.query.isSystem !== undefined ? req.query.isSystem === "true" : undefined,
 
-                        isSystem:
-                            req.query.isSystem !== undefined
-                                ? req.query.isSystem === "true"
-                                : undefined,
+                isActive: req.query.isActive !== undefined ? req.query.isActive === "true" : undefined,
 
-                        isActive:
-                            req.query.isActive !== undefined
-                                ? req.query.isActive === "true"
-                                : undefined,
+                sortBy: req.query.sortBy as string,
 
-                        sortBy:
-                            req.query.sortBy as string,
+                sortOrder: req.query.sortOrder as "asc" | "desc",
+            });
 
-                        sortOrder:
-                            req.query.sortOrder as
-                            | "asc"
-                            | "desc",
-                    });
-
-
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    LanguageMessages.FETCHED_ALL,
-                    languages.data,
-                    languages.pagination.page,
-                    languages.pagination.limit,
-                    languages.pagination.total
-                )
-            );
-
-
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    updateLanguage = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
-        try {
-
-            const language =
-                await this.languageService
-                    .updateLanguage(
-                        RequestUtil.getParam(
-                            req.params.id
-                        ),
-                        req.body
-                    );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    LanguageMessages.UPDATED,
-                    language
-                )
-            );
-
-        } catch (error) {
-            next(error);
-        }
-    };
-
-    deleteLanguage = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
-        try {
-
-            await this.languageService
-                .deleteLanguage(
-                    RequestUtil.getParam(
-                        req.params.id
-                    )
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        LanguageMessages.FETCHED_ALL,
+                        languages.data,
+                        languages.pagination.page,
+                        languages.pagination.limit,
+                        languages.pagination.total,
+                    ),
                 );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    LanguageMessages.DELETED
-                )
-            );
-
         } catch (error) {
             next(error);
         }
     };
 
-    changeLanguageStatus = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    updateLanguage = async (req: Request, res: Response, next: NextFunction) => {
         try {
-
-            const language =
-                await this.languageService
-                    .changeLanguageStatus(
-                        RequestUtil.getParam(
-                            req.params.id
-                        ),
-                        req.body.isActive
-                    );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    LanguageMessages.UPDATED,
-                    language
-                )
+            const language = await this.languageService.updateLanguage(
+                RequestUtil.getParam(req.params.id),
+                req.body,
             );
 
+            return res.status(200).json(ResponseUtil.success(LanguageMessages.UPDATED, language));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    deleteLanguage = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            await this.languageService.deleteLanguage(RequestUtil.getParam(req.params.id));
+
+            return res.status(200).json(ResponseUtil.success(LanguageMessages.DELETED));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    changeLanguageStatus = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const language = await this.languageService.changeLanguageStatus(
+                RequestUtil.getParam(req.params.id),
+                req.body.isActive,
+            );
+
+            return res.status(200).json(ResponseUtil.success(LanguageMessages.UPDATED, language));
         } catch (error) {
             next(error);
         }

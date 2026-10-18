@@ -8,7 +8,11 @@ import { WorkspaceMemberStatus } from "../../workspaceMember/constants/workspace
 import { PermissionAccess, PermissionAction, PermissionModule } from "../constants/permission.enums.js";
 import { PermissionMessages } from "../constants/permission.messages.js";
 import { WorkspaceMemberMessages } from "../../workspaceMember/constants/workspaceMember.messages.js";
-import { SYSTEM_ROLE_CODES, WORKSPACE_ROLE_PERMISSION_CODES, PROTECTED_SYSTEM_ROLE_CODES } from "../../roles/constants/role.constants.js";
+import {
+    SYSTEM_ROLE_CODES,
+    WORKSPACE_ROLE_PERMISSION_CODES,
+    PROTECTED_SYSTEM_ROLE_CODES,
+} from "../../roles/constants/role.constants.js";
 import { RoleMessages } from "../../roles/constants/role.messages.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import type { IPermissionDocument } from "../interfaces/permission.interface.js";
@@ -58,10 +62,14 @@ export class PermissionAuthorizationService {
 
         if (!role) throw new AppError(PermissionMessages.FORBIDDEN, 403, "FORBIDDEN");
         return {
-            userId, permissions: role.permissions.map(p => ({
-                module: String(p.module).toUpperCase(), action: p.action, access: p.access,
-                code: p.code, isActive: p.isActive !== false,
-            }))
+            userId,
+            permissions: role.permissions.map((p) => ({
+                module: String(p.module).toUpperCase(),
+                action: p.action,
+                access: p.access,
+                code: p.code,
+                isActive: p.isActive !== false,
+            })),
         };
     }
     /**
@@ -195,20 +203,23 @@ export class PermissionAuthorizationService {
 
         let role = member.roleId
             ? await RoleModel.findOne({
-                _id: member.roleId,
-                code: { $ne: SYSTEM_ROLE_CODES.WORKSPACE_OWNER },
-                isActive: true,
-                scope: RoleScope.WORKSPACE,
-                $or: [{ workspaceId: new Types.ObjectId(workspaceId) }, { workspaceId: null, isSystem: true }],
-            })
-                .populate<{ permissions: IPermissionDocument[] }>({
-                    path: "permissions",
-                    match: { isActive: true },
-                    select: "module action access code isActive",
-                })
-                .select("_id code name displayName priority scope permissions isSystem isActive")
-                .lean()
-                .exec()
+                  _id: member.roleId,
+                  code: { $ne: SYSTEM_ROLE_CODES.WORKSPACE_OWNER },
+                  isActive: true,
+                  scope: RoleScope.WORKSPACE,
+                  $or: [
+                      { workspaceId: new Types.ObjectId(workspaceId) },
+                      { workspaceId: null, isSystem: true },
+                  ],
+              })
+                  .populate<{ permissions: IPermissionDocument[] }>({
+                      path: "permissions",
+                      match: { isActive: true },
+                      select: "module action access code isActive",
+                  })
+                  .select("_id code name displayName priority scope permissions isSystem isActive")
+                  .lean()
+                  .exec()
             : null;
 
         if (!role && member.roleId) {
@@ -270,7 +281,6 @@ export class PermissionAuthorizationService {
         module: string,
         action: PermissionAction | PermissionAction[],
     ): { granted: boolean; access: PermissionAccess | null } {
-
         const targetModule = module.toUpperCase();
         const targetActions = Array.isArray(action) ? action : [action];
 
@@ -308,39 +318,63 @@ export class PermissionAuthorizationService {
         return access;
     }
 
-    canAccessWorkspace(auth: Pick<IWorkspaceAuthorizationContext, "isOwner" | "permissions">, action: PermissionAction | PermissionAction[]): boolean {
+    canAccessWorkspace(
+        auth: Pick<IWorkspaceAuthorizationContext, "isOwner" | "permissions">,
+        action: PermissionAction | PermissionAction[],
+    ): boolean {
         // Ownership is authoritative for workspace administration, independent of membership roles.
         if (auth.isOwner) return true;
-        return this.checkPermission({ permissions: auth.permissions.filter(p => p.access !== PermissionAccess.OWN) },
-            PermissionModule.WORKSPACE, action).granted;
+        return this.checkPermission(
+            { permissions: auth.permissions.filter((p) => p.access !== PermissionAccess.OWN) },
+            PermissionModule.WORKSPACE,
+            action,
+        ).granted;
     }
 
-    assertWorkspaceAccess(auth: IWorkspaceAuthorizationContext, action: PermissionAction | PermissionAction[]): void {
+    assertWorkspaceAccess(
+        auth: IWorkspaceAuthorizationContext,
+        action: PermissionAction | PermissionAction[],
+    ): void {
         if (!this.canAccessWorkspace(auth, action)) {
             throw new AppError(PermissionMessages.UNAUTHORIZED_WORKSPACE, 403, "FORBIDDEN");
         }
     }
 
-    canAccessFolder(auth: Pick<IWorkspaceAuthorizationContext, "isOwner" | "permissions">, action: PermissionAction | PermissionAction[]): boolean {
+    canAccessFolder(
+        auth: Pick<IWorkspaceAuthorizationContext, "isOwner" | "permissions">,
+        action: PermissionAction | PermissionAction[],
+    ): boolean {
         if (!this.canAccessWorkspace(auth, PermissionAction.READ)) return false;
         if (auth.isOwner) return true;
         // Folders belong to the workspace; createdBy does not confer ownership.
-        return this.checkPermission({ permissions: auth.permissions.filter(p => p.access !== PermissionAccess.OWN) },
-            PermissionModule.FOLDERS, action).granted;
+        return this.checkPermission(
+            { permissions: auth.permissions.filter((p) => p.access !== PermissionAccess.OWN) },
+            PermissionModule.FOLDERS,
+            action,
+        ).granted;
     }
 
-    assertFolderAccess(auth: IWorkspaceAuthorizationContext, action: PermissionAction | PermissionAction[]): void {
+    assertFolderAccess(
+        auth: IWorkspaceAuthorizationContext,
+        action: PermissionAction | PermissionAction[],
+    ): void {
         this.assertWorkspaceAccess(auth, PermissionAction.READ);
         if (!this.canAccessFolder(auth, action)) {
             throw new AppError(PermissionMessages.FORBIDDEN, 403, "FORBIDDEN");
         }
     }
 
-    assertMemberAccess(auth: IWorkspaceAuthorizationContext, action: PermissionAction | PermissionAction[]): void {
+    assertMemberAccess(
+        auth: IWorkspaceAuthorizationContext,
+        action: PermissionAction | PermissionAction[],
+    ): void {
         if (auth.isOwner) return;
         // Membership is scoped to a workspace, not ownership of individual member records.
-        this.assertPermission({ permissions: auth.permissions.filter(p => p.access !== PermissionAccess.OWN) },
-            PermissionModule.MEMBERS, action);
+        this.assertPermission(
+            { permissions: auth.permissions.filter((p) => p.access !== PermissionAccess.OWN) },
+            PermissionModule.MEMBERS,
+            action,
+        );
     }
 
     /**
@@ -435,7 +469,14 @@ export class PermissionAuthorizationService {
      * Workspace Members, Workspace Invitations, and Role Management.
      */
     assertAssignableWorkspaceRole(
-        role: { _id?: unknown; isActive?: boolean; scope?: string; code?: string; workspaceId?: unknown; isSystem?: boolean } | null,
+        role: {
+            _id?: unknown;
+            isActive?: boolean;
+            scope?: string;
+            code?: string;
+            workspaceId?: unknown;
+            isSystem?: boolean;
+        } | null,
         workspaceId: string,
         customMessage?: string,
     ): void {
@@ -444,7 +485,11 @@ export class PermissionAuthorizationService {
         if (!role) {
             throw new AppError(notFoundMsg, 404);
         }
-        if (!role.isActive || role.scope !== RoleScope.WORKSPACE || role.code === SYSTEM_ROLE_CODES.WORKSPACE_OWNER) {
+        if (
+            !role.isActive ||
+            role.scope !== RoleScope.WORKSPACE ||
+            role.code === SYSTEM_ROLE_CODES.WORKSPACE_OWNER
+        ) {
             throw new AppError(notAllowedMsg, 400);
         }
         if (role.isSystem) {
@@ -454,9 +499,12 @@ export class PermissionAuthorizationService {
             return;
         }
         const roleWorkspace = role.workspaceId;
-        const roleWorkspaceId = roleWorkspace && typeof roleWorkspace === "object" && "_id" in roleWorkspace
-            ? String((roleWorkspace as { _id: unknown })._id)
-            : roleWorkspace ? String(roleWorkspace) : null;
+        const roleWorkspaceId =
+            roleWorkspace && typeof roleWorkspace === "object" && "_id" in roleWorkspace
+                ? String((roleWorkspace as { _id: unknown })._id)
+                : roleWorkspace
+                  ? String(roleWorkspace)
+                  : null;
         if (!roleWorkspaceId || roleWorkspaceId !== workspaceId) {
             throw new AppError(notAllowedMsg, 400);
         }

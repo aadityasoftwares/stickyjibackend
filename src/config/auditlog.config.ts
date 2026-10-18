@@ -6,10 +6,7 @@ export interface IAuditLogModuleConfig {
     actions: AuditLogAction[];
 }
 
-export const AuditLogConfig: Partial<
-    Record<AppModule, IAuditLogModuleConfig>
-> = {
-
+export const AuditLogConfig: Partial<Record<AppModule, IAuditLogModuleConfig>> = {
     [AppModule.SUBSCRIPTION_ENTITLEMENT]: {
         resourceType: "SubscriptionEntitlement",
         actions: [AuditLogAction.CREATE, AuditLogAction.UPDATE, AuditLogAction.STATUS_CHANGE],
@@ -111,8 +108,7 @@ export const AuditLogConfig: Partial<
     },
 
     [AppModule.PLAN_PRICE]: {
-        resourceType:
-            "Plan Price",
+        resourceType: "Plan Price",
 
         actions: [
             AuditLogAction.CREATE,
@@ -175,11 +171,7 @@ export const AuditLogConfig: Partial<
 
     [AppModule.LOCALIZATION]: {
         resourceType: "Localization",
-        actions: [
-            AuditLogAction.CREATE,
-            AuditLogAction.UPDATE,
-            AuditLogAction.DELETE,
-        ],
+        actions: [AuditLogAction.CREATE, AuditLogAction.UPDATE, AuditLogAction.DELETE],
     },
 
     [AppModule.SYSTEM_SETTING]: {
@@ -247,12 +239,7 @@ export const AuditLogConfig: Partial<
 
     [AppModule.USER_PREFERENCE]: {
         resourceType: "User Preference",
-        actions: [
-            AuditLogAction.CREATE,
-            AuditLogAction.UPDATE,
-            AuditLogAction.DELETE,
-            AuditLogAction.RESET,
-        ],
+        actions: [AuditLogAction.CREATE, AuditLogAction.UPDATE, AuditLogAction.DELETE, AuditLogAction.RESET],
     },
 
     [AppModule.STICKY_NOTE]: {
@@ -270,11 +257,7 @@ export const AuditLogConfig: Partial<
 
     [AppModule.STICKY_NOTE_COLUMN]: {
         resourceType: "Sticky Note Column",
-        actions: [
-            AuditLogAction.CREATE,
-            AuditLogAction.UPDATE,
-            AuditLogAction.DELETE,
-        ],
+        actions: [AuditLogAction.CREATE, AuditLogAction.UPDATE, AuditLogAction.DELETE],
     },
 
     [AppModule.STICKY_NOTE_LABEL]: {
@@ -342,4 +325,4 @@ export const AuditLogConfig: Partial<
         resourceType: "Audit Log",
         actions: [],
     },
-};
+};

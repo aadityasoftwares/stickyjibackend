@@ -68,13 +68,22 @@ export class BillingReconciliationService {
                         action: AuditLogAction.UPDATE,
                         reason: "Reconciled from Razorpay subscription status: " + sub.status,
                     });
-                    await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.COMPLETED);
+                    await this.repository.updateCheckoutIntentStatus(
+                        intent.checkoutIntentId,
+                        CheckoutIntentStatus.COMPLETED,
+                    );
                     result.reconciledIntents++;
                 } else if (["cancelled", "expired", "completed"].includes(sub.status)) {
-                    await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.EXPIRED);
+                    await this.repository.updateCheckoutIntentStatus(
+                        intent.checkoutIntentId,
+                        CheckoutIntentStatus.EXPIRED,
+                    );
                     result.expiredIntents++;
                 } else {
-                    await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.EXPIRED);
+                    await this.repository.updateCheckoutIntentStatus(
+                        intent.checkoutIntentId,
+                        CheckoutIntentStatus.EXPIRED,
+                    );
                     result.expiredIntents++;
                 }
             } catch {

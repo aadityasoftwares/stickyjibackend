@@ -1,5 +1,4 @@
 export const AppMessages = {
-
     SERVER_RUNNING: (port: number | string) => `Server is running successfully on port ${port}.`,
     SERVER_ERROR: "An unexpected server error occurred. Please try again later.",
     APP_INITIALIZED: "Application initialized successfully.",

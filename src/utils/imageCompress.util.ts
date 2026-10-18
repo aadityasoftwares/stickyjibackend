@@ -1,8 +1,6 @@
 import sharp from "sharp";
 
-export const compressImage = async (
-    file: Express.Multer.File
-): Promise<Buffer> => {
+export const compressImage = async (file: Express.Multer.File): Promise<Buffer> => {
     try {
         const MAX_WIDTH = 1280;
         const QUALITY = 50;
@@ -23,5 +21,4 @@ export const compressImage = async (
     } catch (error: any) {
         throw new Error("WebP conversion failed: " + error.message);
     }
-
 };

@@ -1,7 +1,10 @@
 import type { Document, Types } from "mongoose";
 import type { BillingInterval } from "../../planprice/constants/planPrice.enums.js";
 import type { AuditLogAction, AuditLogActorType } from "../../auditlog/constants/auditLog.enums.js";
-import type { SubscriptionChangeStatus, UserSubscriptionStatus } from "../constants/usersubscription.enums.js";
+import type {
+    SubscriptionChangeStatus,
+    UserSubscriptionStatus,
+} from "../constants/usersubscription.enums.js";
 
 export type { UserSubscriptionStatus } from "../constants/usersubscription.enums.js";
 
@@ -58,13 +61,31 @@ export interface IUserSubscription {
 
 export interface IUserSubscriptionDocument extends IUserSubscription, Document {}
 export type UserSubscriptionRecord = IUserSubscription & { _id: Types.ObjectId };
-export type UserSubscriptionUpdate = Partial<Pick<IUserSubscription,
-    "plan" | "planPriceId" | "billingInterval" | "startDate" | "endDate" |
-    "currentPeriodStart" | "currentPeriodEnd" | "status" | "isActive" |
-    "autoRenew" | "autoRenewBeforeCancellation" | "pendingChange" |
-    "cancelAtPeriodEnd" | "canceledAt" | "cancellationEffectiveAt" | "cancellationReason" |
-    "paymentId" | "paymentProvider" | "providerSubscriptionId" | "providerCustomerId"
->>;
+export type UserSubscriptionUpdate = Partial<
+    Pick<
+        IUserSubscription,
+        | "plan"
+        | "planPriceId"
+        | "billingInterval"
+        | "startDate"
+        | "endDate"
+        | "currentPeriodStart"
+        | "currentPeriodEnd"
+        | "status"
+        | "isActive"
+        | "autoRenew"
+        | "autoRenewBeforeCancellation"
+        | "pendingChange"
+        | "cancelAtPeriodEnd"
+        | "canceledAt"
+        | "cancellationEffectiveAt"
+        | "cancellationReason"
+        | "paymentId"
+        | "paymentProvider"
+        | "providerSubscriptionId"
+        | "providerCustomerId"
+    >
+>;
 
 export interface IVerifiedBillingEvent {
     user: Types.ObjectId | string;

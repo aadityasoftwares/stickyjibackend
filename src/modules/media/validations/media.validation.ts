@@ -14,52 +14,26 @@ export const MediaValidation = {
     statuses: Object.values(MediaStatus) as MediaStatus[],
 
     isValidObjectId(value: unknown): boolean {
-        return (
-            typeof value === "string" &&
-            /^[a-fA-F0-9]{24}$/.test(value)
-        );
+        return typeof value === "string" && /^[a-fA-F0-9]{24}$/.test(value);
     },
 
     isValidMediaType(value: unknown): value is MediaType {
-        return (
-            typeof value === "string" &&
-            this.mediaTypes.includes(value as MediaType)
-        );
+        return typeof value === "string" && this.mediaTypes.includes(value as MediaType);
     },
 
     isValidPurpose(value: unknown): value is MediaPurpose {
-        return (
-            typeof value === "string" &&
-            this.purposes.includes(value as MediaPurpose)
-        );
+        return typeof value === "string" && this.purposes.includes(value as MediaPurpose);
     },
 
-    isValidResourceType(
-        value: unknown,
-    ): value is MediaResourceType {
-        return (
-            typeof value === "string" &&
-            this.resourceTypes.includes(
-                value as MediaResourceType,
-            )
-        );
+    isValidResourceType(value: unknown): value is MediaResourceType {
+        return typeof value === "string" && this.resourceTypes.includes(value as MediaResourceType);
     },
 
-    isValidVisibility(
-        value: unknown,
-    ): value is MediaVisibility {
-        return (
-            typeof value === "string" &&
-            this.visibilities.includes(
-                value as MediaVisibility,
-            )
-        );
+    isValidVisibility(value: unknown): value is MediaVisibility {
+        return typeof value === "string" && this.visibilities.includes(value as MediaVisibility);
     },
 
     isValidStatus(value: unknown): value is MediaStatus {
-        return (
-            typeof value === "string" &&
-            this.statuses.includes(value as MediaStatus)
-        );
+        return typeof value === "string" && this.statuses.includes(value as MediaStatus);
     },
 };

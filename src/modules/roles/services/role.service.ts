@@ -1,6 +1,10 @@
 import { Types } from "mongoose";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
-import { permissionAuthorizationService, type IWorkspaceAuthorizationContext, type IGlobalAuthorizationContext } from "../../permissions/services/permissionAuthorization.service.js";
+import {
+    permissionAuthorizationService,
+    type IWorkspaceAuthorizationContext,
+    type IGlobalAuthorizationContext,
+} from "../../permissions/services/permissionAuthorization.service.js";
 import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
 import type { IAuditLogChange, IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
 import { AuditLogAction } from "../../auditlog/constants/auditLog.enums.js";
@@ -15,10 +19,7 @@ import type {
 import { RoleRepository } from "../repositories/role.repository.js";
 import { PermissionModel } from "../../permissions/models/permission.model.js";
 import { RoleMessages } from "../constants/role.messages.js";
-import {
-    PROTECTED_SYSTEM_ROLE_CODES,
-    SYSTEM_ROLE_CODES,
-} from "../constants/role.constants.js";
+import { PROTECTED_SYSTEM_ROLE_CODES, SYSTEM_ROLE_CODES } from "../constants/role.constants.js";
 import { PERMISSION_CODES } from "../../permissions/constants/permission.constants.js";
 import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
 import { RoleScope, RoleType } from "../constants/role.enums.js";
@@ -41,23 +42,23 @@ export class RoleService {
 
     private toResponse(role: any): IRoleResponse {
         if (!role) return null as any;
-        const id = role._id ? role._id.toString() : (role.id ? role.id.toString() : "");
+        const id = role._id ? role._id.toString() : role.id ? role.id.toString() : "";
         const raw = typeof role.toObject === "function" ? role.toObject() : { ...role };
 
         const permissions = Array.isArray(raw.permissions)
             ? raw.permissions.map((p: any) => {
-                if (!p) return p;
-                if (typeof p === "object" && (p._id || p.id)) {
-                    const pId = p._id ? p._id.toString() : p.id.toString();
-                    const pRaw = typeof p.toObject === "function" ? p.toObject() : { ...p };
-                    return {
-                        ...pRaw,
-                        id: pId,
-                        _id: pId,
-                    };
-                }
-                return p.toString();
-            })
+                  if (!p) return p;
+                  if (typeof p === "object" && (p._id || p.id)) {
+                      const pId = p._id ? p._id.toString() : p.id.toString();
+                      const pRaw = typeof p.toObject === "function" ? p.toObject() : { ...p };
+                      return {
+                          ...pRaw,
+                          id: pId,
+                          _id: pId,
+                      };
+                  }
+                  return p.toString();
+              })
             : raw.permissions;
 
         return {
@@ -70,7 +71,6 @@ export class RoleService {
             permissions,
         };
     }
-
 
     async createRole(
         data: IRoleCreateInput,
@@ -99,21 +99,26 @@ export class RoleService {
 
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
 
-        const auth = (authorization && authorization.workspaceId === workspaceIdString)
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceIdString);
+        const auth =
+            authorization && authorization.workspaceId === workspaceIdString
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      workspaceIdString,
+                  );
 
-        permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.CREATE);
+        permissionAuthorizationService.assertPermission(
+            auth,
+            PermissionModule.ROLES,
+            PermissionAction.CREATE,
+        );
 
         const name = StringHelper.normalize(data.name).toLowerCase();
         const displayName = StringHelper.normalize(data.displayName);
         const code = StringHelper.normalizeUpper(data.code);
         const description = StringHelper.normalizeOptional(data.description) ?? "";
 
-        if (
-            PROTECTED_SYSTEM_ROLE_CODES.has(code) ||
-            Object.values(SYSTEM_ROLE_CODES).includes(code as any)
-        ) {
+        if (PROTECTED_SYSTEM_ROLE_CODES.has(code) || Object.values(SYSTEM_ROLE_CODES).includes(code as any)) {
             throw new AppError(RoleMessages.PROTECTED_CODE, 403);
         }
 
@@ -179,11 +184,7 @@ export class RoleService {
         return this.toResponse(role);
     }
 
-    async getRoleById(
-        id: string,
-        userId: string,
-        authorization?: IWorkspaceAuthorizationContext,
-    ) {
+    async getRoleById(id: string, userId: string, authorization?: IWorkspaceAuthorizationContext) {
         if (!Types.ObjectId.isValid(id)) {
             throw new AppError(RoleMessages.NOT_FOUND, 404);
         }
@@ -196,10 +197,20 @@ export class RoleService {
         if (role.workspaceId) {
             const workspaceIdString = role.workspaceId.toString();
             await workspaceAvailabilityService.assertAvailable(workspaceIdString);
-            const auth = (authorization && authorization.workspaceId === workspaceIdString)
-                ? authorization
-                : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceIdString, true, true);
-            permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.READ);
+            const auth =
+                authorization && authorization.workspaceId === workspaceIdString
+                    ? authorization
+                    : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                          userId,
+                          workspaceIdString,
+                          true,
+                          true,
+                      );
+            permissionAuthorizationService.assertPermission(
+                auth,
+                PermissionModule.ROLES,
+                PermissionAction.READ,
+            );
         }
 
         return this.toResponse(role);
@@ -221,10 +232,20 @@ export class RoleService {
             await workspaceAvailabilityService.assertAvailable(workspaceId);
 
             if (userId) {
-                const auth = (authorization && authorization.workspaceId === workspaceId)
-                    ? authorization
-                    : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId, true, true);
-                permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.READ);
+                const auth =
+                    authorization && authorization.workspaceId === workspaceId
+                        ? authorization
+                        : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                              userId,
+                              workspaceId,
+                              true,
+                              true,
+                          );
+                permissionAuthorizationService.assertPermission(
+                    auth,
+                    PermissionModule.ROLES,
+                    PermissionAction.READ,
+                );
             }
 
             role = await this.roleRepository.findByCode(normalizedCode, workspaceId);
@@ -253,22 +274,39 @@ export class RoleService {
             }
             await workspaceAvailabilityService.assertAvailable(filters.workspaceId);
 
-            const auth = (authorization && "workspaceId" in authorization && authorization.workspaceId === filters.workspaceId)
-                ? authorization
-                : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, filters.workspaceId, true, true);
+            const auth =
+                authorization &&
+                "workspaceId" in authorization &&
+                authorization.workspaceId === filters.workspaceId
+                    ? authorization
+                    : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                          userId,
+                          filters.workspaceId,
+                          true,
+                          true,
+                      );
 
-            permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.READ);
+            permissionAuthorizationService.assertPermission(
+                auth,
+                PermissionModule.ROLES,
+                PermissionAction.READ,
+            );
         } else {
-            const auth = (authorization && !("workspaceId" in authorization))
-                ? authorization
-                : await permissionAuthorizationService.resolveGlobalAuthorization(userId);
+            const auth =
+                authorization && !("workspaceId" in authorization)
+                    ? authorization
+                    : await permissionAuthorizationService.resolveGlobalAuthorization(userId);
 
-            permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.READ);
+            permissionAuthorizationService.assertPermission(
+                auth,
+                PermissionModule.ROLES,
+                PermissionAction.READ,
+            );
         }
 
         const result = await this.roleRepository.findAll(filters);
         return {
-            data: result.data.map(r => this.toResponse(r)),
+            data: result.data.map((r) => this.toResponse(r)),
             pagination: result.pagination,
         };
     }
@@ -300,11 +338,19 @@ export class RoleService {
         const workspaceIdString = role.workspaceId.toString();
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
 
-        const auth = (authorization && authorization.workspaceId === workspaceIdString)
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceIdString);
+        const auth =
+            authorization && authorization.workspaceId === workspaceIdString
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      workspaceIdString,
+                  );
 
-        permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.UPDATE);
+        permissionAuthorizationService.assertPermission(
+            auth,
+            PermissionModule.ROLES,
+            PermissionAction.UPDATE,
+        );
         permissionAuthorizationService.assertCanManageRole(auth, role);
 
         // Prevent self-escalation: member cannot edit the role they are assigned to
@@ -320,7 +366,11 @@ export class RoleService {
         if (data.name !== undefined) {
             const normalizedName = StringHelper.normalize(data.name).toLowerCase();
             if (normalizedName !== role.name) {
-                const nameExists = await this.roleRepository.existsByName(normalizedName, workspaceIdString, id);
+                const nameExists = await this.roleRepository.existsByName(
+                    normalizedName,
+                    workspaceIdString,
+                    id,
+                );
                 if (nameExists) {
                     throw new AppError(RoleMessages.ALREADY_EXISTS, 409);
                 }
@@ -333,7 +383,11 @@ export class RoleService {
             const normalizedDisplayName = StringHelper.normalize(data.displayName);
             if (normalizedDisplayName !== role.displayName) {
                 payload.displayName = normalizedDisplayName;
-                changes.push({ field: "displayName", oldValue: role.displayName, newValue: normalizedDisplayName });
+                changes.push({
+                    field: "displayName",
+                    oldValue: role.displayName,
+                    newValue: normalizedDisplayName,
+                });
             }
         }
 
@@ -346,7 +400,11 @@ export class RoleService {
                 ) {
                     throw new AppError(RoleMessages.PROTECTED_CODE, 403);
                 }
-                const codeExists = await this.roleRepository.existsByCode(normalizedCode, workspaceIdString, id);
+                const codeExists = await this.roleRepository.existsByCode(
+                    normalizedCode,
+                    workspaceIdString,
+                    id,
+                );
                 if (codeExists) {
                     throw new AppError(RoleMessages.ALREADY_EXISTS, 409);
                 }
@@ -359,16 +417,24 @@ export class RoleService {
             const normalizedDescription = StringHelper.normalizeOptional(data.description) ?? "";
             if (normalizedDescription !== (role.description ?? "")) {
                 payload.description = normalizedDescription;
-                changes.push({ field: "description", oldValue: role.description ?? "", newValue: normalizedDescription });
+                changes.push({
+                    field: "description",
+                    oldValue: role.description ?? "",
+                    newValue: normalizedDescription,
+                });
             }
         }
 
         if (data.permissions !== undefined) {
             const newPermissions = await this.preparePermissions(data.permissions, auth);
-            const oldIds = new Set((role.permissions ?? []).map(p => (typeof p === "object" && "_id" in p ? String(p._id) : String(p))));
-            const newIds = new Set(newPermissions.map(p => p.toString()));
+            const oldIds = new Set(
+                (role.permissions ?? []).map((p) =>
+                    typeof p === "object" && "_id" in p ? String(p._id) : String(p),
+                ),
+            );
+            const newIds = new Set(newPermissions.map((p) => p.toString()));
 
-            const hasChanged = oldIds.size !== newIds.size || [...newIds].some(id => !oldIds.has(id));
+            const hasChanged = oldIds.size !== newIds.size || [...newIds].some((id) => !oldIds.has(id));
             if (hasChanged) {
                 payload.permissions = newPermissions;
                 changes.push({
@@ -396,7 +462,11 @@ export class RoleService {
             displayName: role.displayName,
             code: role.code,
             description: role.description,
-            permissions: (role.permissions ?? []).map(p => (typeof p === "object" && "_id" in p ? new Types.ObjectId(String(p._id)) : new Types.ObjectId(String(p)))),
+            permissions: (role.permissions ?? []).map((p) =>
+                typeof p === "object" && "_id" in p
+                    ? new Types.ObjectId(String(p._id))
+                    : new Types.ObjectId(String(p)),
+            ),
             isActive: role.isActive,
             updatedBy: role.updatedBy,
         };
@@ -457,11 +527,19 @@ export class RoleService {
         const workspaceIdString = role.workspaceId.toString();
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
 
-        const auth = (authorization && authorization.workspaceId === workspaceIdString)
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceIdString);
+        const auth =
+            authorization && authorization.workspaceId === workspaceIdString
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      workspaceIdString,
+                  );
 
-        permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.UPDATE);
+        permissionAuthorizationService.assertPermission(
+            auth,
+            PermissionModule.ROLES,
+            PermissionAction.UPDATE,
+        );
         permissionAuthorizationService.assertCanManageRole(auth, role);
 
         if (!auth.isOwner && auth.role._id.toString() === role._id.toString()) {
@@ -533,11 +611,19 @@ export class RoleService {
         const workspaceIdString = role.workspaceId.toString();
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
 
-        const auth = (authorization && authorization.workspaceId === workspaceIdString)
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceIdString);
+        const auth =
+            authorization && authorization.workspaceId === workspaceIdString
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      workspaceIdString,
+                  );
 
-        permissionAuthorizationService.assertPermission(auth, PermissionModule.ROLES, PermissionAction.DELETE);
+        permissionAuthorizationService.assertPermission(
+            auth,
+            PermissionModule.ROLES,
+            PermissionAction.DELETE,
+        );
         permissionAuthorizationService.assertCanManageRole(auth, role);
 
         if (!auth.isOwner && auth.role._id.toString() === role._id.toString()) {
@@ -582,7 +668,9 @@ export class RoleService {
             return [];
         }
 
-        const rawIds = permissions.map(p => (typeof p === "object" && "_id" in p ? String(p._id) : String(p)));
+        const rawIds = permissions.map((p) =>
+            typeof p === "object" && "_id" in p ? String(p._id) : String(p),
+        );
         const uniqueIds = Array.from(new Set(rawIds));
 
         for (const pid of uniqueIds) {
@@ -592,7 +680,7 @@ export class RoleService {
         }
 
         const validPermissions = await PermissionModel.find({
-            _id: { $in: uniqueIds.map(id => new Types.ObjectId(id)) },
+            _id: { $in: uniqueIds.map((id) => new Types.ObjectId(id)) },
             isActive: true,
         })
             .select("_id code module action access isActive")
@@ -606,7 +694,7 @@ export class RoleService {
         // Privilege escalation prevention:
         // Actor cannot grant permissions they themselves do not possess (unless owner)
         if (actorAuth && !actorAuth.isOwner) {
-            const actorCodes = new Set(actorAuth.permissions.map(p => p.code));
+            const actorCodes = new Set(actorAuth.permissions.map((p) => p.code));
             for (const p of validPermissions) {
                 if (OWNER_ONLY_PERMISSIONS.has(p.code)) {
                     throw new AppError(RoleMessages.CANNOT_GRANT_OWNER_PERMISSIONS, 403);
@@ -624,6 +712,6 @@ export class RoleService {
             }
         }
 
-        return validPermissions.map(p => new Types.ObjectId(p._id.toString()));
+        return validPermissions.map((p) => new Types.ObjectId(p._id.toString()));
     }
 }

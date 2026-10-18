@@ -29,7 +29,9 @@ export class BillingRepository {
             provider,
             environment,
             status: GatewayPlanMappingStatus.ACTIVE,
-        }).lean<BillingPlanMappingRecord>().exec();
+        })
+            .lean<BillingPlanMappingRecord>()
+            .exec();
     }
 
     async findPlanMappingByProviderPlanId(
@@ -41,7 +43,9 @@ export class BillingRepository {
             providerPlanId,
             provider,
             environment,
-        }).lean<BillingPlanMappingRecord>().exec();
+        })
+            .lean<BillingPlanMappingRecord>()
+            .exec();
     }
 
     async createPlanMapping(data: Partial<IBillingPlanMapping>): Promise<BillingPlanMappingRecord> {
@@ -97,7 +101,9 @@ export class BillingRepository {
             { checkoutIntentId },
             { $set: { status, ...(metadata ? { metadata } : {}) } },
             { new: true },
-        ).lean<CheckoutIntentRecord>().exec();
+        )
+            .lean<CheckoutIntentRecord>()
+            .exec();
     }
 
     async findStalePendingIntents(olderThan: Date, limit = 50): Promise<CheckoutIntentRecord[]> {
@@ -112,13 +118,8 @@ export class BillingRepository {
 
     // ---------------- Webhook Events ---------------- //
 
-    async findEventByProviderAndId(
-        provider: string,
-        eventId: string,
-    ): Promise<BillingEventRecord | null> {
-        return BillingEventModel.findOne({ provider, eventId })
-            .lean<BillingEventRecord>()
-            .exec();
+    async findEventByProviderAndId(provider: string, eventId: string): Promise<BillingEventRecord | null> {
+        return BillingEventModel.findOne({ provider, eventId }).lean<BillingEventRecord>().exec();
     }
 
     async recordWebhookEvent(data: Partial<IBillingEvent>): Promise<BillingEventRecord> {
@@ -151,7 +152,9 @@ export class BillingRepository {
                 $inc: { attempts: extra.attemptsIncrement ?? 0 },
             },
             { new: true },
-        ).lean<BillingEventRecord>().exec();
+        )
+            .lean<BillingEventRecord>()
+            .exec();
     }
 
     async findRetryableEvents(limit = 50): Promise<BillingEventRecord[]> {

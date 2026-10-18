@@ -10,13 +10,10 @@ export class WorkspacePermissionService {
     }
 
     async createPermission(data: Omit<IWorkspacePermission, "key">) {
-
         const key = generatePermissionKey(data.name);
-
 
         const existing = await this.workspacePermissionRepo.findByKey(key);
         if (existing) throw new Error("Permission key already exists");
-
 
         const permissionData = { ...data, key };
 
@@ -27,7 +24,6 @@ export class WorkspacePermissionService {
         const permission = await this.workspacePermissionRepo.findById(id);
         if (!permission) throw new Error("Workspace permission not found");
 
-
         // if (data.name) {
         //     const key = generatePermissionKey(data.name);
 
@@ -36,7 +32,7 @@ export class WorkspacePermissionService {
         //         throw new Error("Permission key already exists");
         //     }
 
-        //     data.key = key; 
+        //     data.key = key;
         // }
 
         return await this.workspacePermissionRepo.update(id, data);

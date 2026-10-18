@@ -1,26 +1,16 @@
 import { Router } from "express";
 
-import {
-    StickyNoteLabelController,
-} from "../controllers/stickyNoteLabel.controller.js";
+import { StickyNoteLabelController } from "../controllers/stickyNoteLabel.controller.js";
 
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
-import {
-    validateContentType,
-} from "../../../utils/validations/validateContentType.js";
+import { validateContentType } from "../../../utils/validations/validateContentType.js";
 
-import {
-    createStickyNoteLabelValidation,
-} from "../validations/createStickyNoteLabel.validation.js";
+import { createStickyNoteLabelValidation } from "../validations/createStickyNoteLabel.validation.js";
 
-import {
-    getStickyNoteLabelValidation,
-} from "../validations/getStickyNoteLabel.validation.js";
+import { getStickyNoteLabelValidation } from "../validations/getStickyNoteLabel.validation.js";
 
-import {
-    updateStickyNoteLabelValidation,
-} from "../validations/updateStickyNoteLabel.validation.js";
+import { updateStickyNoteLabelValidation } from "../validations/updateStickyNoteLabel.validation.js";
 
 const stickyNoteLabelRoutes = Router();
 const stickyNoteLabelController = new StickyNoteLabelController();
@@ -40,11 +30,7 @@ stickyNoteLabelRoutes.get(
     stickyNoteLabelController.getStickyNoteLabelById,
 );
 
-stickyNoteLabelRoutes.get(
-    "/getall",
-    authMiddleware,
-    stickyNoteLabelController.getStickyNoteLabels,
-);
+stickyNoteLabelRoutes.get("/getall", authMiddleware, stickyNoteLabelController.getStickyNoteLabels);
 
 stickyNoteLabelRoutes.put(
     "/update/:id",

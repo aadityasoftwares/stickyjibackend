@@ -1,4 +1,4 @@
-import type { CookieOptions, } from "express";
+import type { CookieOptions } from "express";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -13,5 +13,4 @@ export const AUTH_COOKIE_CONSTANTS = {
         sameSite: "lax",
         path: "/",
     } satisfies CookieOptions,
-
 } as const;

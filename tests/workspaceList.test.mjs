@@ -33,11 +33,16 @@ const repository = new WorkspaceRepository();
 const counts = { all: 7, active: 5, archived: 2 };
 const names = ["alpha", "Bravo", "charlie", "delta", "Echo", "Literal [x].*", "ALPHA"];
 const rows = names.map((name, index) => ({
-    _id: new Types.ObjectId(), name, slug: `workspace-${index}`, description: "description-only-token",
+    _id: new Types.ObjectId(),
+    name,
+    slug: `workspace-${index}`,
+    description: "description-only-token",
     ownerId: index < 4 ? ownerId : otherId,
-    createdBy: otherId, updatedBy: ownerId,
+    createdBy: otherId,
+    updatedBy: ownerId,
     status: index === 3 || index === 5 ? "ARCHIVED" : "ACTIVE",
-    visibility: "PRIVATE", isPersonal: index === 1,
+    visibility: "PRIVATE",
+    isPersonal: index === 1,
     createdAt: new Date(Date.UTC(2026, 0, index === 6 ? 1 : index + 1)),
     updatedAt: new Date(Date.UTC(2026, 1, index === 6 ? 7 : 7 - index)),
 }));
@@ -60,19 +65,32 @@ before(async () => {
     socket.listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
     mongoDirectory = await mkdtemp(join(tmpdir(), "workspace-list-test-"));
-    mongoProcess = spawn(process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", mongoDirectory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(mongoDirectory, "mongo.log"),
-    ], { windowsHide: true, stdio: "ignore" });
+    mongoProcess = spawn(
+        process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            mongoDirectory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(mongoDirectory, "mongo.log"),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
     let startupError;
-    mongoProcess.on("error", error => { startupError = error; });
+    mongoProcess.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
             await mongoose.connect(`mongodb://127.0.0.1:${port}/workspace_list_test`, {
-                serverSelectionTimeoutMS: 500, autoIndex: false,
+                serverSelectionTimeoutMS: 500,
+                autoIndex: false,
             });
             break;
         } catch (error) {
@@ -81,30 +99,73 @@ before(async () => {
         }
     }
     await Promise.all([WorkspaceModel.createIndexes(), WorkspaceMemberModel.createIndexes()]);
-    const read = await PermissionModel.create({ name: "workspace_read", displayName: "Read", code: "WORKSPACE_READ", module: "WORKSPACE", action: "READ", access: "GENERAL", isActive: true });
-    await RoleModel.create({ _id: roleId, name: "viewer", displayName: "Viewer", code: "WORKSPACE_VIEWER", scope: "WORKSPACE", isSystem: true, isActive: true, permissions: [read._id] });
-    const excluded = ["DELETED", "INACTIVE", "SUSPENDED", "ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE"]
-        .map((status, i) => ({
-            ...rows[0], _id: new Types.ObjectId(), slug: `excluded-${i}`, name: `Excluded ${i}`,
-            ownerId: i < 3 ? ownerId : otherId, createdBy: ownerId, status,
-        }));
+    const read = await PermissionModel.create({
+        name: "workspace_read",
+        displayName: "Read",
+        code: "WORKSPACE_READ",
+        module: "WORKSPACE",
+        action: "READ",
+        access: "GENERAL",
+        isActive: true,
+    });
+    await RoleModel.create({
+        _id: roleId,
+        name: "viewer",
+        displayName: "Viewer",
+        code: "WORKSPACE_VIEWER",
+        scope: "WORKSPACE",
+        isSystem: true,
+        isActive: true,
+        permissions: [read._id],
+    });
+    const excluded = ["DELETED", "INACTIVE", "SUSPENDED", "ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE"].map(
+        (status, i) => ({
+            ...rows[0],
+            _id: new Types.ObjectId(),
+            slug: `excluded-${i}`,
+            name: `Excluded ${i}`,
+            ownerId: i < 3 ? ownerId : otherId,
+            createdBy: ownerId,
+            status,
+        }),
+    );
     await WorkspaceModel.collection.insertMany([...rows, ...excluded]);
     await WorkspaceMemberModel.collection.insertMany([
-        ...[rows[0], ...rows.slice(4)].map(row => ({
-            _id: new Types.ObjectId(), workspaceId: row._id, userId: ownerId,
-            roleId, status: "ACTIVE", joinedAt: new Date("2026-01-01"),
+        ...[rows[0], ...rows.slice(4)].map((row) => ({
+            _id: new Types.ObjectId(),
+            workspaceId: row._id,
+            userId: ownerId,
+            roleId,
+            status: "ACTIVE",
+            joinedAt: new Date("2026-01-01"),
         })),
         ...["INVITED", "REMOVED"].map((status, i) => ({
-            _id: new Types.ObjectId(), workspaceId: excluded[4 + i]._id, userId: ownerId,
-            roleId, status,
+            _id: new Types.ObjectId(),
+            workspaceId: excluded[4 + i]._id,
+            userId: ownerId,
+            roleId,
+            status,
         })),
-        { _id: new Types.ObjectId(), workspaceId: excluded[0]._id, userId: ownerId, roleId, status: "ACTIVE" },
+        {
+            _id: new Types.ObjectId(),
+            workspaceId: excluded[0]._id,
+            userId: ownerId,
+            roleId,
+            status: "ACTIVE",
+        },
     ]);
     await WorkspaceFolderModel.collection.insertMany([
-        { _id: activeFolderId, workspaceId: rows[0]._id, name: "Ideas", position: 0, isDefault: true, status: "ACTIVE" },
+        {
+            _id: activeFolderId,
+            workspaceId: rows[0]._id,
+            name: "Ideas",
+            position: 0,
+            isDefault: true,
+            status: "ACTIVE",
+        },
         { workspaceId: rows[0]._id, name: "Old", position: 1, isDefault: false, status: "DELETED" },
     ]);
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "test" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test" }));
     const app = express();
     app.use(express.json());
     app.use("/api/v1/workspaces", workspaceRoutes);
@@ -115,7 +176,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (httpServer) await new Promise(resolve => httpServer.close(resolve));
+    if (httpServer) await new Promise((resolve) => httpServer.close(resolve));
     mock.restoreAll();
     await mongoose.disconnect();
     if (mongoProcess?.pid && mongoProcess.exitCode === null) {
@@ -135,17 +196,24 @@ test("defaults, owner/member access, exclusions, and no owner/member duplicates"
     const result = await list();
     assert.deepEqual(result.counts, counts);
     assert.deepEqual(result.pagination, { page: 1, limit: 20, total: 5, totalPages: 1 });
-    assert.deepEqual(result.data.map(row => row.name), ["Echo", "charlie", "Bravo", "alpha", "ALPHA"]);
-    assert.equal(new Set(result.data.map(row => String(row._id))).size, 5);
+    assert.deepEqual(
+        result.data.map((row) => row.name),
+        ["Echo", "charlie", "Bravo", "alpha", "ALPHA"],
+    );
+    assert.equal(new Set(result.data.map((row) => String(row._id))).size, 5);
 });
 
-for (const [status, total] of [["ACTIVE", 5], ["ARCHIVED", 2], ["ALL", 7]]) {
+for (const [status, total] of [
+    ["ACTIVE", 5],
+    ["ARCHIVED", 2],
+    ["ALL", 7],
+]) {
     test(`${status} filter has independent tab counts`, async () => {
         const result = await list({ status });
         assert.equal(result.pagination.total, total);
         assert.equal(result.data.length, total);
         assert.deepEqual(result.counts, counts);
-        if (status !== "ALL") assert.ok(result.data.every(row => row.status === status));
+        if (status !== "ALL") assert.ok(result.data.every((row) => row.status === status));
     });
 }
 
@@ -159,13 +227,19 @@ const orders = {
 for (const [sortBy, indices] of Object.entries(orders)) {
     test(`${sortBy} sorts in MongoDB with stable ties`, async () => {
         const result = await list({ status: "ALL", sortBy });
-        assert.deepEqual(result.data.map(row => String(row._id)), indices.map(i => String(rows[i]._id)));
+        assert.deepEqual(
+            result.data.map((row) => String(row._id)),
+            indices.map((i) => String(rows[i]._id)),
+        );
         assert.deepEqual(result.counts, counts);
         const pages = [];
         for (let page = 1; page <= 4; page++) {
             pages.push(...(await list({ status: "ALL", sortBy, page, limit: 2 })).data);
         }
-        assert.deepEqual(pages.map(row => String(row._id)), result.data.map(row => String(row._id)));
+        assert.deepEqual(
+            pages.map((row) => String(row._id)),
+            result.data.map((row) => String(row._id)),
+        );
     });
 }
 
@@ -173,7 +247,10 @@ test("search trims, ignores case, escapes metacharacters, and searches names onl
     const alpha = await list({ search: " ALpHa ", status: "ALL" });
     assert.deepEqual(alpha.counts, { all: 2, active: 2, archived: 0 });
     const literal = await list({ search: "[x].*", status: "ALL" });
-    assert.deepEqual(literal.data.map(row => row.name), ["Literal [x].*"]);
+    assert.deepEqual(
+        literal.data.map((row) => row.name),
+        ["Literal [x].*"],
+    );
     assert.deepEqual(literal.counts, { all: 1, active: 0, archived: 1 });
     for (const search of ["not found", "description-only-token", "workspace-0", "(a+)+$"]) {
         const result = await list({ search, status: "ALL" });
@@ -185,13 +262,21 @@ test("search trims, ignores case, escapes metacharacters, and searches names onl
 
 test("combined status/search/sort/pagination counts include other tabs", async () => {
     const result = await list({ search: "a", status: "ACTIVE", sortBy: "NAME_DESC", page: 2, limit: 2 });
-    assert.deepEqual(result.data.map(row => row.name), ["alpha", "ALPHA"]);
+    assert.deepEqual(
+        result.data.map((row) => row.name),
+        ["alpha", "ALPHA"],
+    );
     assert.deepEqual(result.pagination, { page: 2, limit: 2, total: 4, totalPages: 2 });
     assert.deepEqual(result.counts, { all: 6, active: 4, archived: 2 });
 });
 
 test("first, middle, last, and out-of-range pages", async () => {
-    for (const [page, length] of [[1, 2], [2, 2], [4, 1], [5, 0]]) {
+    for (const [page, length] of [
+        [1, 2],
+        [2, 2],
+        [4, 1],
+        [5, 0],
+    ]) {
         const result = await list({ status: "ALL", page, limit: 2 });
         assert.equal(result.data.length, length);
         assert.deepEqual(result.pagination, { page, limit: 2, total: 7, totalPages: 4 });
@@ -217,16 +302,26 @@ test("POST compatibility, GET aliases, metadata, and enrichment DTO", async () =
     assert.deepEqual(post.body, get.body);
     assert.deepEqual(root.body, get.body);
     assert.deepEqual(root.body.meta.counts, counts);
-    const owned = root.body.data.find(row => row.id === String(rows[0]._id));
+    const owned = root.body.data.find((row) => row.id === String(rows[0]._id));
     assert.equal(owned.isOwner, true);
     assert.equal(owned.role, "Owner");
     assert.equal(owned.summary.folderCount, 1);
     assert.deepEqual(owned.summary.folders, [{ id: String(activeFolderId), name: "Ideas" }]);
     assert.ok(Array.isArray(owned.summary.members));
-    for (const key of ["slug", "description", "ownerId", "visibility", "isPersonal", "createdBy", "updatedBy", "createdAt", "updatedAt"]) {
+    for (const key of [
+        "slug",
+        "description",
+        "ownerId",
+        "visibility",
+        "isPersonal",
+        "createdBy",
+        "updatedBy",
+        "createdAt",
+        "updatedAt",
+    ]) {
         assert.ok(key in owned, key);
     }
-    const member = root.body.data.find(row => row.id === String(rows[4]._id));
+    const member = root.body.data.find((row) => row.id === String(rows[4]._id));
     assert.equal(member.summary.folderCount, 0);
     assert.deepEqual(member.summary.folders, []);
     assert.equal(member.isOwner, false);
@@ -240,7 +335,10 @@ test("legacy ownerId cannot broaden access, and visibility/personal filters stil
     const result = await request("/getall", { status: "ALL", ownerId: String(otherId) });
     assert.deepEqual(result.body.meta.counts, counts);
     const personal = await request("?isPersonal=true&visibility=PRIVATE");
-    assert.deepEqual(personal.body.data.map(row => row.name), ["Bravo"]);
+    assert.deepEqual(
+        personal.body.data.map((row) => row.name),
+        ["Bravo"],
+    );
     assert.deepEqual(personal.body.meta.counts, { all: 1, active: 1, archived: 0 });
     assert.equal((await request("?visibility=PUBLIC")).body.data.length, 0);
 });
@@ -254,12 +352,29 @@ test("pagination coercion and maximum limit", async () => {
 
 test("invalid query and body parameters return standardized validation errors", async () => {
     for (const body of [
-        { page: 0 }, { page: -1 }, { page: 1.5 }, { page: true }, { page: [] },
-        { page: "1.5" }, { page: "1e2" }, { page: "" }, { page: Number.MAX_SAFE_INTEGER },
-        { limit: 0 }, { limit: -1 }, { limit: 1.1 }, { limit: null },
-        { status: "INACTIVE" }, { status: "anything" },
-        { sortBy: "$where" }, { sortOrder: "bad" }, { search: {} }, { search: "a".repeat(101) },
-        { isPersonal: "false" }, { visibility: "bad" }, { ownerId: "bad" }, { unknown: true },
+        { page: 0 },
+        { page: -1 },
+        { page: 1.5 },
+        { page: true },
+        { page: [] },
+        { page: "1.5" },
+        { page: "1e2" },
+        { page: "" },
+        { page: Number.MAX_SAFE_INTEGER },
+        { limit: 0 },
+        { limit: -1 },
+        { limit: 1.1 },
+        { limit: null },
+        { status: "INACTIVE" },
+        { status: "anything" },
+        { sortBy: "$where" },
+        { sortOrder: "bad" },
+        { search: {} },
+        { search: "a".repeat(101) },
+        { isPersonal: "false" },
+        { visibility: "bad" },
+        { ownerId: "bad" },
+        { unknown: true },
     ]) {
         const result = await request("/getall", body);
         assert.equal(result.status, 400, JSON.stringify(body));
@@ -280,8 +395,8 @@ test("my endpoint retains its previous list behavior and metadata", async () => 
     const result = await request("/my");
     assert.equal(result.status, 200);
     assert.equal(result.body.data[0].isPersonal, true);
-    assert.ok(result.body.data.some(row => row.status === "INACTIVE"));
-    assert.ok(result.body.data.every(row => row.summary && row.role && "isOwner" in row));
+    assert.ok(result.body.data.some((row) => row.status === "INACTIVE"));
+    assert.ok(result.body.data.every((row) => row.summary && row.role && "isOwner" in row));
 });
 
 test("access branches use existing indexes (executionStats)", async () => {
@@ -297,7 +412,9 @@ test("access branches use existing indexes (executionStats)", async () => {
 
 test("access filters select owned/shared rows before pagination and keep independent access counts", async () => {
     for (const [access, total, statusCounts] of [
-        ["ALL", 7, counts], ["OWNED", 4, { all: 4, active: 3, archived: 1 }], ["SHARED", 3, { all: 3, active: 2, archived: 1 }],
+        ["ALL", 7, counts],
+        ["OWNED", 4, { all: 4, active: 3, archived: 1 }],
+        ["SHARED", 3, { all: 3, active: 2, archived: 1 }],
     ]) {
         for (const page of [1, 2, 100]) {
             const result = await list({ status: "ALL", access, limit: 1, page, sortBy: "NAME_ASC" });
@@ -305,7 +422,12 @@ test("access filters select owned/shared rows before pagination and keep indepen
             assert.deepEqual(result.accessCounts, { ALL: 7, OWNED: 4, SHARED: 3 });
             assert.deepEqual(result.counts, statusCounts);
             assert.equal(result.data.length, page <= total ? 1 : 0);
-            if (access !== "ALL") assert.ok(result.data.every(row => (String(row.ownerId) === String(ownerId)) === (access === "OWNED")));
+            if (access !== "ALL")
+                assert.ok(
+                    result.data.every(
+                        (row) => (String(row.ownerId) === String(ownerId)) === (access === "OWNED"),
+                    ),
+                );
         }
         const get = await request(`/getall?status=ALL&access=${access}`);
         const post = await request("/getall", { status: "ALL", access });
@@ -316,14 +438,39 @@ test("access filters select owned/shared rows before pagination and keep indepen
             { value: "SHARED", label: "Shared with me", count: 3 },
         ]);
     }
-    assert.deepEqual((await list({ access: "SHARED", status: "ACTIVE" })).accessCounts, { ALL: 5, OWNED: 3, SHARED: 2 });
-    assert.deepEqual((await list({ access: "OWNED", status: "ARCHIVED" })).accessCounts, { ALL: 2, OWNED: 1, SHARED: 1 });
-    assert.deepEqual((await list({ status: "ALL", search: "alpha" })).accessCounts, { ALL: 2, OWNED: 1, SHARED: 1 });
-    assert.deepEqual((await list({ status: "ALL", isPersonal: true, visibility: "PRIVATE" })).accessCounts, { ALL: 1, OWNED: 1, SHARED: 0 });
-    assert.deepEqual((await list({ status: "ALL", visibility: "PUBLIC" })).accessCounts, { ALL: 0, OWNED: 0, SHARED: 0 });
-    assert.deepEqual((await list({ status: "TRASHED", access: "SHARED" })).accessCounts, { ALL: 1, OWNED: 1, SHARED: 0 });
+    assert.deepEqual((await list({ access: "SHARED", status: "ACTIVE" })).accessCounts, {
+        ALL: 5,
+        OWNED: 3,
+        SHARED: 2,
+    });
+    assert.deepEqual((await list({ access: "OWNED", status: "ARCHIVED" })).accessCounts, {
+        ALL: 2,
+        OWNED: 1,
+        SHARED: 1,
+    });
+    assert.deepEqual((await list({ status: "ALL", search: "alpha" })).accessCounts, {
+        ALL: 2,
+        OWNED: 1,
+        SHARED: 1,
+    });
+    assert.deepEqual((await list({ status: "ALL", isPersonal: true, visibility: "PRIVATE" })).accessCounts, {
+        ALL: 1,
+        OWNED: 1,
+        SHARED: 0,
+    });
+    assert.deepEqual((await list({ status: "ALL", visibility: "PUBLIC" })).accessCounts, {
+        ALL: 0,
+        OWNED: 0,
+        SHARED: 0,
+    });
+    assert.deepEqual((await list({ status: "TRASHED", access: "SHARED" })).accessCounts, {
+        ALL: 1,
+        OWNED: 1,
+        SHARED: 0,
+    });
     assert.equal((await list({ status: "TRASHED", access: "SHARED" })).pagination.total, 0);
-    for (const access of ["owned", "INVALID", null, ["ALL"]]) assert.equal((await request("/getall", { access })).status, 400);
+    for (const access of ["owned", "INVALID", null, ["ALL"]])
+        assert.equal((await request("/getall", { access })).status, 400);
     assert.equal((await request("/getall?access=ALL&access=OWNED")).status, 400);
 });
 

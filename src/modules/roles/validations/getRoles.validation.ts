@@ -7,7 +7,8 @@ import { RoleScope, RoleType } from "../constants/role.enums.js";
 export const getRolesValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
         const source = (req.method === "POST" ? req.body : req.query) ?? {};
-        const { workspaceId, page, limit, type, scope, isActive, isSystem, sortOrder, search, sortBy } = source;
+        const { workspaceId, page, limit, type, scope, isActive, isSystem, sortOrder, search, sortBy } =
+            source;
 
         if (workspaceId !== undefined) {
             if (typeof workspaceId !== "string" || !Types.ObjectId.isValid(workspaceId.trim())) {

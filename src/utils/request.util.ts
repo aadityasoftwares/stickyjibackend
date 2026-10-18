@@ -11,4 +11,4 @@ export class RequestUtil {
     static getUserId(req: Request): string {
         return (req.user?.id as string) || "";
     }
-}
+}

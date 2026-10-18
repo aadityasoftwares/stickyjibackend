@@ -10,21 +10,28 @@ export const getStickyNoteColumnsValidation = (req: Request, _res: Response, nex
         const workspaceFolderId = source.workspaceFolderId ?? req.query.workspaceFolderId;
 
         if (typeof workspaceId !== "string" || !StickyNoteColumnValidation.isValidObjectId(workspaceId)) {
-            return next(new AppError(
-                workspaceId === undefined
-                    ? StickyNoteColumnMessages.WORKSPACE_ID_REQUIRED
-                    : StickyNoteColumnMessages.INVALID_WORKSPACE_ID,
-                400,
-            ));
+            return next(
+                new AppError(
+                    workspaceId === undefined
+                        ? StickyNoteColumnMessages.WORKSPACE_ID_REQUIRED
+                        : StickyNoteColumnMessages.INVALID_WORKSPACE_ID,
+                    400,
+                ),
+            );
         }
 
-        if (typeof workspaceFolderId !== "string" || !StickyNoteColumnValidation.isValidObjectId(workspaceFolderId)) {
-            return next(new AppError(
-                workspaceFolderId === undefined
-                    ? StickyNoteColumnMessages.WORKSPACE_FOLDER_ID_REQUIRED
-                    : StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
-                400,
-            ));
+        if (
+            typeof workspaceFolderId !== "string" ||
+            !StickyNoteColumnValidation.isValidObjectId(workspaceFolderId)
+        ) {
+            return next(
+                new AppError(
+                    workspaceFolderId === undefined
+                        ? StickyNoteColumnMessages.WORKSPACE_FOLDER_ID_REQUIRED
+                        : StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
+                    400,
+                ),
+            );
         }
 
         next();

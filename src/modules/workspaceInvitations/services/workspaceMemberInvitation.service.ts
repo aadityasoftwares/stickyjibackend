@@ -136,7 +136,9 @@ export class WorkspaceMemberInvitationService {
             this.invitationRepository.expirePendingByWorkspaceAndEmails(workspaceId, emails, now),
         ]);
 
-        const membershipByUserId = new Map(memberships.map((membership) => [membership.userId.toString(), membership]));
+        const membershipByUserId = new Map(
+            memberships.map((membership) => [membership.userId.toString(), membership]),
+        );
 
         const skipped: IWorkspaceMemberInvitationSkipped[] = [];
 
@@ -215,18 +217,29 @@ export class WorkspaceMemberInvitationService {
                 permissionAuthorizationService.assertCanAssignRole(auth, role);
             } catch (error) {
                 if (!(error instanceof AppError)) throw error;
-                this.addSkipOrThrow(skipped, isBatchRequest, item.email, "ROLE_NOT_ALLOWED", error.message, 403);
+                this.addSkipOrThrow(
+                    skipped,
+                    isBatchRequest,
+                    item.email,
+                    "ROLE_NOT_ALLOWED",
+                    error.message,
+                    403,
+                );
                 continue;
             }
             const id = new Types.ObjectId();
 
-            const rawToken = crypto.randomBytes(WORKSPACE_MEMBER_INVITATION_CONSTANTS.TOKEN.RAW_BYTES).toString("hex");
+            const rawToken = crypto
+                .randomBytes(WORKSPACE_MEMBER_INVITATION_CONSTANTS.TOKEN.RAW_BYTES)
+                .toString("hex");
 
             const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
 
             const expiresAt = new Date(now);
 
-            expiresAt.setUTCDate(expiresAt.getUTCDate() + WORKSPACE_MEMBER_INVITATION_CONSTANTS.DEFAULT_EXPIRY_DAYS);
+            expiresAt.setUTCDate(
+                expiresAt.getUTCDate() + WORKSPACE_MEMBER_INVITATION_CONSTANTS.DEFAULT_EXPIRY_DAYS,
+            );
 
             const userId = user?._id ?? null;
 
@@ -421,14 +434,18 @@ export class WorkspaceMemberInvitationService {
                 throw new AppError(WorkspaceMemberInvitationMessages.CANNOT_INVITE_OWNER, 409);
             }
 
-            const existingMember = await this.invitationRepository.findMembership(workspaceId, existingUser._id);
+            const existingMember = await this.invitationRepository.findMembership(
+                workspaceId,
+                existingUser._id,
+            );
 
             if (existingMember?.status === WorkspaceMemberStatus.ACTIVE) {
                 throw new AppError(WorkspaceMemberInvitationMessages.CANNOT_INVITE_EXISTING_MEMBER, 409);
             }
         }
 
-        const inviterFallback = this.extractEmail(invitation.invitedBy).split("@")[0]?.trim() || "A workspace member";
+        const inviterFallback =
+            this.extractEmail(invitation.invitedBy).split("@")[0]?.trim() || "A workspace member";
 
         return {
             invitationId: invitation._id.toString(),
@@ -497,7 +514,9 @@ export class WorkspaceMemberInvitationService {
 
         const normalizedUserEmail = WorkspaceMemberInvitationValidation.normalizeEmail(user.email);
 
-        const normalizedInvitationEmail = WorkspaceMemberInvitationValidation.normalizeEmail(invitation.email);
+        const normalizedInvitationEmail = WorkspaceMemberInvitationValidation.normalizeEmail(
+            invitation.email,
+        );
 
         if (normalizedUserEmail !== normalizedInvitationEmail) {
             throw new AppError(WorkspaceMemberInvitationMessages.INVITATION_EMAIL_MISMATCH, 403);
@@ -576,7 +595,11 @@ export class WorkspaceMemberInvitationService {
                     module: AppModule.WORKSPACE_MEMBER,
                     resourceId: member._id,
                     resourceName: "Workspace Member",
-                    metadata: { workspaceId, invitationId: invitation._id.toString(), memberId: member._id.toString() },
+                    metadata: {
+                        workspaceId,
+                        invitationId: invitation._id.toString(),
+                        memberId: member._id.toString(),
+                    },
                     changes: [
                         {
                             field: "status",
@@ -608,7 +631,8 @@ export class WorkspaceMemberInvitationService {
         target?: Awaited<ReturnType<WorkspaceMemberInvitationRepository["findById"]>>,
     ) {
         this.assertId(id);
-        const invitation = target?._id.toString() === id ? target : await this.invitationRepository.findById(id);
+        const invitation =
+            target?._id.toString() === id ? target : await this.invitationRepository.findById(id);
 
         if (!invitation) {
             throw new AppError(WorkspaceMemberInvitationMessages.NOT_FOUND, 404);
@@ -633,7 +657,8 @@ export class WorkspaceMemberInvitationService {
             await this.authorizeInvitation(parsed.workspaceId, userId, PermissionAction.READ, authorization);
             return this.invitationRepository.findAll(parsed);
         }
-        if (!Types.ObjectId.isValid(userId)) throw new AppError(WorkspaceMemberInvitationMessages.INVALID_USER_ID, 401);
+        if (!Types.ObjectId.isValid(userId))
+            throw new AppError(WorkspaceMemberInvitationMessages.INVALID_USER_ID, 401);
         const workspaceIds = await this.invitationRepository.findReadableWorkspaceIds(userId);
         return this.invitationRepository.findAll(parsed, workspaceIds);
     }
@@ -836,7 +861,8 @@ export class WorkspaceMemberInvitationService {
     ): asserts workspace is T {
         if (!workspace) throw new AppError(WorkspaceMemberInvitationMessages.WORKSPACE_NOT_FOUND, 404);
         permissionAuthorizationService.assertWorkspaceState(workspace.status);
-        if (workspace.isPersonal) throw new AppError(WorkspaceMemberInvitationMessages.PERSONAL_WORKSPACE, 400);
+        if (workspace.isPersonal)
+            throw new AppError(WorkspaceMemberInvitationMessages.PERSONAL_WORKSPACE, 400);
     }
 
     private async authorizeInvitation(
@@ -845,7 +871,8 @@ export class WorkspaceMemberInvitationService {
         action: PermissionAction,
         authorization?: IWorkspaceAuthorizationContext,
     ) {
-        if (!Types.ObjectId.isValid(userId)) throw new AppError(WorkspaceMemberInvitationMessages.INVALID_USER_ID, 401);
+        if (!Types.ObjectId.isValid(userId))
+            throw new AppError(WorkspaceMemberInvitationMessages.INVALID_USER_ID, 401);
         if (!Types.ObjectId.isValid(workspaceId))
             throw new AppError(WorkspaceMemberInvitationMessages.INVALID_WORKSPACE_ID, 400);
         if (authorization && (authorization.userId !== userId || authorization.workspaceId !== workspaceId)) {
@@ -940,7 +967,11 @@ export class WorkspaceMemberInvitationService {
         },
         workspaceId: string,
     ): boolean {
-        if (!role.isActive || role.scope !== RoleScope.WORKSPACE || role.code === SYSTEM_ROLE_CODES.WORKSPACE_OWNER) {
+        if (
+            !role.isActive ||
+            role.scope !== RoleScope.WORKSPACE ||
+            role.code === SYSTEM_ROLE_CODES.WORKSPACE_OWNER
+        ) {
             return false;
         }
 

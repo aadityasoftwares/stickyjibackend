@@ -58,9 +58,13 @@ export class RazorpayProvider implements IBillingProvider {
             const data = await response.json().catch(() => null);
 
             if (!response.ok) {
-                const message = (data && typeof data === "object" && "error" in data && typeof (data as any).error?.description === "string")
-                    ? (data as any).error.description
-                    : `Razorpay API call failed with status ${response.status}`;
+                const message =
+                    data &&
+                    typeof data === "object" &&
+                    "error" in data &&
+                    typeof (data as any).error?.description === "string"
+                        ? (data as any).error.description
+                        : `Razorpay API call failed with status ${response.status}`;
                 throw new AppError(message, response.status >= 500 ? 502 : 400, "RAZORPAY_API_ERROR");
             }
 

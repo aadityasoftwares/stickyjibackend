@@ -5,9 +5,7 @@ import { SubscriptionEntitlementService } from "../services/subscriptionentitlem
 import { SubscriptionEntitlementMessages } from "../constants/subscriptionentitlement.messages.js";
 
 export class SubscriptionEntitlementController {
-    constructor(
-        private readonly service = new SubscriptionEntitlementService(),
-    ) {}
+    constructor(private readonly service = new SubscriptionEntitlementService()) {}
 
     getMyEntitlements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
@@ -39,7 +37,11 @@ export class SubscriptionEntitlementController {
         }
     };
 
-    getWorkspaceFolderEntitlements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    getWorkspaceFolderEntitlements = async (
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<void> => {
         try {
             const userId = RequestUtil.getUserId(req);
             const workspaceId = RequestUtil.getParam(req.params.workspaceId);

@@ -3,11 +3,7 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { UserPreferenceMessages } from "../constants/userPreference.messages.js";
 import { UserPreferenceValidation } from "./userPreference.validation.js";
 
-export const resetUserPreferenceValidation = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const resetUserPreferenceValidation = (req: Request, res: Response, next: NextFunction) => {
     try {
         const { key } = req.body ?? {};
 

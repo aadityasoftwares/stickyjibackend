@@ -1,7 +1,4 @@
-import {
-    MediaType,
-    MediaVisibility,
-} from "./media.enums.js";
+import { MediaType, MediaVisibility } from "./media.enums.js";
 
 export const MEDIA_CONSTANTS = {
     UPLOAD_URL_EXPIRES_IN_SECONDS: 15 * 60,
@@ -26,26 +23,11 @@ export const MEDIA_CONSTANTS = {
     },
 
     ALLOWED_MIME_TYPES: {
-        [MediaType.IMAGE]: [
-            "image/jpeg",
-            "image/png",
-            "image/webp",
-            "image/gif",
-            "image/svg+xml",
-        ],
+        [MediaType.IMAGE]: ["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"],
 
-        [MediaType.VIDEO]: [
-            "video/mp4",
-            "video/webm",
-            "video/quicktime",
-        ],
+        [MediaType.VIDEO]: ["video/mp4", "video/webm", "video/quicktime"],
 
-        [MediaType.AUDIO]: [
-            "audio/mpeg",
-            "audio/wav",
-            "audio/ogg",
-            "audio/webm",
-        ],
+        [MediaType.AUDIO]: ["audio/mpeg", "audio/wav", "audio/ogg", "audio/webm"],
 
         [MediaType.DOCUMENT]: [
             "application/pdf",

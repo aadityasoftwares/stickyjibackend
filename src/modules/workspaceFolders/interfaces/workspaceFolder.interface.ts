@@ -1,12 +1,7 @@
 import type { Document, Types } from "mongoose";
 import type { WorkspaceFolderStatus } from "../constants/workspaceFolder.enums.js";
 
-export type WorkspaceFolderSortField =
-    | "position"
-    | "name"
-    | "slug"
-    | "createdAt"
-    | "updatedAt";
+export type WorkspaceFolderSortField = "position" | "name" | "slug" | "createdAt" | "updatedAt";
 
 export interface IWorkspaceFolder {
     workspaceId: Types.ObjectId;

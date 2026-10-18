@@ -8,10 +8,7 @@ export const WorkspaceMemberValidation = {
     },
 
     isValidStatus(value: unknown): value is WorkspaceMemberStatus {
-        return (
-            typeof value === "string" &&
-            this.statuses.includes(value as WorkspaceMemberStatus)
-        );
+        return typeof value === "string" && this.statuses.includes(value as WorkspaceMemberStatus);
     },
 
     isActiveStatus(value: unknown): boolean {

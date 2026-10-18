@@ -37,10 +37,12 @@ const WorkspaceRoleSchema: Schema<IWorkspaceRoleDocument> = new Schema(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 WorkspaceRoleSchema.index({ key: 1 }, { unique: true });
 
-export const WorkspaceRoleModel: Model<IWorkspaceRoleDocument> =
-    mongoose.model<IWorkspaceRoleDocument>("WorkspaceRole", WorkspaceRoleSchema);
+export const WorkspaceRoleModel: Model<IWorkspaceRoleDocument> = mongoose.model<IWorkspaceRoleDocument>(
+    "WorkspaceRole",
+    WorkspaceRoleSchema,
+);

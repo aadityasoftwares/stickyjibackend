@@ -13,10 +13,7 @@ import type {
 } from "../interfaces/subscriptionentitlement.interface.js";
 
 export class SubscriptionEntitlementRepository {
-    async findPlanLimits(
-        planId: string | Types.ObjectId,
-        session?: ClientSession,
-    ): Promise<PlanLimitsMap> {
+    async findPlanLimits(planId: string | Types.ObjectId, session?: ClientSession): Promise<PlanLimitsMap> {
         const query = PlanFeatureModel.find({
             planId: new Types.ObjectId(String(planId)),
         }).populate("featureId");
@@ -178,10 +175,7 @@ export class SubscriptionEntitlementRepository {
         return query.exec();
     }
 
-    async expireStaleReservations(
-        now: Date = new Date(),
-        session?: ClientSession,
-    ): Promise<number> {
+    async expireStaleReservations(now: Date = new Date(), session?: ClientSession): Promise<number> {
         const result = await SubscriptionReservationModel.updateMany(
             {
                 status: ReservationStatus.PENDING,

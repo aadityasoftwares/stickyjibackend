@@ -126,12 +126,20 @@ export class UserWorkspaceProvisioningService {
             try {
                 workspace = await this.workspaceRepository.findByOwnerAndPersonal(userId, true);
             } catch (lookupError) {
-                this.logProvisioningError(userId, WorkspaceMessages.PROVISIONING.WORKSPACE_VERIFY_FAILED, lookupError);
+                this.logProvisioningError(
+                    userId,
+                    WorkspaceMessages.PROVISIONING.WORKSPACE_VERIFY_FAILED,
+                    lookupError,
+                );
                 return null;
             }
 
             if (workspace) {
-                this.logProvisioningError(userId, WorkspaceMessages.PROVISIONING.WORKSPACE_POST_CREATE_FAILED, error);
+                this.logProvisioningError(
+                    userId,
+                    WorkspaceMessages.PROVISIONING.WORKSPACE_POST_CREATE_FAILED,
+                    error,
+                );
                 return workspace;
             }
 
@@ -184,15 +192,27 @@ export class UserWorkspaceProvisioningService {
                 return defaultFolder;
             }
 
-            this.logProvisioningError(userId, WorkspaceMessages.PROVISIONING.DEFAULT_FOLDER_CREATE_FAILED, error);
+            this.logProvisioningError(
+                userId,
+                WorkspaceMessages.PROVISIONING.DEFAULT_FOLDER_CREATE_FAILED,
+                error,
+            );
 
             return null;
         }
     }
 
-    private async ensureDefaultStickyNoteColumns(workspaceId: string, workspaceFolderId: string, userId: string) {
+    private async ensureDefaultStickyNoteColumns(
+        workspaceId: string,
+        workspaceFolderId: string,
+        userId: string,
+    ) {
         try {
-            return await this.stickyNoteColumnService.createDefaultColumns(workspaceId, workspaceFolderId, userId);
+            return await this.stickyNoteColumnService.createDefaultColumns(
+                workspaceId,
+                workspaceFolderId,
+                userId,
+            );
         } catch (error) {
             this.logProvisioningError(userId, "Failed to provision default sticky note columns.", error);
             return null;

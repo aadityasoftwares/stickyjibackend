@@ -9,19 +9,35 @@ import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
 import { AuditLogAction, AuditLogActorType } from "../../auditlog/constants/auditLog.enums.js";
 import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
 import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
-import { PermissionAccess, PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
+import {
+    PermissionAccess,
+    PermissionAction,
+    PermissionModule,
+} from "../../permissions/constants/permission.enums.js";
 import { UserSubscriptionRepository } from "../repositories/usersubscription.repository.js";
 import { UserSubscriptionMessages } from "../constants/usersubscription.messages.js";
 import { USER_SUBSCRIPTION_CONSTANTS } from "../constants/usersubscription.constants.js";
-import { SubscriptionAccessState, SubscriptionChangeStatus, UserSubscriptionStatus } from "../constants/usersubscription.enums.js";
+import {
+    SubscriptionAccessState,
+    SubscriptionChangeStatus,
+    UserSubscriptionStatus,
+} from "../constants/usersubscription.enums.js";
 import { UserSubscriptionValidation } from "../validations/usersubscription.validation.js";
 import {
-    adminSubscriptionsSchema, cancelSubscriptionSchema, changeSubscriptionPlanSchema,
-    reconcileSubscriptionsSchema, subscriptionObjectIdSchema, userSubscriptionsSchema,
+    adminSubscriptionsSchema,
+    cancelSubscriptionSchema,
+    changeSubscriptionPlanSchema,
+    reconcileSubscriptionsSchema,
+    subscriptionObjectIdSchema,
+    userSubscriptionsSchema,
 } from "../validations/usersubscription.schema.js";
 import type {
-    IUserSubscription, ISubscriptionAuditEvent, ISubscriptionReconciliationResult,
-    UserSubscriptionRecord, UserSubscriptionUpdate, IVerifiedBillingEvent,
+    IUserSubscription,
+    ISubscriptionAuditEvent,
+    ISubscriptionReconciliationResult,
+    UserSubscriptionRecord,
+    UserSubscriptionUpdate,
+    IVerifiedBillingEvent,
 } from "../interfaces/usersubscription.interface.js";
 
 export class UserSubscriptionService {
@@ -60,7 +76,15 @@ export class UserSubscriptionService {
             isActive: true,
             revision: 0,
         };
-        const event = this.auditEvent(userId, AuditLogAction.CREATE, UserSubscriptionMessages.FREE_READY, null, data, now, context);
+        const event = this.auditEvent(
+            userId,
+            AuditLogAction.CREATE,
+            UserSubscriptionMessages.FREE_READY,
+            null,
+            data,
+            now,
+            context,
+        );
         try {
             const subscription = await this.subscriptionRepository.create({ ...data, auditOutbox: [event] });
             await this.deliverAudit(subscription._id, [event]);
@@ -83,14 +107,20 @@ export class UserSubscriptionService {
             ? await this.planRepository.findSubscriptionPlan(current.plan.toString())
             : null;
         const nonExpiringFree = selectedPlan?.code === PlanCode.FREE && selectedPlan.type === PlanType.FREE;
-        const valid = current && selectedPlan && this.hasValidPeriod(current, now) &&
+        const valid =
+            current &&
+            selectedPlan &&
+            this.hasValidPeriod(current, now) &&
             (nonExpiringFree || Boolean(current.currentPeriodEnd ?? current.endDate));
         const effectivePlan = valid ? selectedPlan : await this.getFreePlan();
         return {
             subscription: current ? this.toResponse(current) : null,
             effectivePlan,
-            accessState: valid ? SubscriptionAccessState.CURRENT
-                : current ? SubscriptionAccessState.AWAITING_RECONCILIATION : SubscriptionAccessState.FREE_FALLBACK,
+            accessState: valid
+                ? SubscriptionAccessState.CURRENT
+                : current
+                  ? SubscriptionAccessState.AWAITING_RECONCILIATION
+                  : SubscriptionAccessState.FREE_FALLBACK,
         };
     }
 
@@ -117,7 +147,7 @@ export class UserSubscriptionService {
         await this.assertAccount(actorId);
         const filters = this.parse(userSubscriptionsSchema, input);
         const result = await this.subscriptionRepository.list(filters, actorId);
-        return { ...result, data: result.data.map(row => this.toResponse(row)) };
+        return { ...result, data: result.data.map((row) => this.toResponse(row)) };
     }
 
     async getSubscriptionHistory(actorId: string, input: unknown = {}) {
@@ -128,7 +158,7 @@ export class UserSubscriptionService {
         await this.assertAdmin(actorId, PermissionAction.READ);
         const filters = this.parse(adminSubscriptionsSchema, input);
         const result = await this.subscriptionRepository.list(filters);
-        return { ...result, data: result.data.map(row => this.toResponse(row)) };
+        return { ...result, data: result.data.map((row) => this.toResponse(row)) };
     }
 
     async getAdminSubscriptionById(id: string, actorId: string) {
@@ -143,9 +173,14 @@ export class UserSubscriptionService {
         await this.assertAccount(actorId, true);
         const data = this.parse(changeSubscriptionPlanSchema, input);
         const selectedPlan = await this.planRepository.findSubscriptionPlan(data.plan);
-        if (!selectedPlan || !selectedPlan.isActive || selectedPlan.visibility !== PlanVisibility.PUBLIC ||
+        if (
+            !selectedPlan ||
+            !selectedPlan.isActive ||
+            selectedPlan.visibility !== PlanVisibility.PUBLIC ||
             [PlanCode.TEAM, PlanCode.ENTERPRISE].includes(selectedPlan.code) ||
-            selectedPlan.type === PlanType.CUSTOM || selectedPlan.pricingModel !== PlanPricingModel.FIXED) {
+            selectedPlan.type === PlanType.CUSTOM ||
+            selectedPlan.pricingModel !== PlanPricingModel.FIXED
+        ) {
             throw new AppError(UserSubscriptionMessages.PLAN_UNAVAILABLE, 422);
         }
         const isFree = selectedPlan.code === PlanCode.FREE && selectedPlan.type === PlanType.FREE;
@@ -154,12 +189,18 @@ export class UserSubscriptionService {
         }
         let priceId: Types.ObjectId | null = null;
         if (isFree) {
-            if (data.planPriceId || data.billingInterval) throw new AppError(UserSubscriptionMessages.FREE_PRICE, 422);
+            if (data.planPriceId || data.billingInterval)
+                throw new AppError(UserSubscriptionMessages.FREE_PRICE, 422);
         } else {
-            if (!data.planPriceId || !data.billingInterval) throw new AppError(UserSubscriptionMessages.PRICE_REQUIRED, 422);
+            if (!data.planPriceId || !data.billingInterval)
+                throw new AppError(UserSubscriptionMessages.PRICE_REQUIRED, 422);
             const price = await this.planPriceRepository.findById(data.planPriceId);
-            if (!price || !price.isActive || price.planId.toString() !== data.plan ||
-                price.billingInterval !== data.billingInterval) {
+            if (
+                !price ||
+                !price.isActive ||
+                price.planId.toString() !== data.plan ||
+                price.billingInterval !== data.billingInterval
+            ) {
                 throw new AppError(UserSubscriptionMessages.PRICE_MISMATCH, 422);
             }
             priceId = new Types.ObjectId(price._id.toString());
@@ -172,26 +213,33 @@ export class UserSubscriptionService {
         }
         if (!current) throw new AppError(UserSubscriptionMessages.CONFLICT, 409);
         this.assertMutablePeriod(current);
-        const sameSelection = current.plan.toString() === data.plan &&
+        const sameSelection =
+            current.plan.toString() === data.plan &&
             (current.planPriceId?.toString() ?? null) === (priceId?.toString() ?? null);
         if (sameSelection && !current.pendingChange) return this.toResponse(current);
-        if (current.pendingChange?.planId.toString() === data.plan &&
-            (current.pendingChange.planPriceId?.toString() ?? null) === (priceId?.toString() ?? null)) {
+        if (
+            current.pendingChange?.planId.toString() === data.plan &&
+            (current.pendingChange.planPriceId?.toString() ?? null) === (priceId?.toString() ?? null)
+        ) {
             return this.toResponse(current);
         }
         if (current.cancelAtPeriodEnd) throw new AppError(UserSubscriptionMessages.CONFLICT, 409);
 
         const now = new Date();
         const changes: UserSubscriptionUpdate = {
-            pendingChange: sameSelection ? null : {
-                requestId: new Types.ObjectId(),
-                planId: selectedPlan._id,
-                planPriceId: priceId,
-                billingInterval: data.billingInterval ?? null,
-                status: isFree ? SubscriptionChangeStatus.SCHEDULED : SubscriptionChangeStatus.PENDING_PAYMENT,
-                requestedAt: now,
-                effectiveAt: isFree ? current.currentPeriodEnd ?? current.endDate : null,
-            },
+            pendingChange: sameSelection
+                ? null
+                : {
+                      requestId: new Types.ObjectId(),
+                      planId: selectedPlan._id,
+                      planPriceId: priceId,
+                      billingInterval: data.billingInterval ?? null,
+                      status: isFree
+                          ? SubscriptionChangeStatus.SCHEDULED
+                          : SubscriptionChangeStatus.PENDING_PAYMENT,
+                      requestedAt: now,
+                      effectiveAt: isFree ? (current.currentPeriodEnd ?? current.endDate) : null,
+                  },
         };
         if (isFree && !sameSelection) {
             const end = current.currentPeriodEnd ?? current.endDate;
@@ -202,7 +250,14 @@ export class UserSubscriptionService {
             changes.autoRenewBeforeCancellation = current.autoRenew;
             changes.autoRenew = false;
         }
-        return this.commit(current, changes, actorId, AuditLogAction.UPDATE, UserSubscriptionMessages.CHANGE_REQUESTED, context);
+        return this.commit(
+            current,
+            changes,
+            actorId,
+            AuditLogAction.UPDATE,
+            UserSubscriptionMessages.CHANGE_REQUESTED,
+            context,
+        );
     }
 
     async requestCancellation(actorId: string, input: unknown = {}, context?: IAuditLogContext) {
@@ -216,17 +271,30 @@ export class UserSubscriptionService {
         if (!end) {
             // Free access remains; only an incomplete paid-plan request is abandoned.
             if (!current.pendingChange) return this.toResponse(current);
-            return this.commit(current, { pendingChange: null }, actorId, AuditLogAction.UPDATE,
-                reason ?? UserSubscriptionMessages.CANCELLATION_REQUESTED, context);
+            return this.commit(
+                current,
+                { pendingChange: null },
+                actorId,
+                AuditLogAction.UPDATE,
+                reason ?? UserSubscriptionMessages.CANCELLATION_REQUESTED,
+                context,
+            );
         }
-        return this.commit(current, {
-            cancelAtPeriodEnd: true,
-            cancellationEffectiveAt: end,
-            cancellationReason: reason ?? null,
-            autoRenewBeforeCancellation: current.autoRenew,
-            autoRenew: false,
-            pendingChange: null,
-        }, actorId, AuditLogAction.UPDATE, reason ?? UserSubscriptionMessages.CANCELLATION_REQUESTED, context);
+        return this.commit(
+            current,
+            {
+                cancelAtPeriodEnd: true,
+                cancellationEffectiveAt: end,
+                cancellationReason: reason ?? null,
+                autoRenewBeforeCancellation: current.autoRenew,
+                autoRenew: false,
+                pendingChange: null,
+            },
+            actorId,
+            AuditLogAction.UPDATE,
+            reason ?? UserSubscriptionMessages.CANCELLATION_REQUESTED,
+            context,
+        );
     }
 
     async undoScheduledCancellation(actorId: string, context?: IAuditLogContext) {
@@ -237,22 +305,35 @@ export class UserSubscriptionService {
         if (!current.cancellationEffectiveAt || current.cancellationEffectiveAt <= new Date()) {
             throw new AppError(UserSubscriptionMessages.NO_CANCELLATION, 409);
         }
-        return this.commit(current, {
-            cancelAtPeriodEnd: false,
-            cancellationEffectiveAt: null,
-            cancellationReason: null,
-            autoRenew: current.autoRenewBeforeCancellation ?? false,
-            autoRenewBeforeCancellation: null,
-            pendingChange: null,
-        }, actorId, AuditLogAction.UPDATE, UserSubscriptionMessages.CANCELLATION_UNDONE, context);
+        return this.commit(
+            current,
+            {
+                cancelAtPeriodEnd: false,
+                cancellationEffectiveAt: null,
+                cancellationReason: null,
+                autoRenew: current.autoRenewBeforeCancellation ?? false,
+                autoRenewBeforeCancellation: null,
+                pendingChange: null,
+            },
+            actorId,
+            AuditLogAction.UPDATE,
+            UserSubscriptionMessages.CANCELLATION_UNDONE,
+            context,
+        );
     }
 
     async reconcileAsAdmin(actorId: string, input: unknown, context?: IAuditLogContext) {
         await this.assertAdmin(actorId, PermissionAction.MANAGE);
         const options = this.parse(reconcileSubscriptionsSchema, input);
-        return this.reconcileExpiredSubscriptions(options.batchSize, options.afterId, {
-            ...context, actorId,
-        }, options.reason);
+        return this.reconcileExpiredSubscriptions(
+            options.batchSize,
+            options.afterId,
+            {
+                ...context,
+                actorId,
+            },
+            options.reason,
+        );
     }
 
     // Internal worker entry point. Routes use reconcileAsAdmin; no caller can supply payment evidence here.
@@ -262,14 +343,21 @@ export class UserSubscriptionService {
         context?: IAuditLogContext,
         reason: string = UserSubscriptionMessages.RECONCILED,
     ): Promise<ISubscriptionReconciliationResult> {
-        if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > USER_SUBSCRIPTION_CONSTANTS.MAX_BATCH_SIZE) {
+        if (
+            !Number.isInteger(batchSize) ||
+            batchSize < 1 ||
+            batchSize > USER_SUBSCRIPTION_CONSTANTS.MAX_BATCH_SIZE
+        ) {
             throw new AppError(UserSubscriptionMessages.INVALID_INPUT, 400);
         }
         if (afterId) this.assertId(afterId);
         const now = new Date();
         const rows = await this.subscriptionRepository.findDue(now, batchSize, afterId);
         const result: ISubscriptionReconciliationResult = {
-            scanned: rows.length, updated: 0, conflicts: 0, failed: [],
+            scanned: rows.length,
+            updated: 0,
+            conflicts: 0,
+            failed: [],
             nextCursor: rows.length === batchSize ? rows.at(-1)!._id.toString() : null,
         };
         for (const row of rows) {
@@ -278,16 +366,27 @@ export class UserSubscriptionService {
                 if (!status) continue;
                 UserSubscriptionValidation.assertTransition(row.status, status);
                 const changes: UserSubscriptionUpdate = {
-                    status, isActive: false, autoRenew: false,
-                    autoRenewBeforeCancellation: null, pendingChange: null,
+                    status,
+                    isActive: false,
+                    autoRenew: false,
+                    autoRenewBeforeCancellation: null,
+                    pendingChange: null,
                     ...(status === UserSubscriptionStatus.CANCELED ? { canceledAt: now } : {}),
                 };
                 const event = this.auditEvent(
-                    context?.actorId?.toString() ?? null, AuditLogAction.STATUS_CHANGE, reason,
-                    this.snapshot(row), this.snapshot({ ...row, ...changes }), now, context,
+                    context?.actorId?.toString() ?? null,
+                    AuditLogAction.STATUS_CHANGE,
+                    reason,
+                    this.snapshot(row),
+                    this.snapshot({ ...row, ...changes }),
+                    now,
+                    context,
                 );
                 const updated = await this.subscriptionRepository.compareAndSet(
-                    row, changes, event, this.subscriptionRepository.dueFilter(now),
+                    row,
+                    changes,
+                    event,
+                    this.subscriptionRepository.dueFilter(now),
                 );
                 if (updated) {
                     result.updated++;
@@ -303,8 +402,12 @@ export class UserSubscriptionService {
         return result;
     }
 
-    async flushAuditOutbox(batchSize = USER_SUBSCRIPTION_CONSTANTS.RECONCILE_BATCH_SIZE as number): Promise<void> {
-        const rows = await this.subscriptionRepository.findAuditBacklog(Math.min(Math.max(batchSize, 1), USER_SUBSCRIPTION_CONSTANTS.MAX_BATCH_SIZE));
+    async flushAuditOutbox(
+        batchSize = USER_SUBSCRIPTION_CONSTANTS.RECONCILE_BATCH_SIZE as number,
+    ): Promise<void> {
+        const rows = await this.subscriptionRepository.findAuditBacklog(
+            Math.min(Math.max(batchSize, 1), USER_SUBSCRIPTION_CONSTANTS.MAX_BATCH_SIZE),
+        );
         for (const row of rows) await this.deliverAudit(row._id, row.auditOutbox ?? []);
     }
 
@@ -336,8 +439,14 @@ export class UserSubscriptionService {
             isActive: event.isActive ?? true,
             startDate: event.startDate ?? current?.startDate ?? now,
             currentPeriodStart: event.currentPeriodStart ?? current?.currentPeriodStart ?? now,
-            currentPeriodEnd: event.currentPeriodEnd !== undefined ? event.currentPeriodEnd : current?.currentPeriodEnd ?? null,
-            endDate: event.endDate !== undefined ? event.endDate : (event.currentPeriodEnd ?? current?.endDate ?? null),
+            currentPeriodEnd:
+                event.currentPeriodEnd !== undefined
+                    ? event.currentPeriodEnd
+                    : (current?.currentPeriodEnd ?? null),
+            endDate:
+                event.endDate !== undefined
+                    ? event.endDate
+                    : (event.currentPeriodEnd ?? current?.endDate ?? null),
             autoRenew: event.autoRenew ?? current?.autoRenew ?? true,
             cancelAtPeriodEnd: event.cancelAtPeriodEnd ?? false,
             canceledAt: event.canceledAt ?? (event.status === UserSubscriptionStatus.CANCELED ? now : null),
@@ -360,11 +469,7 @@ export class UserSubscriptionService {
                 now,
                 context,
             );
-            const updated = await this.subscriptionRepository.compareAndSet(
-                current,
-                changes,
-                audit,
-            );
+            const updated = await this.subscriptionRepository.compareAndSet(current, changes, audit);
             if (!updated) {
                 const fresh = await this.subscriptionRepository.findCurrentByUser(userId);
                 if (fresh) {
@@ -377,7 +482,11 @@ export class UserSubscriptionService {
                         now,
                         context,
                     );
-                    const retryUpdated = await this.subscriptionRepository.compareAndSet(fresh, changes, retryAudit);
+                    const retryUpdated = await this.subscriptionRepository.compareAndSet(
+                        fresh,
+                        changes,
+                        retryAudit,
+                    );
                     if (retryUpdated) {
                         await this.deliverAudit(retryUpdated._id, retryUpdated.auditOutbox ?? []);
                         return retryUpdated;
@@ -430,11 +539,14 @@ export class UserSubscriptionService {
     }
 
     private async assertAccount(actorId: string, mutation = false, provisioning = false): Promise<void> {
-        if (!subscriptionObjectIdSchema.safeParse(actorId).success) throw new AppError(UserSubscriptionMessages.UNAUTHORIZED, 401);
+        if (!subscriptionObjectIdSchema.safeParse(actorId).success)
+            throw new AppError(UserSubscriptionMessages.UNAUTHORIZED, 401);
         const account = await this.subscriptionRepository.findAccount(actorId);
         if (!account) throw new AppError(UserSubscriptionMessages.USER_NOT_FOUND, 404);
-        if ((mutation && account.status !== UserStatus.ACTIVE) ||
-            (provisioning && ![UserStatus.ACTIVE, UserStatus.PENDING].includes(account.status))) {
+        if (
+            (mutation && account.status !== UserStatus.ACTIVE) ||
+            (provisioning && ![UserStatus.ACTIVE, UserStatus.PENDING].includes(account.status))
+        ) {
             throw new AppError(UserSubscriptionMessages.INACTIVE_ACCOUNT, 403);
         }
     }
@@ -442,9 +554,15 @@ export class UserSubscriptionService {
     private async assertAdmin(actorId: string, action: PermissionAction): Promise<void> {
         await this.assertAccount(actorId, true);
         const authorization = await permissionAuthorizationService.resolveGlobalAuthorization(actorId);
-        permissionAuthorizationService.assertPermission({
-            permissions: authorization.permissions.filter(permission => permission.access !== PermissionAccess.OWN),
-        }, PermissionModule.USER_SUBSCRIPTION, action);
+        permissionAuthorizationService.assertPermission(
+            {
+                permissions: authorization.permissions.filter(
+                    (permission) => permission.access !== PermissionAccess.OWN,
+                ),
+            },
+            PermissionModule.USER_SUBSCRIPTION,
+            action,
+        );
     }
 
     private async getFreePlan() {
@@ -465,7 +583,8 @@ export class UserSubscriptionService {
             currentPeriodStart: subscription.currentPeriodStart ?? subscription.startDate,
             currentPeriodEnd: subscription.currentPeriodEnd ?? subscription.endDate,
         });
-        if (!this.hasValidPeriod(subscription, new Date())) throw new AppError(UserSubscriptionMessages.PERIOD_ENDED, 409);
+        if (!this.hasValidPeriod(subscription, new Date()))
+            throw new AppError(UserSubscriptionMessages.PERIOD_ENDED, 409);
         if ((subscription.auditOutbox?.length ?? 0) >= USER_SUBSCRIPTION_CONSTANTS.MAX_AUDIT_OUTBOX) {
             throw new AppError(UserSubscriptionMessages.AUDIT_BACKLOG, 503);
         }
@@ -482,12 +601,16 @@ export class UserSubscriptionService {
         } catch {
             return false;
         }
-        return subscription.isActive &&
+        return (
+            subscription.isActive &&
             [UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.PAST_DUE].includes(subscription.status) &&
             subscription.startDate <= now &&
             (!subscription.currentPeriodStart || subscription.currentPeriodStart <= now) &&
             (!end || end > now) &&
-            (!subscription.cancelAtPeriodEnd || !subscription.cancellationEffectiveAt || subscription.cancellationEffectiveAt > now);
+            (!subscription.cancelAtPeriodEnd ||
+                !subscription.cancellationEffectiveAt ||
+                subscription.cancellationEffectiveAt > now)
+        );
     }
 
     private async commit(
@@ -499,8 +622,15 @@ export class UserSubscriptionService {
         context?: IAuditLogContext,
     ) {
         const now = new Date();
-        const event = this.auditEvent(actorId, action, reason, this.snapshot(previous),
-            this.snapshot({ ...previous, ...changes }), now, context);
+        const event = this.auditEvent(
+            actorId,
+            action,
+            reason,
+            this.snapshot(previous),
+            this.snapshot({ ...previous, ...changes }),
+            now,
+            context,
+        );
         const updated = await this.subscriptionRepository.compareAndSet(previous, changes, event, {
             $and: [
                 { $or: [{ currentPeriodEnd: null }, { currentPeriodEnd: { $gt: now } }] },
@@ -514,20 +644,31 @@ export class UserSubscriptionService {
     }
 
     private auditEvent(
-        actorId: string | null, action: AuditLogAction, reason: string,
-        before: Record<string, unknown> | null, after: Record<string, unknown>,
-        occurredAt: Date, context?: IAuditLogContext,
+        actorId: string | null,
+        action: AuditLogAction,
+        reason: string,
+        before: Record<string, unknown> | null,
+        after: Record<string, unknown>,
+        occurredAt: Date,
+        context?: IAuditLogContext,
     ): ISubscriptionAuditEvent {
         return {
             _id: new Types.ObjectId(),
             actorId: actorId ? new Types.ObjectId(actorId) : null,
             actorType: actorId ? AuditLogActorType.USER : AuditLogActorType.SYSTEM,
-            action, reason, before, after, occurredAt,
+            action,
+            reason,
+            before,
+            after,
+            occurredAt,
             requestId: context?.requestId ?? null,
         };
     }
 
-    private async deliverAudit(subscriptionId: Types.ObjectId, events: ISubscriptionAuditEvent[]): Promise<void> {
+    private async deliverAudit(
+        subscriptionId: Types.ObjectId,
+        events: ISubscriptionAuditEvent[],
+    ): Promise<void> {
         for (const event of events) {
             try {
                 await this.auditLogService.log({
@@ -540,7 +681,11 @@ export class UserSubscriptionService {
                     requestId: event.requestId,
                     createdAt: event.occurredAt,
                     changes: [{ field: "subscription", oldValue: event.before, newValue: event.after }],
-                    metadata: { eventId: event._id.toString(), reason: event.reason, occurredAt: event.occurredAt },
+                    metadata: {
+                        eventId: event._id.toString(),
+                        reason: event.reason,
+                        occurredAt: event.occurredAt,
+                    },
                 });
                 await this.subscriptionRepository.acknowledgeAudit(subscriptionId, event._id);
             } catch {
@@ -553,26 +698,41 @@ export class UserSubscriptionService {
 
     private snapshot(subscription: Partial<IUserSubscription>): Record<string, unknown> {
         return {
-            plan: subscription.plan, planPriceId: subscription.planPriceId,
-            status: subscription.status, isActive: subscription.isActive,
-            endDate: subscription.endDate, currentPeriodEnd: subscription.currentPeriodEnd,
-            autoRenew: subscription.autoRenew, cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+            plan: subscription.plan,
+            planPriceId: subscription.planPriceId,
+            status: subscription.status,
+            isActive: subscription.isActive,
+            endDate: subscription.endDate,
+            currentPeriodEnd: subscription.currentPeriodEnd,
+            autoRenew: subscription.autoRenew,
+            cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             cancellationEffectiveAt: subscription.cancellationEffectiveAt,
             pendingChange: subscription.pendingChange,
         };
     }
 
     private toResponse(subscription: UserSubscriptionRecord) {
-        const { auditOutbox, paymentId, paymentProvider, providerSubscriptionId, providerCustomerId,
-            autoRenewBeforeCancellation, ...response } = subscription;
+        const {
+            auditOutbox,
+            paymentId,
+            paymentProvider,
+            providerSubscriptionId,
+            providerCustomerId,
+            autoRenewBeforeCancellation,
+            ...response
+        } = subscription;
         return response;
     }
 
     private assertId(id: string): void {
-        if (!subscriptionObjectIdSchema.safeParse(id).success) throw new AppError(UserSubscriptionMessages.INVALID_ID, 400);
+        if (!subscriptionObjectIdSchema.safeParse(id).success)
+            throw new AppError(UserSubscriptionMessages.INVALID_ID, 400);
     }
 
-    private parse<T>(schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } }, input: unknown): T {
+    private parse<T>(
+        schema: { safeParse: (value: unknown) => { success: true; data: T } | { success: false } },
+        input: unknown,
+    ): T {
         const result = schema.safeParse(input);
         if (!result.success) throw new AppError(UserSubscriptionMessages.INVALID_INPUT, 400);
         return result.data;

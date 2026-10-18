@@ -16,11 +16,11 @@ app.use(helmet());
 app.use(cookieParser());
 app.use(
     cors({
-        origin: 'http://localhost:4200',
-        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true
-    })
+        origin: "http://localhost:4200",
+        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+        credentials: true,
+    }),
 );
 
 /**
@@ -31,11 +31,13 @@ app.use(compression());
 /**
  * Body parsing
  */
-app.use(express.json({
-    verify: (req: any, _res, buf) => {
-        req.rawBody = buf;
-    }
-}));
+app.use(
+    express.json({
+        verify: (req: any, _res, buf) => {
+            req.rawBody = buf;
+        },
+    }),
+);
 app.use(express.urlencoded({ extended: true }));
 
 /**

@@ -52,8 +52,8 @@ export interface IUserFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface IUserDocument extends IUser, Document { }
-export interface IUserDocument extends IUser, Document { }
+export interface IUserDocument extends IUser, Document {}
+export interface IUserDocument extends IUser, Document {}
 
 export interface IUserPaginatedResult {
     data: IUserDocument[];

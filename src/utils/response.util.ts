@@ -14,7 +14,6 @@ export interface PaginationMeta {
 }
 
 export class ResponseUtil {
-
     static success<T>(message: string, data?: T): ApiResponse<T> {
         const response: ApiResponse<T> = {
             success: true,
@@ -104,7 +103,7 @@ export class ResponseUtil {
         data: T[],
         page: number,
         limit: number,
-        total: number
+        total: number,
     ): ApiResponse<T[]> {
         return {
             success: true,

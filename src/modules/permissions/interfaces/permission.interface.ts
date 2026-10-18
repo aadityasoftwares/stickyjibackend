@@ -1,12 +1,6 @@
-import {
-    Document,
-    Types,
-} from "mongoose";
+import { Document, Types } from "mongoose";
 
-import {
-    PermissionAccess,
-    PermissionAction,
-} from "../constants/permission.enums.js";
+import { PermissionAccess, PermissionAction } from "../constants/permission.enums.js";
 
 export interface IPermission {
     name: string;
@@ -100,9 +94,7 @@ export interface IPermissionFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface IPermissionDocument
-    extends IPermission,
-    Document { }
+export interface IPermissionDocument extends IPermission, Document {}
 
 export interface IPermissionResponse {
     id: string;
@@ -121,4 +113,4 @@ export interface IPermissionResponse {
     updatedBy?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
-}
+}

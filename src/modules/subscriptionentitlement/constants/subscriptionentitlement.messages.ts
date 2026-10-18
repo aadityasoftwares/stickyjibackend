@@ -13,9 +13,9 @@ export const SubscriptionEntitlementMessages = {
         `File size exceeds the maximum allowed upload limit of ${limitBytes} bytes on your current plan.`,
     STORAGE_EXCEEDED: (limitBytes: number): string =>
         `Storage capacity exceeded. Your plan allows up to ${limitBytes} bytes.`,
-    USER_LIMIT_EXCEEDED: (limit: number): string =>
-        `User limit of ${limit} reached on your current plan.`,
-    CONFIGURATION_ERROR: "Required subscription plan configuration or resource limits are missing or malformed.",
+    USER_LIMIT_EXCEEDED: (limit: number): string => `User limit of ${limit} reached on your current plan.`,
+    CONFIGURATION_ERROR:
+        "Required subscription plan configuration or resource limits are missing or malformed.",
     SUBSCRIPTION_UNAVAILABLE: "Unable to resolve active subscription for this account.",
     INVALID_RESOURCE: "The requested resource is not a valid subscription quota resource.",
     INVALID_SCOPE: "Invalid billing scope provided.",

@@ -15,25 +15,18 @@ const planFeatureController = new PlanFeatureController();
 planFeatureRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "planId",
-        "featureId",
-        "limitType"
-    ),
+    requireBodyFields("planId", "featureId", "limitType"),
     createPlanFeatureValidation,
-    planFeatureController.createPlanFeature
+    planFeatureController.createPlanFeature,
 );
 
-planFeatureRoutes.get(
-    "/getall",
-    planFeatureController.getPlanFeatures
-);
+planFeatureRoutes.get("/getall", planFeatureController.getPlanFeatures);
 
 planFeatureRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getPlanFeatureValidation,
-    planFeatureController.getPlanFeatureById
+    planFeatureController.getPlanFeatureById,
 );
 
 planFeatureRoutes.get(
@@ -41,7 +34,7 @@ planFeatureRoutes.get(
     requireRouteParam("planId"),
     requireRouteParam("featureId"),
     getPlanFeatureValidation,
-    planFeatureController.getPlanFeatureByPlanAndFeature
+    planFeatureController.getPlanFeatureByPlanAndFeature,
 );
 
 planFeatureRoutes.put(
@@ -49,7 +42,7 @@ planFeatureRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updatePlanFeatureValidation,
-    planFeatureController.updatePlanFeature
+    planFeatureController.updatePlanFeature,
 );
 
 planFeatureRoutes.patch(
@@ -58,14 +51,14 @@ planFeatureRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isEnabled"),
     changePlanFeatureStatusValidation,
-    planFeatureController.changePlanFeatureStatus
+    planFeatureController.changePlanFeatureStatus,
 );
 
 planFeatureRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deletePlanFeatureValidation,
-    planFeatureController.deletePlanFeature
+    planFeatureController.deletePlanFeature,
 );
 
 export default planFeatureRoutes;

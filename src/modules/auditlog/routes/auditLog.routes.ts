@@ -7,17 +7,8 @@ import { requireRouteParam } from "../../../utils/validations/validateParam.vali
 const auditLogRoutes = Router();
 const auditLogController = new AuditLogController();
 
-auditLogRoutes.get(
-    "/getall",
-    getAuditLogsValidation,
-    auditLogController.getAll
-);
+auditLogRoutes.get("/getall", getAuditLogsValidation, auditLogController.getAll);
 
-auditLogRoutes.get(
-    "/get/:id",
-    requireRouteParam("id"),
-    getAuditLogValidation,
-    auditLogController.getById
-);
+auditLogRoutes.get("/get/:id", requireRouteParam("id"), getAuditLogValidation, auditLogController.getById);
 
 export default auditLogRoutes;

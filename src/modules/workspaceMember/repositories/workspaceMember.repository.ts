@@ -80,7 +80,10 @@ export class WorkspaceMemberRepository {
     }
 
     async findRoleById(id: string) {
-        return RoleModel.findById(id).select("_id code scope workspaceId isSystem isActive priority").lean().exec();
+        return RoleModel.findById(id)
+            .select("_id code scope workspaceId isSystem isActive priority")
+            .lean()
+            .exec();
     }
 
     async hardDeleteById(id: string): Promise<void> {
@@ -97,10 +100,7 @@ export class WorkspaceMemberRepository {
     }
 
     async findAuthorizationTarget(id: string) {
-        return WorkspaceMemberModel.findById(id)
-            .select("_id workspaceId userId roleId status")
-            .lean()
-            .exec();
+        return WorkspaceMemberModel.findById(id).select("_id workspaceId userId roleId status").lean().exec();
     }
 
     async findByIdIncludingRemoved(id: string) {
@@ -504,10 +504,20 @@ export class WorkspaceMemberRepository {
         expectedStatus?: WorkspaceMemberStatus,
         expectedRoleId?: IWorkspaceMember["roleId"],
     ) {
-        return this.updateStatus(id, WorkspaceMemberStatus.REMOVED, updatedBy, expectedStatus, expectedRoleId);
+        return this.updateStatus(
+            id,
+            WorkspaceMemberStatus.REMOVED,
+            updatedBy,
+            expectedStatus,
+            expectedRoleId,
+        );
     }
 
-    async restore(id: string, updatedBy?: IWorkspaceMember["updatedBy"], expectedRoleId?: IWorkspaceMember["roleId"]) {
+    async restore(
+        id: string,
+        updatedBy?: IWorkspaceMember["updatedBy"],
+        expectedRoleId?: IWorkspaceMember["roleId"],
+    ) {
         return this.updateStatus(
             id,
             WorkspaceMemberStatus.ACTIVE,
@@ -572,7 +582,9 @@ export class WorkspaceMemberRepository {
             return new Map();
         }
 
-        const ids = workspaceIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+        const ids = workspaceIds
+            .filter((id) => Types.ObjectId.isValid(id))
+            .map((id) => new Types.ObjectId(id));
 
         if (!ids.length) {
             return new Map();

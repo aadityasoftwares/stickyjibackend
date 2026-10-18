@@ -32,4 +32,4 @@ export enum AppModule {
     PLAN_PRICE = "PLAN_PRICE",
     BILLING = "BILLING",
     SUBSCRIPTION_PAYMENT = "SUBSCRIPTION_PAYMENT",
-}
+}

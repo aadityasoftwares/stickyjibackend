@@ -3,12 +3,7 @@
 import { getButtonStyle } from "../config/emailStyles.js";
 import { emailTheme } from "../config/emailTheme.js";
 
-export type EmailButtonVariant =
-    | "primary"
-    | "secondary"
-    | "success"
-    | "error"
-    | "custom";
+export type EmailButtonVariant = "primary" | "secondary" | "success" | "error" | "custom";
 
 export interface EmailButtonProps {
     text: string;
@@ -66,10 +61,7 @@ export const EmailButton = ({
 
     const buttonStyle = getButtonStyle(bgColor, color)
         .replace("padding: 13px 24px;", `padding: ${padding};`)
-        .replace(
-            `border-radius: ${emailTheme.radius.full};`,
-            `border-radius: ${borderRadius};`,
-        );
+        .replace(`border-radius: ${emailTheme.radius.full};`, `border-radius: ${borderRadius};`);
 
     return `
     <table

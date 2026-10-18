@@ -14,8 +14,8 @@ export const USER_WORKSPACE_CONSTANTS = {
 
     DEFAULT_NOTE: {
         TITLE: "My First Note",
-        CONTENT: "Welcome This is your first sticky note. Edit it, move it between columns, or create a new note.",
+        CONTENT:
+            "Welcome This is your first sticky note. Edit it, move it between columns, or create a new note.",
         POSITION: 0,
     },
-
 } as const;

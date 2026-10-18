@@ -41,6 +41,6 @@ export const seedSystemSettings = async (): Promise<void> => {
             `Inserted: ${result.upsertedCount}`,
             `Updated: ${result.modifiedCount}`,
             `Matched: ${result.matchedCount}`,
-        ].join(" ")
+        ].join(" "),
     );
 };

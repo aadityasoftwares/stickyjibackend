@@ -42,7 +42,8 @@ export class UserSubscriptionController {
     getSubscriptionById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.getSubscriptionById(
-                RequestUtil.getParam(req.params.id), RequestUtil.getUserId(req),
+                RequestUtil.getParam(req.params.id),
+                RequestUtil.getUserId(req),
             );
             return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.FETCHED, result));
         } catch (error) {
@@ -52,11 +53,21 @@ export class UserSubscriptionController {
 
     getUserSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const result = await this.subscriptionService.getUserSubscriptions(RequestUtil.getUserId(req), req.body);
-            return res.status(200).json(ResponseUtil.paginated(
-                UserSubscriptionMessages.FETCHED_ALL, result.data,
-                result.pagination.page, result.pagination.limit, result.pagination.total,
-            ));
+            const result = await this.subscriptionService.getUserSubscriptions(
+                RequestUtil.getUserId(req),
+                req.body,
+            );
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        UserSubscriptionMessages.FETCHED_ALL,
+                        result.data,
+                        result.pagination.page,
+                        result.pagination.limit,
+                        result.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
@@ -64,11 +75,21 @@ export class UserSubscriptionController {
 
     getAdminSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const result = await this.subscriptionService.getAdminSubscriptions(RequestUtil.getUserId(req), req.body);
-            return res.status(200).json(ResponseUtil.paginated(
-                UserSubscriptionMessages.FETCHED_ALL, result.data,
-                result.pagination.page, result.pagination.limit, result.pagination.total,
-            ));
+            const result = await this.subscriptionService.getAdminSubscriptions(
+                RequestUtil.getUserId(req),
+                req.body,
+            );
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        UserSubscriptionMessages.FETCHED_ALL,
+                        result.data,
+                        result.pagination.page,
+                        result.pagination.limit,
+                        result.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
@@ -77,7 +98,8 @@ export class UserSubscriptionController {
     getAdminSubscriptionById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.getAdminSubscriptionById(
-                RequestUtil.getParam(req.params.id), RequestUtil.getUserId(req),
+                RequestUtil.getParam(req.params.id),
+                RequestUtil.getUserId(req),
             );
             return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.FETCHED, result));
         } catch (error) {
@@ -88,9 +110,13 @@ export class UserSubscriptionController {
     requestPlanChange = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.requestPlanChange(
-                RequestUtil.getUserId(req), req.body, this.getAuditContext(req),
+                RequestUtil.getUserId(req),
+                req.body,
+                this.getAuditContext(req),
             );
-            return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.CHANGE_REQUESTED, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserSubscriptionMessages.CHANGE_REQUESTED, result));
         } catch (error) {
             next(error);
         }
@@ -99,9 +125,13 @@ export class UserSubscriptionController {
     requestCancellation = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.requestCancellation(
-                RequestUtil.getUserId(req), req.body, this.getAuditContext(req),
+                RequestUtil.getUserId(req),
+                req.body,
+                this.getAuditContext(req),
             );
-            return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.CANCELLATION_REQUESTED, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserSubscriptionMessages.CANCELLATION_REQUESTED, result));
         } catch (error) {
             next(error);
         }
@@ -110,9 +140,12 @@ export class UserSubscriptionController {
     undoScheduledCancellation = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.undoScheduledCancellation(
-                RequestUtil.getUserId(req), this.getAuditContext(req),
+                RequestUtil.getUserId(req),
+                this.getAuditContext(req),
             );
-            return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.CANCELLATION_UNDONE, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserSubscriptionMessages.CANCELLATION_UNDONE, result));
         } catch (error) {
             next(error);
         }
@@ -121,7 +154,9 @@ export class UserSubscriptionController {
     reconcileSubscriptions = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const result = await this.subscriptionService.reconcileAsAdmin(
-                RequestUtil.getUserId(req), req.body, this.getAuditContext(req),
+                RequestUtil.getUserId(req),
+                req.body,
+                this.getAuditContext(req),
             );
             return res.status(200).json(ResponseUtil.success(UserSubscriptionMessages.RECONCILED, result));
         } catch (error) {

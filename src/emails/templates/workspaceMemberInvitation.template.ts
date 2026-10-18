@@ -96,8 +96,8 @@ export const workspaceMemberInvitationEmailTemplate = ({
             </table>
 
             ${EmailCard({
-            variant: "yellow",
-            content: `
+                variant: "yellow",
+                content: `
                     <p
                         style="
                             margin: 0 0 8px;
@@ -134,8 +134,9 @@ export const workspaceMemberInvitationEmailTemplate = ({
                         <strong>${roleName}</strong>.
                     </p>
 
-                    ${message
-                    ? `
+                    ${
+                        message
+                            ? `
                                 <p
                                     style="
                                         ${emailStyles.mutedText}
@@ -145,10 +146,10 @@ export const workspaceMemberInvitationEmailTemplate = ({
                                     "${message}"
                                 </p>
                             `
-                    : ""
-                }
+                            : ""
+                    }
                 `,
-        })}
+            })}
 
             <div
                 style="
@@ -193,10 +194,10 @@ export const workspaceMemberInvitationEmailTemplate = ({
                         </p>
 
                         ${EmailButton({
-            text: "Accept Invitation",
-            href: invitationUrl,
-            variant: "primary",
-        })}
+                            text: "Accept Invitation",
+                            href: invitationUrl,
+                            variant: "primary",
+                        })}
                     </td>
                 </tr>
             </table>
@@ -211,8 +212,8 @@ export const workspaceMemberInvitationEmailTemplate = ({
             </div>
 
             ${EmailCard({
-            variant: "blue",
-            content: `
+                variant: "blue",
+                content: `
                     <p
                         style="
                             margin: 0 0 8px;
@@ -258,7 +259,7 @@ export const workspaceMemberInvitationEmailTemplate = ({
                         ${formattedExpiry}.
                     </p>
                 `,
-        })}
+            })}
 
             <table
                 role="presentation"

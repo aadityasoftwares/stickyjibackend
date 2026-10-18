@@ -1,9 +1,8 @@
 import { CurrencyModel } from "../models/currency.model.js";
-import type { ICurrency, ICurrencyFilter, } from "../interfaces/currency.interface.js";
-import { CurrencyCode, } from "../constants/currency.enums.js";
+import type { ICurrency, ICurrencyFilter } from "../interfaces/currency.interface.js";
+import { CurrencyCode } from "../constants/currency.enums.js";
 
 export class CurrencyRepository {
-
     async create(data: Partial<ICurrency>) {
         return CurrencyModel.create(data);
     }
@@ -18,16 +17,13 @@ export class CurrencyRepository {
         });
     }
 
-
     async findByNumericCode(numericCode: string) {
         return CurrencyModel.findOne({
             numericCode: numericCode.trim(),
         });
     }
 
-
     async findAll(filters: ICurrencyFilter = {}) {
-
         const {
             page = 1,
             limit = 10,
@@ -46,9 +42,7 @@ export class CurrencyRepository {
         const query: any = {};
 
         if (search) {
-
             query.$or = [
-
                 {
                     name: {
                         $regex: search,
@@ -76,10 +70,8 @@ export class CurrencyRepository {
                         $options: "i",
                     },
                 },
-
             ];
         }
-
 
         if (code) {
             query.code = code.toUpperCase().trim();
@@ -111,16 +103,14 @@ export class CurrencyRepository {
 
         const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
+        const [data, total] = await Promise.all([
+            CurrencyModel.find(query)
+                .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 })
+                .skip(skip)
+                .limit(limit),
 
-                CurrencyModel.find(query).sort({ [sortBy]: sortOrder === "asc" ? 1 : -1, })
-                    .skip(skip)
-                    .limit(limit),
-
-                CurrencyModel.countDocuments(query),
-            ]);
-
+            CurrencyModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -128,14 +118,10 @@ export class CurrencyRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(
-                        total / limit
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
-
 
     async existsByCode(code: string): Promise<boolean> {
         const exists = await CurrencyModel.exists({
@@ -144,25 +130,17 @@ export class CurrencyRepository {
         return !!exists;
     }
 
-
     async existsByNumericCode(numericCode: string): Promise<boolean> {
-        const exists = await CurrencyModel.exists({ numericCode: numericCode.trim(), });
+        const exists = await CurrencyModel.exists({ numericCode: numericCode.trim() });
         return !!exists;
     }
 
-
     async updateById(id: string, data: Partial<ICurrency>) {
-
-        return CurrencyModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        return CurrencyModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
-
 
     async deleteById(id: string) {
         return CurrencyModel.findByIdAndDelete(id);

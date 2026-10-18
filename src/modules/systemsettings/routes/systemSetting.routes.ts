@@ -16,39 +16,33 @@ systemSettingRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("key", "value", "valueType", "category", "description"),
     createSystemSettingValidation,
-    systemSettingController.createSystemSetting
+    systemSettingController.createSystemSetting,
 );
 
-systemSettingRoutes.get(
-    "/getall",
-    systemSettingController.getSystemSettings
-);
+systemSettingRoutes.get("/getall", systemSettingController.getSystemSettings);
 
 systemSettingRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getSystemSettingValidation,
-    systemSettingController.getSystemSettingById
+    systemSettingController.getSystemSettingById,
 );
 
 systemSettingRoutes.get(
     "/get/key/:key",
     requireRouteParam("key"),
     getSystemSettingValidation,
-    systemSettingController.getSystemSettingByKey
+    systemSettingController.getSystemSettingByKey,
 );
 
-systemSettingRoutes.get(
-    "/public",
-    systemSettingController.getPublicSystemSettings
-);
+systemSettingRoutes.get("/public", systemSettingController.getPublicSystemSettings);
 
 systemSettingRoutes.put(
     "/update/:id",
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateSystemSettingValidation,
-    systemSettingController.updateSystemSetting
+    systemSettingController.updateSystemSetting,
 );
 
 systemSettingRoutes.patch(
@@ -56,7 +50,7 @@ systemSettingRoutes.patch(
     validateContentType("application/json"),
     requireRouteParam("id"),
     resetSystemSettingValidation,
-    systemSettingController.resetSystemSetting
+    systemSettingController.resetSystemSetting,
 );
 
 export default systemSettingRoutes;

@@ -14,11 +14,9 @@ export const StickyNoteChecklistItemMessages = {
 
     NOT_FOUND: "Sticky note checklist item not found.",
     CHECKLIST_NOT_FOUND: "Sticky note checklist not found.",
-    CHECKLIST_DELETED:
-        "Cannot perform this operation because the checklist has been deleted.",
+    CHECKLIST_DELETED: "Cannot perform this operation because the checklist has been deleted.",
 
-    ALREADY_EXISTS:
-        "A sticky note checklist item with this title already exists.",
+    ALREADY_EXISTS: "A sticky note checklist item with this title already exists.",
 
     INVALID_ID: "Invalid sticky note checklist item ID.",
     INVALID_CHECKLIST_ID: "Invalid sticky note checklist ID.",
@@ -39,22 +37,15 @@ export const StickyNoteChecklistItemMessages = {
     INVALID_USER_ID: "Invalid authenticated user.",
     INVALID_FIELD: "One or more request fields are not supported.",
 
-    UPDATE_REQUIRED:
-        "At least one field is required to update the sticky note checklist item.",
-    CANNOT_UPDATE_CHECKLIST:
-        "Checklist cannot be changed for an existing checklist item.",
+    UPDATE_REQUIRED: "At least one field is required to update the sticky note checklist item.",
+    CANNOT_UPDATE_CHECKLIST: "Checklist cannot be changed for an existing checklist item.",
     CANNOT_UPDATE_CREATED_BY: "Created by cannot be updated.",
     CANNOT_UPDATE_UPDATED_BY: "Updated by cannot be updated.",
-    CANNOT_UPDATE_STATUS:
-        "Checklist item status must be updated through the status endpoint.",
-    CANNOT_SET_STATUS:
-        "Checklist item status cannot be set during creation.",
-    CANNOT_UPDATE_COMPLETION:
-        "Checklist item completion must be updated through the completion endpoint.",
-    CANNOT_SET_COMPLETION:
-        "Checklist item completion cannot be set during creation.",
-    CANNOT_DELETE_THROUGH_STATUS:
-        "Use the delete endpoint to delete a sticky note checklist item.",
+    CANNOT_UPDATE_STATUS: "Checklist item status must be updated through the status endpoint.",
+    CANNOT_SET_STATUS: "Checklist item status cannot be set during creation.",
+    CANNOT_UPDATE_COMPLETION: "Checklist item completion must be updated through the completion endpoint.",
+    CANNOT_SET_COMPLETION: "Checklist item completion cannot be set during creation.",
+    CANNOT_DELETE_THROUGH_STATUS: "Use the delete endpoint to delete a sticky note checklist item.",
 
     ALREADY_COMPLETED: "Sticky note checklist item is already completed.",
     ALREADY_INCOMPLETE: "Sticky note checklist item is already incomplete.",
@@ -62,10 +53,8 @@ export const StickyNoteChecklistItemMessages = {
     ALREADY_ACTIVE: "Sticky note checklist item is already active.",
     ALREADY_DELETED: "Sticky note checklist item is already deleted.",
     CANNOT_RESTORE_ACTIVE: "Sticky note checklist item is already active.",
-    RESTORE_CONFLICT:
-        "A checklist item with the same title already exists in this checklist.",
+    RESTORE_CONFLICT: "A checklist item with the same title already exists in this checklist.",
 
     NO_ITEMS_FOUND: "No sticky note checklist items found.",
-    MAX_ITEMS_REACHED:
-        "The maximum number of items for this checklist has been reached.",
+    MAX_ITEMS_REACHED: "The maximum number of items for this checklist has been reached.",
 } as const;

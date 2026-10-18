@@ -13,9 +13,12 @@ import { updateWorkspaceFolderStatusValidation } from "../validations/updateWork
 
 const workspaceFolderRoutes = Router();
 const workspaceFolderController = new WorkspaceFolderController();
-const folderPermission = (action: PermissionAction, resource?: "folder") => requirePermission({
-    module: PermissionModule.FOLDERS, action, resource,
-});
+const folderPermission = (action: PermissionAction, resource?: "folder") =>
+    requirePermission({
+        module: PermissionModule.FOLDERS,
+        action,
+        resource,
+    });
 
 workspaceFolderRoutes.use(authMiddleware);
 
@@ -86,11 +89,23 @@ workspaceFolderRoutes.put(
     workspaceFolderController.restoreWorkspaceFolder,
 );
 
-workspaceFolderRoutes.get(["/", "/getall"], getAllWorkspaceFoldersValidation,
-    folderPermission(PermissionAction.READ), workspaceFolderController.getWorkspaceFolders);
-workspaceFolderRoutes.put("/trash/:id", getWorkspaceFolderValidation,
-    folderPermission(PermissionAction.DELETE, "folder"), workspaceFolderController.deleteWorkspaceFolder);
-workspaceFolderRoutes.delete("/permanent/:id", getWorkspaceFolderValidation,
-    folderPermission(PermissionAction.DELETE, "folder"), workspaceFolderController.permanentlyDeleteWorkspaceFolder);
+workspaceFolderRoutes.get(
+    ["/", "/getall"],
+    getAllWorkspaceFoldersValidation,
+    folderPermission(PermissionAction.READ),
+    workspaceFolderController.getWorkspaceFolders,
+);
+workspaceFolderRoutes.put(
+    "/trash/:id",
+    getWorkspaceFolderValidation,
+    folderPermission(PermissionAction.DELETE, "folder"),
+    workspaceFolderController.deleteWorkspaceFolder,
+);
+workspaceFolderRoutes.delete(
+    "/permanent/:id",
+    getWorkspaceFolderValidation,
+    folderPermission(PermissionAction.DELETE, "folder"),
+    workspaceFolderController.permanentlyDeleteWorkspaceFolder,
+);
 
 export default workspaceFolderRoutes;

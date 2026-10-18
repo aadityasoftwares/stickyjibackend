@@ -1,14 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
-
 import { AppError } from "../../../utils/errors/app.error.js";
 import { SystemSettingService } from "../../systemsettings/services/systemSetting.service.js";
 import { SystemSettingKey } from "../../systemsettings/constants/systemSetting.enums.js";
-import { AuthMessages } from "../constants/auth.messages.js";
 
 export const changePasswordValidation = async (
     req: Request,
     res: Response,
-    next: NextFunction
+    next: NextFunction,
 ): Promise<void> => {
     try {
         const { currentPassword, newPassword } = req.body;
@@ -31,10 +29,9 @@ export const changePasswordValidation = async (
 
         const systemSettingService = new SystemSettingService();
 
-        const passwordMinLengthSetting =
-            await systemSettingService.getSystemSettingByKey(
-                SystemSettingKey.PASSWORD_MIN_LENGTH
-            );
+        const passwordMinLengthSetting = await systemSettingService.getSystemSettingByKey(
+            SystemSettingKey.PASSWORD_MIN_LENGTH,
+        );
 
         const passwordMinLength = Number(passwordMinLengthSetting.value);
 
@@ -43,17 +40,11 @@ export const changePasswordValidation = async (
         }
 
         if (newPassword.length < passwordMinLength) {
-            throw new AppError(
-                `Password must contain at least ${passwordMinLength} characters.`,
-                400
-            );
+            throw new AppError(`Password must contain at least ${passwordMinLength} characters.`, 400);
         }
 
         if (currentPassword === newPassword) {
-            throw new AppError(
-                "New password must be different from the current password.",
-                400
-            );
+            throw new AppError("New password must be different from the current password.", 400);
         }
 
         next();

@@ -35,7 +35,9 @@ declare global {
             stickyNote?: unknown;
             targetMember?: unknown;
             targetRole?: unknown;
-            targetInvitation?: Awaited<ReturnType<WorkspaceMemberInvitationRepository["findByIdForMutation"]>>;
+            targetInvitation?: Awaited<
+                ReturnType<WorkspaceMemberInvitationRepository["findByIdForMutation"]>
+            >;
             invitationResponse?: Awaited<ReturnType<WorkspaceMemberInvitationRepository["findById"]>>;
             targetColumn?: unknown;
         }
@@ -64,15 +66,23 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
 
             if (options.resource === "invitation") {
                 const id = req.params.id;
-                if (typeof id !== "string" || !Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMemberInvitationMessages.NOT_FOUND, 404);
+                if (typeof id !== "string" || !Types.ObjectId.isValid(id))
+                    throw new AppError(WorkspaceMemberInvitationMessages.NOT_FOUND, 404);
                 const repository = new WorkspaceMemberInvitationRepository();
-                const invitation = options.action === PermissionAction.READ
-                    ? await repository.findById(id) : await repository.findByIdForMutation(id);
+                const invitation =
+                    options.action === PermissionAction.READ
+                        ? await repository.findById(id)
+                        : await repository.findByIdForMutation(id);
                 if (!invitation) throw new AppError(WorkspaceMemberInvitationMessages.NOT_FOUND, 404);
                 const workspace = invitation.workspaceId;
-                workspaceId = String(workspace && typeof workspace === "object" && "_id" in workspace ? workspace._id : workspace);
+                workspaceId = String(
+                    workspace && typeof workspace === "object" && "_id" in workspace
+                        ? workspace._id
+                        : workspace,
+                );
                 for (const supplied of [req.query.workspaceId, req.body?.workspaceId]) {
-                    if (supplied !== undefined && supplied !== workspaceId) throw new AppError(WorkspaceMemberInvitationMessages.ACCESS_DENIED, 403);
+                    if (supplied !== undefined && supplied !== workspaceId)
+                        throw new AppError(WorkspaceMemberInvitationMessages.ACCESS_DENIED, 403);
                 }
                 if (options.action === PermissionAction.READ) res.locals.invitationResponse = invitation;
                 else res.locals.targetInvitation = invitation;
@@ -84,30 +94,41 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
 
             if (options.resource === "folder") {
                 const id = req.params.id;
-                if (typeof id !== "string" || !Types.ObjectId.isValid(id)) throw new AppError(WorkspaceFolderMessages.NOT_FOUND, 400);
+                if (typeof id !== "string" || !Types.ObjectId.isValid(id))
+                    throw new AppError(WorkspaceFolderMessages.NOT_FOUND, 400);
                 const folder = await new WorkspaceFolderRepository().findByIdIncludingDeleted(id);
                 if (!folder) throw new AppError(WorkspaceFolderMessages.NOT_FOUND, 404);
                 workspaceId = folder.workspaceId.toString();
                 for (const supplied of [req.query.workspaceId, req.body?.workspaceId]) {
-                    if (supplied !== undefined && supplied !== workspaceId) throw new AppError(WorkspaceFolderMessages.WORKSPACE_MISMATCH, 400);
+                    if (supplied !== undefined && supplied !== workspaceId)
+                        throw new AppError(WorkspaceFolderMessages.WORKSPACE_MISMATCH, 400);
                 }
             }
 
             if (options.resource === "column") {
                 const id = req.params.id;
-                if (typeof id !== "string" || !Types.ObjectId.isValid(id)) throw new AppError(StickyNoteColumnMessages.INVALID_ID, 400);
-                const column = await StickyNoteColumnModel.findById(id).select("_id workspaceId workspaceFolderId isSystem").lean().exec();
+                if (typeof id !== "string" || !Types.ObjectId.isValid(id))
+                    throw new AppError(StickyNoteColumnMessages.INVALID_ID, 400);
+                const column = await StickyNoteColumnModel.findById(id)
+                    .select("_id workspaceId workspaceFolderId isSystem")
+                    .lean()
+                    .exec();
                 if (!column) throw new AppError(StickyNoteColumnMessages.NOT_FOUND, 404);
                 res.locals.targetColumn = column;
                 workspaceId = column.workspaceId.toString();
-                for (const supplied of [req.query?.workspaceId, (req.body as Record<string, unknown> | undefined)?.workspaceId]) {
-                    if (supplied !== undefined && supplied !== workspaceId) throw new AppError(StickyNoteColumnMessages.COLUMN_WORKSPACE_MISMATCH, 400);
+                for (const supplied of [
+                    req.query?.workspaceId,
+                    (req.body as Record<string, unknown> | undefined)?.workspaceId,
+                ]) {
+                    if (supplied !== undefined && supplied !== workspaceId)
+                        throw new AppError(StickyNoteColumnMessages.COLUMN_WORKSPACE_MISMATCH, 400);
                 }
             }
 
             if (options.resource === "workspace") {
                 const id = req.params.id;
-                if (typeof id !== "string" || !Types.ObjectId.isValid(id)) throw new AppError("Invalid workspace ID.", 400);
+                if (typeof id !== "string" || !Types.ObjectId.isValid(id))
+                    throw new AppError("Invalid workspace ID.", 400);
                 workspaceId = id;
             }
 
@@ -167,13 +188,16 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
             }
 
             if (options.resource === "role") {
-                const rawRoleId = req.params?.id ?? (req.body as Record<string, unknown> | undefined)?.id ?? req.query?.id;
+                const rawRoleId =
+                    req.params?.id ?? (req.body as Record<string, unknown> | undefined)?.id ?? req.query?.id;
                 const roleId = typeof rawRoleId === "string" ? rawRoleId.trim() : undefined;
                 if (!roleId || !Types.ObjectId.isValid(roleId)) {
                     throw new AppError(RoleMessages.NOT_FOUND, 404);
                 }
                 const role = await RoleModel.findById(roleId)
-                    .select("_id name displayName code type scope workspaceId isSystem isDefault priority isActive permissions")
+                    .select(
+                        "_id name displayName code type scope workspaceId isSystem isDefault priority isActive permissions",
+                    )
                     .lean()
                     .exec();
                 if (!role) {
@@ -182,7 +206,10 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
                 res.locals.targetRole = role;
                 if (role.workspaceId) {
                     const roleWorkspaceId = role.workspaceId.toString();
-                    for (const supplied of [req.query.workspaceId, (req.body as Record<string, unknown> | undefined)?.workspaceId]) {
+                    for (const supplied of [
+                        req.query.workspaceId,
+                        (req.body as Record<string, unknown> | undefined)?.workspaceId,
+                    ]) {
                         if (supplied !== undefined && supplied !== roleWorkspaceId) {
                             throw new AppError(RoleMessages.WORKSPACE_MISMATCH, 403);
                         }
@@ -190,9 +217,16 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
                     workspaceId = roleWorkspaceId;
                 } else if (role.isSystem) {
                     const actionList = Array.isArray(options.action) ? options.action : [options.action];
-                    const isMutation = actionList.some(a => [PermissionAction.UPDATE, PermissionAction.DELETE].includes(a));
+                    const isMutation = actionList.some((a) =>
+                        [PermissionAction.UPDATE, PermissionAction.DELETE].includes(a),
+                    );
                     if (isMutation) {
-                        throw new AppError(actionList.includes(PermissionAction.DELETE) ? RoleMessages.SYSTEM_ROLE_DELETE : RoleMessages.SYSTEM_ROLE_UPDATE, 403);
+                        throw new AppError(
+                            actionList.includes(PermissionAction.DELETE)
+                                ? RoleMessages.SYSTEM_ROLE_DELETE
+                                : RoleMessages.SYSTEM_ROLE_UPDATE,
+                            403,
+                        );
                     }
                 }
             }
@@ -227,11 +261,18 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
 
                 if (options.resource === "role" && res.locals.targetRole) {
                     const actionList = Array.isArray(options.action) ? options.action : [options.action];
-                    const isMutation = actionList.some(a => [PermissionAction.UPDATE, PermissionAction.DELETE].includes(a));
+                    const isMutation = actionList.some((a) =>
+                        [PermissionAction.UPDATE, PermissionAction.DELETE].includes(a),
+                    );
                     if (isMutation) {
                         permissionAuthorizationService.assertCanManageRole(
                             auth,
-                            res.locals.targetRole as { priority?: number; code?: string; isSystem?: boolean; workspaceId?: unknown },
+                            res.locals.targetRole as {
+                                priority?: number;
+                                code?: string;
+                                isSystem?: boolean;
+                                workspaceId?: unknown;
+                            },
                         );
                     }
                 }

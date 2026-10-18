@@ -1,9 +1,6 @@
 import type { Document, Types } from "mongoose";
 
-import type {
-    StickyNoteLabelColor,
-    StickyNoteLabelStatus,
-} from "../constants/stickyNoteLabel.enums.js";
+import type { StickyNoteLabelColor, StickyNoteLabelStatus } from "../constants/stickyNoteLabel.enums.js";
 
 export interface IStickyNoteLabel {
     workspaceId: Types.ObjectId;
@@ -20,9 +17,7 @@ export interface IStickyNoteLabel {
     updatedAt?: Date;
 }
 
-export interface IStickyNoteLabelDocument
-    extends IStickyNoteLabel,
-    Document {
+export interface IStickyNoteLabelDocument extends IStickyNoteLabel, Document {
     _id: Types.ObjectId;
 }
 

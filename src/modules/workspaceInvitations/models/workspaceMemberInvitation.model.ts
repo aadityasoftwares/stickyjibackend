@@ -189,4 +189,7 @@ WorkspaceMemberInvitationSchema.index(
 );
 
 export const WorkspaceMemberInvitationModel: Model<IWorkspaceMemberInvitationDocument> =
-    mongoose.model<IWorkspaceMemberInvitationDocument>("WorkspaceMemberInvitation", WorkspaceMemberInvitationSchema);
+    mongoose.model<IWorkspaceMemberInvitationDocument>(
+        "WorkspaceMemberInvitation",
+        WorkspaceMemberInvitationSchema,
+    );

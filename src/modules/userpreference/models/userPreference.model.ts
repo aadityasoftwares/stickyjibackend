@@ -1,9 +1,6 @@
 import mongoose, { Model, Schema } from "mongoose";
 import type { IUserPreferenceDocument } from "../interfaces/userPreference.interface.js";
-import {
-    UserPreferenceCategory,
-    UserPreferenceValueType,
-} from "../constants/userPreference.enums.js";
+import { UserPreferenceCategory, UserPreferenceValueType } from "../constants/userPreference.enums.js";
 
 const UserPreferenceSchema = new Schema<IUserPreferenceDocument>(
     {
@@ -60,8 +57,7 @@ UserPreferenceSchema.index(
     },
 );
 
-export const UserPreferenceModel: Model<IUserPreferenceDocument> =
-    mongoose.model<IUserPreferenceDocument>(
-        "UserPreference",
-        UserPreferenceSchema,
-    );
+export const UserPreferenceModel: Model<IUserPreferenceDocument> = mongoose.model<IUserPreferenceDocument>(
+    "UserPreference",
+    UserPreferenceSchema,
+);

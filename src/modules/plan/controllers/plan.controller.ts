@@ -120,10 +120,7 @@ export class PlanController {
 
     deletePlan = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            await this.planService.deletePlan(
-                RequestUtil.getParam(req.params.id),
-                this.getAuditContext(req),
-            );
+            await this.planService.deletePlan(RequestUtil.getParam(req.params.id), this.getAuditContext(req));
 
             return res.status(200).json(ResponseUtil.success(PlanMessages.DELETED));
         } catch (error) {

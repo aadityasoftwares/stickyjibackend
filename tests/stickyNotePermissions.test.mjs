@@ -20,7 +20,11 @@ import { AuditLogModel } from "../src/modules/auditlog/models/auditLog.model.ts"
 import { AuditLogService } from "../src/modules/auditlog/services/auditLog.service.ts";
 import { RoleModel } from "../src/modules/roles/models/role.model.ts";
 import { PermissionModel } from "../src/modules/permissions/models/permission.model.ts";
-import { PermissionAccess, PermissionAction, PermissionModule } from "../src/modules/permissions/constants/permission.enums.ts";
+import {
+    PermissionAccess,
+    PermissionAction,
+    PermissionModule,
+} from "../src/modules/permissions/constants/permission.enums.ts";
 import { RoleScope, RoleType } from "../src/modules/roles/constants/role.enums.ts";
 import { SYSTEM_ROLE_CODES } from "../src/modules/roles/constants/role.constants.ts";
 import { StickyNoteColumnModel } from "../src/modules/stickynotescolumns/models/stickyNoteColumn.model.ts";
@@ -31,7 +35,8 @@ process.env.JWT_ACCESS_SECRET = "permission-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "permission-test-refresh-secret";
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
 const { default: noteRoutes } = await import("../src/modules/stickynotes/routes/stickyNote.routes.ts");
-const { default: memberRoutes } = await import("../src/modules/workspaceMember/routes/workspaceMember.routes.ts");
+const { default: memberRoutes } =
+    await import("../src/modules/workspaceMember/routes/workspaceMember.routes.ts");
 
 let mongoProcess, mongoDirectory, httpServer, baseUrl;
 
@@ -103,7 +108,10 @@ before(async () => {
     });
 
     const uri = `mongodb://127.0.0.1:${port}/sticky_perm_test`;
-    const client = new mongoose.mongo.MongoClient(uri, { directConnection: true, serverSelectionTimeoutMS: 500 });
+    const client = new mongoose.mongo.MongoClient(uri, {
+        directConnection: true,
+        serverSelectionTimeoutMS: 500,
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
@@ -293,10 +301,7 @@ before(async () => {
         priority: 10,
         isSystem: true,
         isActive: true,
-        permissions: [
-            permNotesReadGeneral._id,
-            permMembersRead._id,
-        ],
+        permissions: [permNotesReadGeneral._id, permMembersRead._id],
     });
 
     // Seed Workspace & Hierarchy
@@ -582,11 +587,7 @@ test("MEMBERS: Role priority prevents Admin (priority 80) from assigning equal o
 });
 
 test("MEMBERS: Self-removal is prevented (400 CANNOT_REMOVE_SELF)", async () => {
-    const res = await request(
-        `/workspacemembers/delete/${adminMembershipId}`,
-        { method: "DELETE" },
-        adminId,
-    );
+    const res = await request(`/workspacemembers/delete/${adminMembershipId}`, { method: "DELETE" }, adminId);
 
     if (res.status !== 400) {
         console.error("Subtest 8 unexpected response:", JSON.stringify(res.body));
@@ -612,22 +613,56 @@ test("MEMBERS: Owner can assign Member role to Admin", async () => {
 
 test("MEMBERS: add, list and audit use the workspace member permissions", async () => {
     const target = new Types.ObjectId();
-    await UserModel.collection.insertOne({ _id: target, email: "new-member@test.com", username: "new-member", isDeleted: false });
-    const input = { workspaceId: String(workspaceId), userId: String(target), roleId: String(viewerRoleDoc._id) };
+    await UserModel.collection.insertOne({
+        _id: target,
+        email: "new-member@test.com",
+        username: "new-member",
+        isDeleted: false,
+    });
+    const input = {
+        workspaceId: String(workspaceId),
+        userId: String(target),
+        roleId: String(viewerRoleDoc._id),
+    };
     const path = "/workspacemembers/create";
-    assert.equal((await request(path, { method: "POST", body: JSON.stringify(input) }, viewerId)).status, 403);
-    assert.equal((await request(path, { method: "POST", body: JSON.stringify(input) }, strangerId)).status, 403);
-    assert.equal((await request(path, { method: "POST", body: JSON.stringify({ ...input, status: "ACTIVE" }) }, ownerId)).status, 400);
+    assert.equal(
+        (await request(path, { method: "POST", body: JSON.stringify(input) }, viewerId)).status,
+        403,
+    );
+    assert.equal(
+        (await request(path, { method: "POST", body: JSON.stringify(input) }, strangerId)).status,
+        403,
+    );
+    assert.equal(
+        (
+            await request(
+                path,
+                { method: "POST", body: JSON.stringify({ ...input, status: "ACTIVE" }) },
+                ownerId,
+            )
+        ).status,
+        400,
+    );
     const created = await request(path, { method: "POST", body: JSON.stringify(input) }, ownerId);
     assert.equal(created.status, 201, JSON.stringify(created.body));
     assert.equal(created.body.data.status, "ACTIVE");
     assert.equal((await request(path, { method: "POST", body: JSON.stringify(input) }, ownerId)).status, 409);
-    const list = await request(`/workspacemembers/getall?workspaceId=${workspaceId}&roleId=${viewerRoleDoc._id}&search=new-member&page=1&limit=1`, {}, ownerId);
+    const list = await request(
+        `/workspacemembers/getall?workspaceId=${workspaceId}&roleId=${viewerRoleDoc._id}&search=new-member&page=1&limit=1`,
+        {},
+        ownerId,
+    );
     assert.equal(list.status, 200, JSON.stringify(list.body));
     assert.equal(list.body.meta.total, 1);
     assert.equal(list.body.data[0].user.id, String(target));
-    assert.equal((await request(`/workspacemembers/getall?workspaceId=${workspaceId}&page=0`, {}, ownerId)).status, 400);
-    const log = await AuditLogModel.findOne({ resourceId: new Types.ObjectId(created.body.data._id), action: "ASSIGN" }).lean();
+    assert.equal(
+        (await request(`/workspacemembers/getall?workspaceId=${workspaceId}&page=0`, {}, ownerId)).status,
+        400,
+    );
+    const log = await AuditLogModel.findOne({
+        resourceId: new Types.ObjectId(created.body.data._id),
+        action: "ASSIGN",
+    }).lean();
     assert.equal(String(log.actorId), String(ownerId));
     assert.equal(log.metadata.workspaceId, String(workspaceId));
 });
@@ -637,52 +672,133 @@ test("MEMBERS: a workspace hint cannot redirect target authorization", async () 
     const otherWorkspace = new Types.ObjectId();
     const path = `/workspacemembers/get/${member._id}?workspaceId=${otherWorkspace}`;
     assert.equal((await request(path, {}, ownerId)).status, 403);
-    assert.equal((await request(`/workspacemembers/role/${member._id}?workspaceId=${otherWorkspace}`,
-        { method: "PUT", body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }) }, ownerId)).status, 403);
-    const protectedOwner = await WorkspaceMemberModel.create({ workspaceId, userId: ownerId,
-        roleId: ownerRoleDoc._id, status: "ACTIVE" });
-    assert.equal((await request(`/workspacemembers/role/${protectedOwner._id}`,
-        { method: "PUT", body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }) }, ownerId)).status, 400);
-    assert.equal((await request(`/workspacemembers/delete/${protectedOwner._id}`, { method: "DELETE" }, ownerId)).status, 400);
-    assert.equal((await request(`/workspacemembers/update/${member._id}`,
-        { method: "PUT", body: JSON.stringify({ roleId: String(viewerRoleDoc._id), status: "REMOVED" }) }, ownerId)).status, 400);
-    const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(String(ownerId), String(workspaceId));
+    assert.equal(
+        (
+            await request(
+                `/workspacemembers/role/${member._id}?workspaceId=${otherWorkspace}`,
+                { method: "PUT", body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }) },
+                ownerId,
+            )
+        ).status,
+        403,
+    );
+    const protectedOwner = await WorkspaceMemberModel.create({
+        workspaceId,
+        userId: ownerId,
+        roleId: ownerRoleDoc._id,
+        status: "ACTIVE",
+    });
+    assert.equal(
+        (
+            await request(
+                `/workspacemembers/role/${protectedOwner._id}`,
+                { method: "PUT", body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }) },
+                ownerId,
+            )
+        ).status,
+        400,
+    );
+    assert.equal(
+        (await request(`/workspacemembers/delete/${protectedOwner._id}`, { method: "DELETE" }, ownerId))
+            .status,
+        400,
+    );
+    assert.equal(
+        (
+            await request(
+                `/workspacemembers/update/${member._id}`,
+                {
+                    method: "PUT",
+                    body: JSON.stringify({ roleId: String(viewerRoleDoc._id), status: "REMOVED" }),
+                },
+                ownerId,
+            )
+        ).status,
+        400,
+    );
+    const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
+        String(ownerId),
+        String(workspaceId),
+    );
     await assert.rejects(
-        () => new WorkspaceMemberService().getWorkspaceMemberById(String(member._id), String(strangerId), auth),
-        error => error.statusCode === 403,
+        () =>
+            new WorkspaceMemberService().getWorkspaceMemberById(String(member._id), String(strangerId), auth),
+        (error) => error.statusCode === 403,
     );
 });
 
 test("MEMBERS: remove, restore and failed audit preserve membership state", async () => {
     const target = new Types.ObjectId();
-    await UserModel.collection.insertOne({ _id: target, email: "lifecycle@test.com", username: "lifecycle", isDeleted: false });
-    const member = await WorkspaceMemberModel.create({ workspaceId, userId: target,
-        roleId: viewerRoleDoc._id, status: "ACTIVE" });
-    assert.equal((await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, viewerId)).status, 403);
-    assert.equal((await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status, 200);
+    await UserModel.collection.insertOne({
+        _id: target,
+        email: "lifecycle@test.com",
+        username: "lifecycle",
+        isDeleted: false,
+    });
+    const member = await WorkspaceMemberModel.create({
+        workspaceId,
+        userId: target,
+        roleId: viewerRoleDoc._id,
+        status: "ACTIVE",
+    });
+    assert.equal(
+        (await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, viewerId)).status,
+        403,
+    );
+    assert.equal(
+        (await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status,
+        200,
+    );
     assert.equal((await WorkspaceMemberModel.findById(member._id)).status, "REMOVED");
-    assert.equal((await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, viewerId)).status, 403);
-    assert.equal((await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, ownerId)).status, 200);
-    const failure = mock.method(AuditLogService.prototype, "log", async () => { throw new Error("audit unavailable"); });
+    assert.equal(
+        (await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, viewerId)).status,
+        403,
+    );
+    assert.equal(
+        (await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, ownerId)).status,
+        200,
+    );
+    const failure = mock.method(AuditLogService.prototype, "log", async () => {
+        throw new Error("audit unavailable");
+    });
     try {
-        const changed = await request(`/workspacemembers/role/${member._id}`,
-            { method: "PUT", body: JSON.stringify({ roleId: String(memberRoleDoc._id) }) }, ownerId);
+        const changed = await request(
+            `/workspacemembers/role/${member._id}`,
+            { method: "PUT", body: JSON.stringify({ roleId: String(memberRoleDoc._id) }) },
+            ownerId,
+        );
         assert.equal(changed.status, 500);
-        assert.equal(String((await WorkspaceMemberModel.findById(member._id)).roleId), String(viewerRoleDoc._id));
+        assert.equal(
+            String((await WorkspaceMemberModel.findById(member._id)).roleId),
+            String(viewerRoleDoc._id),
+        );
     } finally {
         failure.mock.restore();
     }
-    const removeFailure = mock.method(AuditLogService.prototype, "log", async () => { throw new Error("audit unavailable"); });
+    const removeFailure = mock.method(AuditLogService.prototype, "log", async () => {
+        throw new Error("audit unavailable");
+    });
     try {
-        assert.equal((await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status, 500);
+        assert.equal(
+            (await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status,
+            500,
+        );
         assert.equal((await WorkspaceMemberModel.findById(member._id)).status, "ACTIVE");
     } finally {
         removeFailure.mock.restore();
     }
-    assert.equal((await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status, 200);
-    const restoreFailure = mock.method(AuditLogService.prototype, "log", async () => { throw new Error("audit unavailable"); });
+    assert.equal(
+        (await request(`/workspacemembers/delete/${member._id}`, { method: "DELETE" }, ownerId)).status,
+        200,
+    );
+    const restoreFailure = mock.method(AuditLogService.prototype, "log", async () => {
+        throw new Error("audit unavailable");
+    });
     try {
-        assert.equal((await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, ownerId)).status, 500);
+        assert.equal(
+            (await request(`/workspacemembers/restore/${member._id}`, { method: "PUT" }, ownerId)).status,
+            500,
+        );
         assert.equal((await WorkspaceMemberModel.findById(member._id)).status, "REMOVED");
     } finally {
         restoreFailure.mock.restore();

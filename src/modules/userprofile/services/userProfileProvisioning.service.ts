@@ -16,20 +16,16 @@ export interface IUserProfileRegistrationInput {
 }
 
 export class UserProfileProvisioningService {
-
     private userProfileService: UserProfileService;
     private countryRepository: CountryRepository;
     private timezoneRepository: TimezoneRepository;
 
     constructor() {
-        this.userProfileService =
-            new UserProfileService();
+        this.userProfileService = new UserProfileService();
 
-        this.countryRepository =
-            new CountryRepository();
+        this.countryRepository = new CountryRepository();
 
-        this.timezoneRepository =
-            new TimezoneRepository();
+        this.timezoneRepository = new TimezoneRepository();
     }
 
     async provisionRegistrationProfile(
@@ -37,43 +33,20 @@ export class UserProfileProvisioningService {
         data: IUserProfileRegistrationInput,
         context?: IAuditLogContext,
     ) {
+        const countryCode = this.normalizeCountryCode(data.countryCodeHint);
 
-        const countryCode =
-            this.normalizeCountryCode(
-                data.countryCodeHint,
-            );
+        const timezoneCode = this.normalizeTimezoneCode(data.timezoneCode);
 
-        const timezoneCode =
-            this.normalizeTimezoneCode(
-                data.timezoneCode,
-            );
-
-        const country =
-            await this.countryRepository.findByCode(
-                countryCode,
-            );
+        const country = await this.countryRepository.findByCode(countryCode);
 
         if (!country) {
-            throw new AppError(
-                `Country '${countryCode}' is not configured.`,
-                503,
-            );
+            throw new AppError(`Country '${countryCode}' is not configured.`, 503);
         }
 
-        let timezone =
-            await this.timezoneRepository
-                .findByCodeAndCountry(
-                    timezoneCode,
-                    countryCode,
-                );
+        let timezone = await this.timezoneRepository.findByCodeAndCountry(timezoneCode, countryCode);
 
         if (!timezone && countryCode === "IN") {
-            timezone =
-                await this.timezoneRepository
-                    .findByCodeAndCountry(
-                        "Asia/Kolkata",
-                        "IN",
-                    );
+            timezone = await this.timezoneRepository.findByCodeAndCountry("Asia/Kolkata", "IN");
         }
 
         if (!timezone) {
@@ -87,30 +60,19 @@ export class UserProfileProvisioningService {
             {
                 userId,
 
-                firstName:
-                    StringHelper.normalize(
-                        data.firstName,
-                    ),
+                firstName: StringHelper.normalize(data.firstName),
 
-                lastName:
-                    StringHelper.normalize(
-                        data.lastName,
-                    ),
+                lastName: StringHelper.normalize(data.lastName),
 
-                displayName:
-                    `${StringHelper.normalize(data.firstName)} ${StringHelper.normalize(data.lastName)}`,
+                displayName: `${StringHelper.normalize(data.firstName)} ${StringHelper.normalize(data.lastName)}`,
 
-                countryId:
-                    country._id,
+                countryId: country._id,
 
-                timezoneId:
-                    timezone._id,
+                timezoneId: timezone._id,
 
-                languageId:
-                    null,
+                languageId: null,
 
-                currencyId:
-                    null,
+                currencyId: null,
 
                 interests: [],
             },
@@ -118,24 +80,14 @@ export class UserProfileProvisioningService {
         );
     }
 
-    private normalizeCountryCode(
-        value?: string,
-    ): string {
-
-        const countryCode =
-            value
-                ?.trim()
-                .toUpperCase();
+    private normalizeCountryCode(value?: string): string {
+        const countryCode = value?.trim().toUpperCase();
 
         return countryCode || "IN";
     }
 
-    private normalizeTimezoneCode(
-        value?: string,
-    ): string {
-
-        const timezone =
-            value?.trim();
+    private normalizeTimezoneCode(value?: string): string {
+        const timezone = value?.trim();
 
         if (!timezone) {
             return "Asia/Kolkata";

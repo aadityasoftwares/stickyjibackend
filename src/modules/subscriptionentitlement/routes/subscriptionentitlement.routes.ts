@@ -10,17 +10,9 @@ const controller = new SubscriptionEntitlementController();
 
 subscriptionEntitlementRoutes.use(authMiddleware);
 
-subscriptionEntitlementRoutes.get(
-    "/me",
-    getSubscriptionEntitlementsValidation,
-    controller.getMyEntitlements,
-);
+subscriptionEntitlementRoutes.get("/me", getSubscriptionEntitlementsValidation, controller.getMyEntitlements);
 
-subscriptionEntitlementRoutes.get(
-    "/summary",
-    getSubscriptionEntitlementsValidation,
-    controller.getSummary,
-);
+subscriptionEntitlementRoutes.get("/summary", getSubscriptionEntitlementsValidation, controller.getSummary);
 
 subscriptionEntitlementRoutes.post(
     "/check",

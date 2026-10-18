@@ -1,16 +1,7 @@
-import {
-    RoleType,
-    RoleScope,
-} from "../constants/role.enums.js";
+import { RoleType, RoleScope } from "../constants/role.enums.js";
 
 export const RoleValidation = {
-    types:
-        Object.values(
-            RoleType
-        ),
+    types: Object.values(RoleType),
 
-    scopes:
-        Object.values(
-            RoleScope
-        ),
+    scopes: Object.values(RoleScope),
 };

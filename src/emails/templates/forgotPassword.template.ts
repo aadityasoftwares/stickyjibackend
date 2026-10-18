@@ -4,27 +4,22 @@ import { EmailLayout } from "../components/EmailLayout.js";
 import { emailStyles } from "../config/emailStyles.js";
 import { emailTheme } from "../config/emailTheme.js";
 
-
 export interface ForgotPasswordEmailProps {
     resetUrl: string;
     expiresInMinutes: number;
 }
 
-
 /**
  * Escapes user-controlled or dynamic text that is rendered
  * directly inside HTML.
  */
-const escapeHtml = (
-    value: string,
-): string =>
+const escapeHtml = (value: string): string =>
     value
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-
 
 /**
  * Password reset email.
@@ -38,16 +33,9 @@ export const forgotPasswordEmailTemplate = ({
     resetUrl,
     expiresInMinutes,
 }: ForgotPasswordEmailProps): string => {
+    const safeResetUrl = escapeHtml(resetUrl);
 
-    const safeResetUrl =
-        escapeHtml(resetUrl);
-
-    const safeExpiry =
-        Math.max(
-            1,
-            Math.floor(expiresInMinutes),
-        );
-
+    const safeExpiry = Math.max(1, Math.floor(expiresInMinutes));
 
     /**
      * Caveat is used only for expressive handwritten elements.
@@ -55,17 +43,12 @@ export const forgotPasswordEmailTemplate = ({
      * Main content still uses the regular email typography
      * for maximum readability and email-client compatibility.
      */
-    const handwrittenFont =
-        "'Caveat', 'Comic Sans MS', 'Segoe Print', cursive";
-
+    const handwrittenFont = "'Caveat', 'Comic Sans MS', 'Segoe Print', cursive";
 
     return EmailLayout({
+        title: `Reset your ${emailTheme.brand.name} password`,
 
-        title:
-            `Reset your ${emailTheme.brand.name} password`,
-
-        preheader:
-            `Reset your ${emailTheme.brand.name} password securely. This link expires in ${safeExpiry} minutes.`,
+        preheader: `Reset your ${emailTheme.brand.name} password securely. This link expires in ${safeExpiry} minutes.`,
 
         showHeader: true,
 
@@ -426,10 +409,10 @@ export const forgotPasswordEmailTemplate = ({
 
 
                     ${EmailButton({
-            text: "Reset My Password",
-            href: safeResetUrl,
-            variant: "primary",
-        })}
+                        text: "Reset My Password",
+                        href: safeResetUrl,
+                        variant: "primary",
+                    })}
 
 
                     <p
@@ -489,7 +472,6 @@ export const forgotPasswordEmailTemplate = ({
         ========================================================== -->
 
         ${EmailCard({
-
             variant: "blue",
 
             content: `
@@ -574,7 +556,6 @@ export const forgotPasswordEmailTemplate = ({
                 </table>
 
             `,
-
         })}
 
 
@@ -594,7 +575,6 @@ export const forgotPasswordEmailTemplate = ({
 
 
         ${EmailCard({
-
             variant: "yellow",
 
             content: `
@@ -655,7 +635,6 @@ export const forgotPasswordEmailTemplate = ({
                 </p>
 
             `,
-
         })}
 
 

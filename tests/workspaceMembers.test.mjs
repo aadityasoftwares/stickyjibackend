@@ -18,7 +18,11 @@ import { AuditLogModel } from "../src/modules/auditlog/models/auditLog.model.ts"
 import { AuditLogService } from "../src/modules/auditlog/services/auditLog.service.ts";
 import { RoleModel } from "../src/modules/roles/models/role.model.ts";
 import { PermissionModel } from "../src/modules/permissions/models/permission.model.ts";
-import { PermissionAccess, PermissionAction, PermissionModule } from "../src/modules/permissions/constants/permission.enums.ts";
+import {
+    PermissionAccess,
+    PermissionAction,
+    PermissionModule,
+} from "../src/modules/permissions/constants/permission.enums.ts";
 import { RoleScope, RoleType } from "../src/modules/roles/constants/role.enums.ts";
 import { SYSTEM_ROLE_CODES } from "../src/modules/roles/constants/role.constants.ts";
 import { UserModel } from "../src/modules/user/models/user.model.ts";
@@ -28,7 +32,8 @@ import { seedRoles } from "../src/modules/roles/seeders/role.seeder.ts";
 process.env.JWT_ACCESS_SECRET = "ws-member-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "ws-member-test-refresh-secret";
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
-const { default: memberRoutes } = await import("../src/modules/workspaceMember/routes/workspaceMember.routes.ts");
+const { default: memberRoutes } =
+    await import("../src/modules/workspaceMember/routes/workspaceMember.routes.ts");
 
 let mongoProcess, mongoDirectory, httpServer, baseUrl;
 
@@ -99,7 +104,10 @@ before(async () => {
     });
 
     const uri = `mongodb://127.0.0.1:${port}/ws_member_test`;
-    const client = new mongoose.mongo.MongoClient(uri, { directConnection: true, serverSelectionTimeoutMS: 500 });
+    const client = new mongoose.mongo.MongoClient(uri, {
+        directConnection: true,
+        serverSelectionTimeoutMS: 500,
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
@@ -249,10 +257,14 @@ test("1 & 2 & 3. GET and POST /getall return equivalent member listing and metad
     assert.equal(rootRes.body.meta.total, getRes.body.meta.total);
 
     // POST /getall with JSON body
-    const postRes = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), page: 1, limit: 10 }),
-    }, ownerId);
+    const postRes = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), page: 1, limit: 10 }),
+        },
+        ownerId,
+    );
     assert.equal(postRes.status, 200, JSON.stringify(postRes.body));
     assert.equal(postRes.body.success, true);
     assert.equal(postRes.body.meta.total, getRes.body.meta.total);
@@ -264,32 +276,48 @@ test("1 & 2 & 3. GET and POST /getall return equivalent member listing and metad
 
 test("4. POST /getall validates JSON body filters and rejects unexpected fields or invalid types", async () => {
     // Unexpected field in body
-    const badKey = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), unexpectedField: 123 }),
-    }, ownerId);
+    const badKey = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), unexpectedField: 123 }),
+        },
+        ownerId,
+    );
     assert.equal(badKey.status, 400);
 
     // Invalid page (0 or negative)
-    const badPage = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), page: 0 }),
-    }, ownerId);
+    const badPage = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), page: 0 }),
+        },
+        ownerId,
+    );
     assert.equal(badPage.status, 400);
 
     // Invalid roleId
-    const badRole = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), roleId: "invalid-id" }),
-    }, ownerId);
+    const badRole = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), roleId: "invalid-id" }),
+        },
+        ownerId,
+    );
     assert.equal(badRole.status, 400);
 
     // Unsupported Content-Type
-    const badContentType = await request("/getall", {
-        method: "POST",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({ workspaceId: String(workspaceId) }),
-    }, ownerId);
+    const badContentType = await request(
+        "/getall",
+        {
+            method: "POST",
+            headers: { "Content-Type": "text/plain" },
+            body: JSON.stringify({ workspaceId: String(workspaceId) }),
+        },
+        ownerId,
+    );
     assert.equal(badContentType.status, 415);
 });
 
@@ -317,16 +345,25 @@ test("7 & 8. Cross-workspace access and unauthorized operations are rejected", a
     assert.equal(crossWorkspace.status, 403);
 
     // Viewer in workspace has no MEMBERS:ASSIGN permission
-    const viewerForbidden = await request(`/role/${memberMembershipId}`, {
-        method: "PUT",
-        body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }),
-    }, viewerId);
+    const viewerForbidden = await request(
+        `/role/${memberMembershipId}`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }),
+        },
+        viewerId,
+    );
     assert.equal(viewerForbidden.status, 403);
 });
 
 test("9 & 10. Authorized member invitation succeeds and duplicate membership is rejected (409)", async () => {
     const newUserId = new Types.ObjectId();
-    await UserModel.collection.insertOne({ _id: newUserId, email: "newinvite@test.com", username: "newinvite", isDeleted: false });
+    await UserModel.collection.insertOne({
+        _id: newUserId,
+        email: "newinvite@test.com",
+        username: "newinvite",
+        isDeleted: false,
+    });
 
     const createPayload = {
         workspaceId: String(workspaceId),
@@ -335,41 +372,61 @@ test("9 & 10. Authorized member invitation succeeds and duplicate membership is 
     };
 
     // Owner creates member
-    const created = await request("/create", {
-        method: "POST",
-        body: JSON.stringify(createPayload),
-    }, ownerId);
+    const created = await request(
+        "/create",
+        {
+            method: "POST",
+            body: JSON.stringify(createPayload),
+        },
+        ownerId,
+    );
     assert.equal(created.status, 201, JSON.stringify(created.body));
     assert.equal(created.body.data.status, "ACTIVE");
 
     // Duplicate creation must return 409
-    const duplicate = await request("/create", {
-        method: "POST",
-        body: JSON.stringify(createPayload),
-    }, ownerId);
+    const duplicate = await request(
+        "/create",
+        {
+            method: "POST",
+            body: JSON.stringify(createPayload),
+        },
+        ownerId,
+    );
     assert.equal(duplicate.status, 409);
 });
 
 test("11 & 12. Role changes respect authorization and prevent privilege escalation", async () => {
     // Owner role cannot be assigned to members (400)
-    const ownerRoleAssign = await request(`/role/${memberMembershipId}`, {
-        method: "PUT",
-        body: JSON.stringify({ roleId: String(ownerRoleDoc._id) }),
-    }, adminId);
+    const ownerRoleAssign = await request(
+        `/role/${memberMembershipId}`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ roleId: String(ownerRoleDoc._id) }),
+        },
+        adminId,
+    );
     assert.equal(ownerRoleAssign.status, 400);
 
     // Admin cannot assign Admin role (priority 80 >= 80, returns 403)
-    const escalatePriority = await request(`/role/${memberMembershipId}`, {
-        method: "PUT",
-        body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
-    }, adminId);
+    const escalatePriority = await request(
+        `/role/${memberMembershipId}`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
+        },
+        adminId,
+    );
     assert.equal(escalatePriority.status, 403);
 
     // Owner can change member role to Viewer (200)
-    const successChange = await request(`/role/${memberMembershipId}`, {
-        method: "PUT",
-        body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }),
-    }, ownerId);
+    const successChange = await request(
+        `/role/${memberMembershipId}`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ roleId: String(viewerRoleDoc._id) }),
+        },
+        ownerId,
+    );
     assert.equal(successChange.status, 200);
 
     // Check updated role in DB
@@ -390,10 +447,14 @@ test("13 & 14 & 15. Membership lifecycle: remove, owner protection, and restorat
     assert.equal(removeOwner.status, 400);
 
     // Owner role cannot be changed
-    const changeOwnerRole = await request(`/role/${ownerMember._id}`, {
-        method: "PUT",
-        body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
-    }, ownerId);
+    const changeOwnerRole = await request(
+        `/role/${ownerMember._id}`,
+        {
+            method: "PUT",
+            body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
+        },
+        ownerId,
+    );
     assert.equal(changeOwnerRole.status, 400);
 
     // Remove regular member
@@ -413,19 +474,27 @@ test("13 & 14 & 15. Membership lifecycle: remove, owner protection, and restorat
 
 test("16 & 17. Pagination and search filtering on member list", async () => {
     // Search by username/email
-    const searchRes = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), search: "admin", page: 1, limit: 10 }),
-    }, ownerId);
+    const searchRes = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), search: "admin", page: 1, limit: 10 }),
+        },
+        ownerId,
+    );
     assert.equal(searchRes.status, 200);
     assert.ok(searchRes.body.data.length >= 1);
     assert.ok(searchRes.body.data.some((m) => m.user.email.includes("admin")));
 
     // Filter by roleId
-    const roleRes = await request("/getall", {
-        method: "POST",
-        body: JSON.stringify({ workspaceId: String(workspaceId), roleId: String(adminRoleDoc._id) }),
-    }, ownerId);
+    const roleRes = await request(
+        "/getall",
+        {
+            method: "POST",
+            body: JSON.stringify({ workspaceId: String(workspaceId), roleId: String(adminRoleDoc._id) }),
+        },
+        ownerId,
+    );
     assert.equal(roleRes.status, 200);
     assert.ok(roleRes.body.data.every((m) => m.role.id === String(adminRoleDoc._id)));
 });
@@ -436,10 +505,14 @@ test("18. Audit failure rolls back role change and member removal", async () => 
     });
 
     try {
-        const failChange = await request(`/role/${memberMembershipId}`, {
-            method: "PUT",
-            body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
-        }, ownerId);
+        const failChange = await request(
+            `/role/${memberMembershipId}`,
+            {
+                method: "PUT",
+                body: JSON.stringify({ roleId: String(adminRoleDoc._id) }),
+            },
+            ownerId,
+        );
         assert.equal(failChange.status, 500);
 
         // Role must remain unchanged

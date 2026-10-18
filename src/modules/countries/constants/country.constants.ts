@@ -1,4 +1,11 @@
-import { CountryCode, CountryCodeAlpha3, CountryNumericCode, CountryContinent, CurrencyCode, CountryDialCode, } from "./country.enums.js";
+import {
+    CountryCode,
+    CountryCodeAlpha3,
+    CountryNumericCode,
+    CountryContinent,
+    CurrencyCode,
+    CountryDialCode,
+} from "./country.enums.js";
 export const DEFAULT_COUNTRY_STATUS = true;
 export const DEFAULT_COUNTRY_SYSTEM = true;
 export const DEFAULT_COUNTRY_CODE = CountryCode.INDIA;

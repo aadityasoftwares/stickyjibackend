@@ -6,8 +6,11 @@ import { WorkspaceFolderMessages } from "../constants/workspaceFolder.messages.j
 const validate = validateUsingZOD(folderListSchema);
 export const getAllWorkspaceFoldersValidation = (req: Request, res: Response, next: NextFunction) => {
     if (req.method === "GET") {
-        req.body = { ...req.query,
-            ...(req.query.isDefault === "true" || req.query.isDefault === "false" ? { isDefault: req.query.isDefault === "true" } : {}),
+        req.body = {
+            ...req.query,
+            ...(req.query.isDefault === "true" || req.query.isDefault === "false"
+                ? { isDefault: req.query.isDefault === "true" }
+                : {}),
         };
     } else req.body ??= {};
     if (req.params.workspaceId !== undefined) {

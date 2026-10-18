@@ -1,5 +1,5 @@
 import { Document, Types } from "mongoose";
-import { LanguageDirection, LanguageCode, } from "../constants/language.enums.js";
+import { LanguageDirection, LanguageCode } from "../constants/language.enums.js";
 
 export interface ILanguage {
     name: string;
@@ -30,9 +30,7 @@ export interface ILanguageFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface ILanguageDocument
-    extends ILanguage,
-    Document { }
+export interface ILanguageDocument extends ILanguage, Document {}
 
 export interface ILanguagePaginatedResult {
     data: ILanguageDocument[];

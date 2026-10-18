@@ -22,7 +22,6 @@ import { AppModule } from "../../../utils/enums/appModule.enums.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { AuditLogConfig } from "../../../config/auditlog.config.js";
 
-
 export class AuditLogService {
     private auditLogRepository: AuditLogRepository;
 
@@ -33,100 +32,55 @@ export class AuditLogService {
     async log(data: IAuditLogCreateData) {
         const config = this.getModuleConfig(data.module);
 
-        this.validateAction(
-            data.module,
-            data.action
-        );
+        this.validateAction(data.module, data.action);
 
         return this.auditLogRepository.create({
             ...data,
             actorId: this.toObjectId(data.actorId),
-            resourceType:
-                data.resourceType ??
-                config.resourceType,
-            status:
-                data.status ??
-                AuditLogStatus.SUCCESS,
-            severity:
-                data.severity ??
-                AuditLogSeverity.INFO,
-            changes:
-                data.changes ?? [],
-            metadata:
-                data.metadata ?? {},
+            resourceType: data.resourceType ?? config.resourceType,
+            status: data.status ?? AuditLogStatus.SUCCESS,
+            severity: data.severity ?? AuditLogSeverity.INFO,
+            changes: data.changes ?? [],
+            metadata: data.metadata ?? {},
         });
     }
 
-    async logMany(
-        logs: IAuditLogCreateData[],
-        session?: ClientSession,
-    ) {
+    async logMany(logs: IAuditLogCreateData[], session?: ClientSession) {
         if (!logs.length) {
             return [];
         }
 
         const auditLogs = logs.map((log) => {
-            const config =
-                this.getModuleConfig(
-                    log.module
-                );
+            const config = this.getModuleConfig(log.module);
 
-            this.validateAction(
-                log.module,
-                log.action
-            );
+            this.validateAction(log.module, log.action);
 
             return {
                 ...log,
-                actorId:
-                    this.toObjectId(
-                        log.actorId
-                    ),
-                resourceType:
-                    log.resourceType ??
-                    config.resourceType,
-                status:
-                    log.status ??
-                    AuditLogStatus.SUCCESS,
-                severity:
-                    log.severity ??
-                    AuditLogSeverity.INFO,
-                changes:
-                    log.changes ?? [],
-                metadata:
-                    log.metadata ?? {},
+                actorId: this.toObjectId(log.actorId),
+                resourceType: log.resourceType ?? config.resourceType,
+                status: log.status ?? AuditLogStatus.SUCCESS,
+                severity: log.severity ?? AuditLogSeverity.INFO,
+                changes: log.changes ?? [],
+                metadata: log.metadata ?? {},
             };
         });
 
-        return this.auditLogRepository.createMany(
-            auditLogs,
-            session,
-        );
+        return this.auditLogRepository.createMany(auditLogs, session);
     }
 
     async logFromRequest(
         req: Request,
-        data: Omit<
-            IAuditLogCreateData,
-            | "actorId"
-            | "ipAddress"
-            | "userAgent"
-            | "requestId"
-        >
+        data: Omit<IAuditLogCreateData, "actorId" | "ipAddress" | "userAgent" | "requestId">,
     ) {
-        const context =
-            this.getRequestContext(req);
+        const context = this.getRequestContext(req);
 
         return this.log({
             ...data,
-            actorId:
-                context.actorId,
-            ipAddress:
-                context.ipAddress,
-            userAgent:
-                context.userAgent,
-            requestId:
-                context.requestId,
+            actorId: context.actorId,
+            ipAddress: context.ipAddress,
+            userAgent: context.userAgent,
+            requestId: context.requestId,
         });
     }
 
@@ -134,29 +88,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.CREATE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.CREATE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -166,29 +109,18 @@ export class AuditLogService {
         resource: IAuditLogResource,
         description: string,
         changes: IAuditLogChange[],
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.UPDATE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.UPDATE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             changes,
             metadata,
         });
@@ -198,29 +130,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.DELETE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.DELETE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.WARNING,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.WARNING,
             metadata,
         });
     }
@@ -229,29 +150,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.RESTORE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.RESTORE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -263,42 +173,23 @@ export class AuditLogService {
         oldValue: unknown,
         newValue: unknown,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.STATUS_CHANGE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.STATUS_CHANGE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             changes: [
                 {
                     field,
-                    oldValue:
-                        this.sanitizeValue(
-                            field,
-                            oldValue
-                        ),
-                    newValue:
-                        this.sanitizeValue(
-                            field,
-                            newValue
-                        ),
+                    oldValue: this.sanitizeValue(field, oldValue),
+                    newValue: this.sanitizeValue(field, newValue),
                 },
             ],
             metadata,
@@ -308,19 +199,15 @@ export class AuditLogService {
     async logLogin(
         context: IAuditLogContext,
         description = "User logged in successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.LOGIN,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.LOGIN,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -328,19 +215,15 @@ export class AuditLogService {
     async logLogout(
         context: IAuditLogContext,
         description = "User logged out successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.LOGOUT,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.LOGOUT,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -348,19 +231,15 @@ export class AuditLogService {
     async logLoginFailed(
         context: IAuditLogContext,
         description = "User login failed.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.LOGIN_FAILED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.LOGIN_FAILED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.FAILURE,
-            severity:
-                AuditLogSeverity.WARNING,
+            status: AuditLogStatus.FAILURE,
+            severity: AuditLogSeverity.WARNING,
             metadata,
         });
     }
@@ -368,19 +247,15 @@ export class AuditLogService {
     async logPasswordChanged(
         context: IAuditLogContext,
         description = "User password changed successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.PASSWORD_CHANGED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.PASSWORD_CHANGED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -388,19 +263,15 @@ export class AuditLogService {
     async logPasswordReset(
         context: IAuditLogContext,
         description = "User password was reset successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.PASSWORD_RESET,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.PASSWORD_RESET,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -408,19 +279,15 @@ export class AuditLogService {
     async logEmailVerified(
         context: IAuditLogContext,
         description = "User email was verified successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.EMAIL_VERIFIED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.EMAIL_VERIFIED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -428,19 +295,15 @@ export class AuditLogService {
     async logPhoneVerified(
         context: IAuditLogContext,
         description = "User phone was verified successfully.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.PHONE_VERIFIED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.PHONE_VERIFIED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -448,19 +311,15 @@ export class AuditLogService {
     async logMfaEnabled(
         context: IAuditLogContext,
         description = "Multi-factor authentication was enabled.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.MFA_ENABLED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.MFA_ENABLED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -468,19 +327,15 @@ export class AuditLogService {
     async logMfaDisabled(
         context: IAuditLogContext,
         description = "Multi-factor authentication was disabled.",
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.MFA_DISABLED,
-            module:
-                AppModule.USER,
+            action: AuditLogAction.MFA_DISABLED,
+            module: AppModule.USER,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.WARNING,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.WARNING,
             metadata,
         });
     }
@@ -489,29 +344,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.ASSIGN,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.ASSIGN,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -520,29 +364,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.REMOVE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.REMOVE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -551,29 +384,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.ROLE_ASSIGNED,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.ROLE_ASSIGNED,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -582,29 +404,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.PERMISSION_ASSIGNED,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.PERMISSION_ASSIGNED,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -613,29 +424,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.PERMISSION_REVOKED,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.PERMISSION_REVOKED,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.WARNING,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.WARNING,
             metadata,
         });
     }
@@ -645,29 +445,18 @@ export class AuditLogService {
         resource: IAuditLogResource,
         description: string,
         changes?: IAuditLogChange[],
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.SETTINGS_UPDATED,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.SETTINGS_UPDATED,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             changes,
             metadata,
         });
@@ -677,29 +466,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.IMPORT,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.IMPORT,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -708,29 +486,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.EXPORT,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.EXPORT,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -739,29 +506,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.ARCHIVE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.ARCHIVE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.WARNING,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.WARNING,
             metadata,
         });
     }
@@ -770,29 +526,18 @@ export class AuditLogService {
         context: IAuditLogContext,
         resource: IAuditLogResource,
         description: string,
-        metadata?: Record<string, unknown>
+        metadata?: Record<string, unknown>,
     ) {
         return this.log({
             ...context,
-            action:
-                AuditLogAction.RESTORE_ARCHIVE,
-            module:
-                resource.module,
-            resourceType:
-                this.getResourceType(
-                    resource.module
-                ),
-            resourceId:
-                resource.resourceId as any ??
-                null,
-            resourceName:
-                resource.resourceName ??
-                null,
+            action: AuditLogAction.RESTORE_ARCHIVE,
+            module: resource.module,
+            resourceType: this.getResourceType(resource.module),
+            resourceId: (resource.resourceId as any) ?? null,
+            resourceName: resource.resourceName ?? null,
             description,
-            status:
-                AuditLogStatus.SUCCESS,
-            severity:
-                AuditLogSeverity.INFO,
+            status: AuditLogStatus.SUCCESS,
+            severity: AuditLogSeverity.INFO,
             metadata,
         });
     }
@@ -809,107 +554,62 @@ export class AuditLogService {
             severity?: AuditLogSeverity;
             changes?: IAuditLogChange[];
             metadata?: Record<string, unknown>;
-        }
+        },
     ) {
-        const module =
-            data.module ??
-            AppModule.USER;
+        const module = data.module ?? AppModule.USER;
 
         return this.log({
             ...context,
             action: data.action,
             module,
-            resourceType:
-                this.getResourceType(module),
-            resourceId:
-                data.resourceId as any ?? null,
-            resourceName:
-                data.resourceName ?? null,
-            description:
-                data.description,
-            status:
-                data.status ??
-                AuditLogStatus.FAILURE,
-            severity:
-                data.severity ??
-                AuditLogSeverity.WARNING,
-            changes:
-                data.changes,
-            metadata:
-                data.metadata,
+            resourceType: this.getResourceType(module),
+            resourceId: (data.resourceId as any) ?? null,
+            resourceName: data.resourceName ?? null,
+            description: data.description,
+            status: data.status ?? AuditLogStatus.FAILURE,
+            severity: data.severity ?? AuditLogSeverity.WARNING,
+            changes: data.changes,
+            metadata: data.metadata,
         });
     }
 
     async getById(id: string) {
-        const auditLog =
-            await this.auditLogRepository.findById(
-                id
-            );
+        const auditLog = await this.auditLogRepository.findById(id);
 
         if (!auditLog) {
-            throw new AppError(
-                "Audit log not found.",
-                404
-            );
+            throw new AppError("Audit log not found.", 404);
         }
 
         return auditLog;
     }
 
-    async getAll(
-        filters: IAuditLogFilter = {}
-    ) {
-        return this.auditLogRepository.findAll(
-            filters
-        );
+    async getAll(filters: IAuditLogFilter = {}) {
+        return this.auditLogRepository.findAll(filters);
     }
 
-    private getModuleConfig(
-        module: AppModule
-    ) {
-        const config =
-            AuditLogConfig[module];
+    private getModuleConfig(module: AppModule) {
+        const config = AuditLogConfig[module];
 
         if (!config) {
-            throw new AppError(
-                `Audit log configuration not found for module: ${module}`,
-                400
-            );
+            throw new AppError(`Audit log configuration not found for module: ${module}`, 400);
         }
 
         return config;
     }
 
-    private getResourceType(
-        module: AppModule
-    ): string {
-        return this.getModuleConfig(
-            module
-        ).resourceType;
+    private getResourceType(module: AppModule): string {
+        return this.getModuleConfig(module).resourceType;
     }
 
-    private validateAction(
-        module: AppModule,
-        action: AuditLogAction
-    ): void {
-        const config =
-            this.getModuleConfig(module);
+    private validateAction(module: AppModule, action: AuditLogAction): void {
+        const config = this.getModuleConfig(module);
 
-        if (
-            !config.actions.includes(
-                action
-            )
-        ) {
-            throw new AppError(
-                `Action ${action} is not allowed for module ${module}.`,
-                400
-            );
+        if (!config.actions.includes(action)) {
+            throw new AppError(`Action ${action} is not allowed for module ${module}.`, 400);
         }
     }
 
-    private toObjectId(
-        id?: Types.ObjectId | string | null
-    ): Types.ObjectId | null {
+    private toObjectId(id?: Types.ObjectId | string | null): Types.ObjectId | null {
         if (!id) {
             return null;
         }
@@ -919,64 +619,37 @@ export class AuditLogService {
         }
 
         if (!Types.ObjectId.isValid(id)) {
-            throw new AppError(
-                "Invalid audit log actor ID.",
-                400
-            );
+            throw new AppError("Invalid audit log actor ID.", 400);
         }
 
         return new Types.ObjectId(id);
     }
 
-    private getRequestContext(
-        req: Request
-    ): IAuditLogContext {
+    private getRequestContext(req: Request): IAuditLogContext {
         const user = req.user as
             | {
-                _id?: string;
-                id?: string;
-                actorType?: AuditLogActorType;
-            }
+                  _id?: string;
+                  id?: string;
+                  actorType?: AuditLogActorType;
+              }
             | undefined;
 
-        const requestId =
-            req.headers[
-                "x-request-id"
-            ]?.toString() ?? null;
+        const requestId = req.headers["x-request-id"]?.toString() ?? null;
 
-        const forwardedFor =
-            req.headers[
-                "x-forwarded-for"
-            ]?.toString();
+        const forwardedFor = req.headers["x-forwarded-for"]?.toString();
 
-        const ipAddress =
-            forwardedFor
-                ?.split(",")[0]
-                ?.trim() ??
-            req.ip ??
-            null;
+        const ipAddress = forwardedFor?.split(",")[0]?.trim() ?? req.ip ?? null;
 
         return {
-            actorId:
-                user?._id?.toString() ??
-                user?.id?.toString() ??
-                null,
-            actorType:
-                user?.actorType ??
-                AuditLogActorType.USER,
+            actorId: user?._id?.toString() ?? user?.id?.toString() ?? null,
+            actorType: user?.actorType ?? AuditLogActorType.USER,
             ipAddress,
-            userAgent:
-                req.get(
-                    "user-agent"
-                ) ?? null,
+            userAgent: req.get("user-agent") ?? null,
             requestId,
         };
     }
 
-    private sanitizeValue(
-        field: string,
-        value: unknown
-    ): unknown {
+    private sanitizeValue(field: string, value: unknown): unknown {
         const sensitiveFields = [
             "password",
             "currentPassword",
@@ -997,17 +670,11 @@ export class AuditLogService {
             "emailVerificationTokenHash",
         ];
 
-        if (
-            sensitiveFields.includes(
-                field
-            )
-        ) {
+        if (sensitiveFields.includes(field)) {
             return "[REDACTED]";
         }
 
-        if (
-            value instanceof Types.ObjectId
-        ) {
+        if (value instanceof Types.ObjectId) {
             return value.toString();
         }
 

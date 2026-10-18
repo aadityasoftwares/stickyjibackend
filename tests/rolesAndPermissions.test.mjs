@@ -45,23 +45,30 @@ before(async () => {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(res => socket.close(res));
+    await new Promise((res) => socket.close(res));
 
     directory = await mkdtemp(join(tmpdir(), "roles-permissions-test-"));
     mongo = spawn(
         process.env.MONGOD_BINARY ?? "mongod",
         [
-            "--dbpath", directory,
-            "--port", String(port),
-            "--bind_ip", "127.0.0.1",
-            "--replSet", "roles-permissions",
-            "--logpath", join(directory, "mongo.log"),
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--replSet",
+            "roles-permissions",
+            "--logpath",
+            join(directory, "mongo.log"),
         ],
-        { windowsHide: true, stdio: "ignore" }
+        { windowsHide: true, stdio: "ignore" },
     );
 
     let startupError;
-    mongo.on("error", err => { startupError = err; });
+    mongo.on("error", (err) => {
+        startupError = err;
+    });
 
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
@@ -78,7 +85,7 @@ before(async () => {
     }
 
     await mongoose.connection.db.admin().command({
-        replSetInitiate: { _id: "roles-permissions", members: [{ _id: 0, host: `127.0.0.1:${port}` }] }
+        replSetInitiate: { _id: "roles-permissions", members: [{ _id: 0, host: `127.0.0.1:${port}` }] },
     });
 
     for (let attempt = 0; ; attempt++) {
@@ -110,7 +117,7 @@ before(async () => {
     regularMember = await createUser(roles[SYSTEM_ROLE_CODES.USER]);
     outsiderUser = await createUser(roles[SYSTEM_ROLE_CODES.USER]);
 
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "roles-test" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "roles-test" }));
 
     const app = express();
     app.use(express.json());
@@ -124,7 +131,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (server) await new Promise(res => server.close(res));
+    if (server) await new Promise((res) => server.close(res));
     mock.restoreAll();
     await mongoose.disconnect();
     if (mongo?.pid && mongo.exitCode === null) {
@@ -184,15 +191,17 @@ async function apiRequest(method, path, actor, body) {
 test("1. Create custom role: validates workspace, enforces unique code and name in workspace", async () => {
     const ws = await createTestWorkspace();
     const permissions = await Permission.find({
-        code: { $in: ["NOTES_READ", "NOTES_CREATE"] }
-    }).select("_id").lean();
+        code: { $in: ["NOTES_READ", "NOTES_CREATE"] },
+    })
+        .select("_id")
+        .lean();
 
     const payload = {
         name: "Developer",
         displayName: "Software Developer",
         code: "DEV_ROLE",
         workspaceId: String(ws._id),
-        permissions: permissions.map(p => String(p._id)),
+        permissions: permissions.map((p) => String(p._id)),
         priority: 30,
     };
 
@@ -256,19 +265,33 @@ test("3. System role protection: cannot create role with protected system code, 
     assert.equal(res.status, 403);
 
     // Reject modifying system role
-    const updateRes = await apiRequest("PUT", `/roles/update/${roles[SYSTEM_ROLE_CODES.WORKSPACE_ADMIN]}`, owner, {
-        displayName: "Hacked Admin",
-    });
+    const updateRes = await apiRequest(
+        "PUT",
+        `/roles/update/${roles[SYSTEM_ROLE_CODES.WORKSPACE_ADMIN]}`,
+        owner,
+        {
+            displayName: "Hacked Admin",
+        },
+    );
     assert.equal(updateRes.status, 403);
 
     // Reject deleting system role
-    const deleteRes = await apiRequest("DELETE", `/roles/delete/${roles[SYSTEM_ROLE_CODES.WORKSPACE_MEMBER]}`, owner);
+    const deleteRes = await apiRequest(
+        "DELETE",
+        `/roles/delete/${roles[SYSTEM_ROLE_CODES.WORKSPACE_MEMBER]}`,
+        owner,
+    );
     assert.equal(deleteRes.status, 403);
 
     // Reject changing system role status
-    const statusRes = await apiRequest("PATCH", `/roles/update/${roles[SYSTEM_ROLE_CODES.WORKSPACE_VIEWER]}/status`, owner, {
-        isActive: false,
-    });
+    const statusRes = await apiRequest(
+        "PATCH",
+        `/roles/update/${roles[SYSTEM_ROLE_CODES.WORKSPACE_VIEWER]}/status`,
+        owner,
+        {
+            isActive: false,
+        },
+    );
     assert.equal(statusRes.status, 403);
 });
 
@@ -508,7 +531,7 @@ test("12. Permissions: list permissions, get by ID, get by code, grouped permiss
     const groupedRes = await apiRequest("GET", "/permissions/grouped", owner);
     assert.equal(groupedRes.status, 200);
     assert.ok(Array.isArray(groupedRes.body.data));
-    assert.ok(groupedRes.body.data.some(g => g.module === "WORKSPACE"));
+    assert.ok(groupedRes.body.data.some((g) => g.module === "WORKSPACE"));
 });
 
 test("13. Permissions mutations: system permissions are strictly immutable and protected", async () => {
@@ -613,28 +636,31 @@ test("17. Shared role validation: assertAssignableWorkspaceRole rejects inactive
 
     // Owner role cannot be assigned as a workspace member role
     assert.throws(
-        () => permissionAuthorizationService.assertAssignableWorkspaceRole(
-            { code: SYSTEM_ROLE_CODES.WORKSPACE_OWNER, scope: RoleScope.WORKSPACE, isActive: true },
-            String(wsA._id),
-        ),
-        err => err.statusCode === 400,
+        () =>
+            permissionAuthorizationService.assertAssignableWorkspaceRole(
+                { code: SYSTEM_ROLE_CODES.WORKSPACE_OWNER, scope: RoleScope.WORKSPACE, isActive: true },
+                String(wsA._id),
+            ),
+        (err) => err.statusCode === 400,
     );
 
     // Cross-workspace role cannot be assigned
     assert.throws(
-        () => permissionAuthorizationService.assertAssignableWorkspaceRole(
-            { code: "CUSTOM", scope: RoleScope.WORKSPACE, isActive: true, workspaceId: wsB._id },
-            String(wsA._id),
-        ),
-        err => err.statusCode === 400,
+        () =>
+            permissionAuthorizationService.assertAssignableWorkspaceRole(
+                { code: "CUSTOM", scope: RoleScope.WORKSPACE, isActive: true, workspaceId: wsB._id },
+                String(wsA._id),
+            ),
+        (err) => err.statusCode === 400,
     );
 
     // Inactive role cannot be assigned
     assert.throws(
-        () => permissionAuthorizationService.assertAssignableWorkspaceRole(
-            { code: "CUSTOM", scope: RoleScope.WORKSPACE, isActive: false, workspaceId: wsA._id },
-            String(wsA._id),
-        ),
-        err => err.statusCode === 400,
+        () =>
+            permissionAuthorizationService.assertAssignableWorkspaceRole(
+                { code: "CUSTOM", scope: RoleScope.WORKSPACE, isActive: false, workspaceId: wsA._id },
+                String(wsA._id),
+            ),
+        (err) => err.statusCode === 400,
     );
 });

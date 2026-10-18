@@ -1,8 +1,14 @@
 import { CountryModel } from "../models/country.model.js";
-import { CountryCode, CountryCodeAlpha3, CountryNumericCode, CountryContinent, CurrencyCode, CountryDialCode, } from "../constants/country.enums.js";
+import {
+    CountryCode,
+    CountryCodeAlpha3,
+    CountryNumericCode,
+    CountryContinent,
+    CurrencyCode,
+    CountryDialCode,
+} from "../constants/country.enums.js";
 
 export const seedCountries = async (): Promise<void> => {
-
     await CountryModel.findOneAndUpdate(
         {
             code: CountryCode.INDIA,
@@ -37,7 +43,7 @@ export const seedCountries = async (): Promise<void> => {
             upsert: true,
             new: true,
             setDefaultsOnInsert: true,
-        }
+        },
     );
 
     console.log("Default India country seeded successfully.");

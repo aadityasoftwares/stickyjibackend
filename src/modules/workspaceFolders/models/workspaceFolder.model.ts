@@ -87,5 +87,7 @@ WorkspaceFolderSchema.index(
     },
 );
 
-export const WorkspaceFolderModel: Model<IWorkspaceFolderDocument> =
-    mongoose.model<IWorkspaceFolderDocument>("WorkspaceFolder", WorkspaceFolderSchema);
+export const WorkspaceFolderModel: Model<IWorkspaceFolderDocument> = mongoose.model<IWorkspaceFolderDocument>(
+    "WorkspaceFolder",
+    WorkspaceFolderSchema,
+);

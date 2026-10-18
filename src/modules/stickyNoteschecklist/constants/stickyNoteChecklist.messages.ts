@@ -11,11 +11,9 @@ export const StickyNoteChecklistMessages = {
 
     NOT_FOUND: "Sticky note checklist not found.",
     STICKY_NOTE_NOT_FOUND: "Sticky note not found.",
-    STICKY_NOTE_DELETED:
-        "Cannot perform this operation because the sticky note has been deleted.",
+    STICKY_NOTE_DELETED: "Cannot perform this operation because the sticky note has been deleted.",
 
-    ALREADY_EXISTS:
-        "A sticky note checklist with this title already exists.",
+    ALREADY_EXISTS: "A sticky note checklist with this title already exists.",
     TITLE_REQUIRED: "Sticky note checklist title is required.",
     INVALID_TITLE: "Invalid sticky note checklist title.",
     INVALID_ID: "Invalid sticky note checklist ID.",
@@ -31,28 +29,21 @@ export const StickyNoteChecklistMessages = {
     INVALID_CREATED_BY: "Invalid createdBy user ID.",
     INVALID_USER_ID: "Invalid authenticated user.",
 
-    UPDATE_REQUIRED:
-        "At least one field is required to update the sticky note checklist.",
-    CANNOT_UPDATE_STICKY_NOTE:
-        "Sticky note cannot be changed for an existing checklist.",
+    UPDATE_REQUIRED: "At least one field is required to update the sticky note checklist.",
+    CANNOT_UPDATE_STICKY_NOTE: "Sticky note cannot be changed for an existing checklist.",
     CANNOT_UPDATE_CREATED_BY: "Created by cannot be updated.",
     CANNOT_UPDATE_UPDATED_BY: "Updated by cannot be updated.",
-    CANNOT_UPDATE_STATUS:
-        "Checklist status must be updated through the status endpoint.",
-    CANNOT_SET_STATUS:
-        "Checklist status cannot be set during creation.",
-    CANNOT_DELETE_THROUGH_STATUS:
-        "Use the delete endpoint to delete a sticky note checklist.",
+    CANNOT_UPDATE_STATUS: "Checklist status must be updated through the status endpoint.",
+    CANNOT_SET_STATUS: "Checklist status cannot be set during creation.",
+    CANNOT_DELETE_THROUGH_STATUS: "Use the delete endpoint to delete a sticky note checklist.",
     INVALID_FIELD: "One or more request fields are not supported.",
 
     ALREADY_ARCHIVED: "Sticky note checklist is already archived.",
     ALREADY_ACTIVE: "Sticky note checklist is already active.",
     ALREADY_DELETED: "Sticky note checklist is already deleted.",
     CANNOT_RESTORE_ACTIVE: "Sticky note checklist is already active.",
-    RESTORE_CONFLICT:
-        "A checklist with the same title already exists on this sticky note.",
+    RESTORE_CONFLICT: "A checklist with the same title already exists on this sticky note.",
 
     NO_CHECKLISTS_FOUND: "No sticky note checklists found.",
-    MAX_CHECKLISTS_REACHED:
-        "The maximum number of checklists for this sticky note has been reached.",
+    MAX_CHECKLISTS_REACHED: "The maximum number of checklists for this sticky note has been reached.",
 } as const;

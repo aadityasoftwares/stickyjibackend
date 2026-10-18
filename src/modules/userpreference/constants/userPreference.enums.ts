@@ -18,4 +18,4 @@ export enum UserPreferenceValueType {
 }
 
 export { StickyNoteView } from "../../stickynotes/constants/stickyNote.enums.js";
-export { WorkspaceAccessFilter } from "../../workspace/constants/workspace.enums.js";
+export { WorkspaceAccessFilter } from "../../workspace/constants/workspace.enums.js";

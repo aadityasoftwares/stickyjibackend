@@ -1,10 +1,8 @@
 import { TimezoneModel } from "../models/timezone.model.js";
-import type { ITimezone, ITimezoneFilter, } from "../interfaces/timezone.interface.js";
+import type { ITimezone, ITimezoneFilter } from "../interfaces/timezone.interface.js";
 import { CountryCode } from "../../countries/constants/country.enums.js";
 
-
 export class TimezoneRepository {
-
     async create(data: Partial<ITimezone>) {
         return TimezoneModel.create(data);
     }
@@ -25,10 +23,7 @@ export class TimezoneRepository {
         });
     }
 
-    async findByCodeAndCountry(
-        code: string,
-        countryCode: CountryCode | string
-    ) {
+    async findByCodeAndCountry(code: string, countryCode: CountryCode | string) {
         return TimezoneModel.findOne({
             code: code.trim(),
             countryCode: countryCode.toUpperCase().trim() as CountryCode,
@@ -36,7 +31,6 @@ export class TimezoneRepository {
     }
 
     async findAll(filters: ITimezoneFilter = {}) {
-
         const {
             page = 1,
             limit = 10,
@@ -54,9 +48,7 @@ export class TimezoneRepository {
         const query: any = {};
 
         if (search) {
-
             query.$or = [
-
                 {
                     name: {
                         $regex: search,
@@ -84,7 +76,6 @@ export class TimezoneRepository {
                         $options: "i",
                     },
                 },
-
             ];
         }
 
@@ -114,14 +105,13 @@ export class TimezoneRepository {
 
         const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
-                TimezoneModel.find(query).sort({ [sortBy]: sortOrder === "asc" ? 1 : -1, })
-                    .skip(skip)
-                    .limit(limit),
-                TimezoneModel.countDocuments(query),
-            ]);
-
+        const [data, total] = await Promise.all([
+            TimezoneModel.find(query)
+                .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 })
+                .skip(skip)
+                .limit(limit),
+            TimezoneModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -134,12 +124,10 @@ export class TimezoneRepository {
         };
     }
 
-
     async existsByCode(code: string): Promise<boolean> {
-        const exists = await TimezoneModel.exists({ code: code.trim(), });
+        const exists = await TimezoneModel.exists({ code: code.trim() });
         return !!exists;
     }
-
 
     async existsByCodeAndCountry(code: string, countryCode: CountryCode | string): Promise<boolean> {
         const exists = await TimezoneModel.exists({
@@ -150,14 +138,10 @@ export class TimezoneRepository {
     }
 
     async updateById(id: string, data: Partial<ITimezone>) {
-        return TimezoneModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        return TimezoneModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
 
     async deleteById(id: string) {

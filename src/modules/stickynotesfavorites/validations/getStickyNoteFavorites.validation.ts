@@ -3,45 +3,21 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { StickyNoteFavoriteMessages } from "../constants/stickyNoteFavorite.messages.js";
 import { StickyNoteFavoriteValidation } from "./stickyNoteFavorite.validation.js";
 
-export const getStickyNoteFavoritesValidation = (
-    req: Request,
-    _res: Response,
-    next: NextFunction,
-) => {
+export const getStickyNoteFavoritesValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
         const source = (req.method === "POST" ? req.body : req.query) ?? {};
-        const {
-            stickyNoteId,
-            status,
-            page,
-            limit,
-            sortBy,
-            sortOrder,
-        } = source;
+        const { stickyNoteId, status, page, limit, sortBy, sortOrder } = source;
 
         if (
             stickyNoteId !== undefined &&
             stickyNoteId !== "" &&
             !StickyNoteFavoriteValidation.isValidObjectId(stickyNoteId)
         ) {
-            return next(
-                new AppError(
-                    StickyNoteFavoriteMessages.INVALID_STICKY_NOTE_ID,
-                    400,
-                ),
-            );
+            return next(new AppError(StickyNoteFavoriteMessages.INVALID_STICKY_NOTE_ID, 400));
         }
 
-        if (
-            status !== undefined &&
-            !StickyNoteFavoriteValidation.isValidStatus(status)
-        ) {
-            return next(
-                new AppError(
-                    StickyNoteFavoriteMessages.INVALID_STATUS,
-                    400,
-                ),
-            );
+        if (status !== undefined && !StickyNoteFavoriteValidation.isValidStatus(status)) {
+            return next(new AppError(StickyNoteFavoriteMessages.INVALID_STATUS, 400));
         }
 
         if (
@@ -60,17 +36,11 @@ export const getStickyNoteFavoritesValidation = (
             return next(new AppError("Limit must be a positive integer.", 400));
         }
 
-        if (
-            sortBy !== undefined &&
-            !StickyNoteFavoriteValidation.isValidSortField(sortBy)
-        ) {
+        if (sortBy !== undefined && !StickyNoteFavoriteValidation.isValidSortField(sortBy)) {
             return next(new AppError("Invalid sort field.", 400));
         }
 
-        if (
-            sortOrder !== undefined &&
-            !StickyNoteFavoriteValidation.isValidSortOrder(sortOrder)
-        ) {
+        if (sortOrder !== undefined && !StickyNoteFavoriteValidation.isValidSortOrder(sortOrder)) {
             return next(new AppError('sortOrder must be "asc" or "desc".', 400));
         }
 

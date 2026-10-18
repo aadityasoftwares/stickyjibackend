@@ -17,10 +17,24 @@ export const USER_SUBSCRIPTION_CONSTANTS = {
     RECONCILIATION_DELAY_MS: 24 * 60 * 60 * 1000,
 } as const;
 
-export const USER_SUBSCRIPTION_TRANSITIONS: Readonly<Record<UserSubscriptionStatus, readonly UserSubscriptionStatus[]>> = {
-    [UserSubscriptionStatus.PENDING]: [UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.CANCELED, UserSubscriptionStatus.EXPIRED],
-    [UserSubscriptionStatus.ACTIVE]: [UserSubscriptionStatus.PAST_DUE, UserSubscriptionStatus.CANCELED, UserSubscriptionStatus.EXPIRED],
-    [UserSubscriptionStatus.PAST_DUE]: [UserSubscriptionStatus.ACTIVE, UserSubscriptionStatus.CANCELED, UserSubscriptionStatus.EXPIRED],
+export const USER_SUBSCRIPTION_TRANSITIONS: Readonly<
+    Record<UserSubscriptionStatus, readonly UserSubscriptionStatus[]>
+> = {
+    [UserSubscriptionStatus.PENDING]: [
+        UserSubscriptionStatus.ACTIVE,
+        UserSubscriptionStatus.CANCELED,
+        UserSubscriptionStatus.EXPIRED,
+    ],
+    [UserSubscriptionStatus.ACTIVE]: [
+        UserSubscriptionStatus.PAST_DUE,
+        UserSubscriptionStatus.CANCELED,
+        UserSubscriptionStatus.EXPIRED,
+    ],
+    [UserSubscriptionStatus.PAST_DUE]: [
+        UserSubscriptionStatus.ACTIVE,
+        UserSubscriptionStatus.CANCELED,
+        UserSubscriptionStatus.EXPIRED,
+    ],
     [UserSubscriptionStatus.CANCELED]: [],
     [UserSubscriptionStatus.EXPIRED]: [],
 };

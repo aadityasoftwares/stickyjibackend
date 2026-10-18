@@ -91,31 +91,19 @@ export class StickyNoteAssigneeService {
             description: `User "${userId}" was assigned to sticky note "${stickyNote.title || stickyNoteId}".`,
         });
 
-        await this.logAssignmentChange(
-            stickyNote,
-            context,
-            isReactivation ? [userId] : [],
-            [userId],
-            [],
-        );
+        await this.logAssignmentChange(stickyNote, context, isReactivation ? [userId] : [], [userId], []);
 
         return this.toResponse(assignee);
     }
 
-    async getStickyNoteAssigneeById(
-        id: string,
-        requestedBy: string,
-    ): Promise<IStickyNoteAssigneeResponse> {
+    async getStickyNoteAssigneeById(id: string, requestedBy: string): Promise<IStickyNoteAssigneeResponse> {
         const assignee = await this.stickyNoteAssigneeRepository.findById(id);
 
         if (!assignee) {
             throw new AppError(StickyNoteAssigneeMessages.NOT_FOUND, 404);
         }
 
-        await this.assertActorMembership(
-            this.getReferenceId(assignee.workspaceId),
-            requestedBy,
-        );
+        await this.assertActorMembership(this.getReferenceId(assignee.workspaceId), requestedBy);
 
         return this.toResponse(assignee);
     }
@@ -144,10 +132,7 @@ export class StickyNoteAssigneeService {
         let workspaceId = filters.workspaceId ? String(filters.workspaceId) : "";
 
         if (filters.stickyNoteId) {
-            const stickyNote = await this.getAssignmentTarget(
-                String(filters.stickyNoteId),
-                false,
-            );
+            const stickyNote = await this.getAssignmentTarget(String(filters.stickyNoteId), false);
 
             const noteWorkspaceId = stickyNote.workspaceId.toString();
 
@@ -169,15 +154,9 @@ export class StickyNoteAssigneeService {
             stickyNoteId: filters.stickyNoteId,
             userId: filters.userId,
             status: filters.status ?? StickyNoteAssigneeStatus.ACTIVE,
-            page: Math.max(
-                filters.page ?? STICKY_NOTE_ASSIGNEE_CONSTANTS.PAGINATION.DEFAULT_PAGE,
-                1,
-            ),
+            page: Math.max(filters.page ?? STICKY_NOTE_ASSIGNEE_CONSTANTS.PAGINATION.DEFAULT_PAGE, 1),
             limit: Math.min(
-                Math.max(
-                    filters.limit ?? STICKY_NOTE_ASSIGNEE_CONSTANTS.PAGINATION.DEFAULT_LIMIT,
-                    1,
-                ),
+                Math.max(filters.limit ?? STICKY_NOTE_ASSIGNEE_CONSTANTS.PAGINATION.DEFAULT_LIMIT, 1),
                 STICKY_NOTE_ASSIGNEE_CONSTANTS.PAGINATION.MAX_LIMIT,
             ),
             sortBy: filters.sortBy ?? "assignedAt",
@@ -198,9 +177,7 @@ export class StickyNoteAssigneeService {
         actorId: string,
         context?: IAuditLogContext,
     ): Promise<IStickyNoteAssigneeResponse[]> {
-        const requestedUserIds = StickyNoteAssigneeValidation.normalizeUniqueObjectIds(
-            data.assigneeIds,
-        );
+        const requestedUserIds = StickyNoteAssigneeValidation.normalizeUniqueObjectIds(data.assigneeIds);
 
         if (requestedUserIds.length > STICKY_NOTE_ASSIGNEE_CONSTANTS.MAX_PER_NOTE) {
             throw new AppError(StickyNoteAssigneeMessages.TOO_MANY_ASSIGNEES, 400);
@@ -233,13 +210,7 @@ export class StickyNoteAssigneeService {
             actorId,
         });
 
-        await this.logAssignmentChange(
-            stickyNote,
-            context,
-            currentUserIds,
-            requestedUserIds,
-            removeUserIds,
-        );
+        await this.logAssignmentChange(stickyNote, context, currentUserIds, requestedUserIds, removeUserIds);
 
         const active = await this.stickyNoteAssigneeRepository.findActiveByStickyNote(stickyNoteId);
         return active.map((a) => this.toResponse(a));
@@ -284,13 +255,7 @@ export class StickyNoteAssigneeService {
             description: `User "${targetUserId}" was removed from sticky note "${stickyNote.title || stickyNoteId}".`,
         });
 
-        await this.logAssignmentChange(
-            stickyNote,
-            context,
-            [targetUserId],
-            [],
-            [targetUserId],
-        );
+        await this.logAssignmentChange(stickyNote, context, [targetUserId], [], [targetUserId]);
 
         return this.toResponse(removedAssignee);
     }
@@ -325,10 +290,7 @@ export class StickyNoteAssigneeService {
             throw new AppError(StickyNoteAssigneeMessages.MAX_ASSIGNEES_REACHED, 400);
         }
 
-        const restoredAssignee = await this.stickyNoteAssigneeRepository.restoreById(
-            id,
-            assignedBy,
-        );
+        const restoredAssignee = await this.stickyNoteAssigneeRepository.restoreById(id, assignedBy);
 
         if (!restoredAssignee) {
             throw new AppError(StickyNoteAssigneeMessages.NOT_FOUND, 404);
@@ -343,27 +305,13 @@ export class StickyNoteAssigneeService {
             description: `Assignment of user "${userId}" to sticky note "${stickyNote.title || stickyNoteId}" was restored successfully.`,
         });
 
-        await this.logAssignmentChange(
-            stickyNote,
-            context,
-            [],
-            [userId],
-            [],
-        );
+        await this.logAssignmentChange(stickyNote, context, [], [userId], []);
 
         return this.toResponse(restoredAssignee);
     }
 
-    async removeAssignmentsForWorkspaceMember(
-        workspaceId: string,
-        userId: string,
-        removedBy: string,
-    ) {
-        return this.stickyNoteAssigneeRepository.removeAllByWorkspaceAndUser(
-            workspaceId,
-            userId,
-            removedBy,
-        );
+    async removeAssignmentsForWorkspaceMember(workspaceId: string, userId: string, removedBy: string) {
+        return this.stickyNoteAssigneeRepository.removeAllByWorkspaceAndUser(workspaceId, userId, removedBy);
     }
 
     private async getAssignmentTarget(
@@ -397,10 +345,7 @@ export class StickyNoteAssigneeService {
         return stickyNote as IStickyNoteAssignmentTarget;
     }
 
-    private async assertActorMembership(
-        workspaceId: string,
-        actorId: string,
-    ): Promise<void> {
+    private async assertActorMembership(workspaceId: string, actorId: string): Promise<void> {
         const workspace = await WorkspaceModel.findById(workspaceId)
             .select("_id ownerId createdBy status")
             .lean();
@@ -410,8 +355,7 @@ export class StickyNoteAssigneeService {
         }
 
         const isOwnerOrCreator =
-            workspace.ownerId?.toString() === actorId ||
-            workspace.createdBy?.toString() === actorId;
+            workspace.ownerId?.toString() === actorId || workspace.createdBy?.toString() === actorId;
 
         if (!isOwnerOrCreator) {
             const actor = await WorkspaceMemberModel.findOne({

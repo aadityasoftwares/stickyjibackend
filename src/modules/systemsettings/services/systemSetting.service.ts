@@ -51,7 +51,7 @@ export class SystemSettingService {
     async updateSystemSetting(
         id: string,
         data: Partial<ISystemSetting>,
-        updatedBy?: ISystemSetting["updatedBy"]
+        updatedBy?: ISystemSetting["updatedBy"],
     ) {
         const setting = await this.systemSettingRepository.findById(id);
 
@@ -72,17 +72,11 @@ export class SystemSettingService {
         }
 
         if (data.valueType !== undefined) {
-            throw new AppError(
-                SystemSettingMessages.VALUE_TYPE_NOT_EDITABLE,
-                400
-            );
+            throw new AppError(SystemSettingMessages.VALUE_TYPE_NOT_EDITABLE, 400);
         }
 
         if (data.category !== undefined) {
-            throw new AppError(
-                SystemSettingMessages.CATEGORY_NOT_EDITABLE,
-                400
-            );
+            throw new AppError(SystemSettingMessages.CATEGORY_NOT_EDITABLE, 400);
         }
 
         const updateData: Partial<ISystemSetting> = {
@@ -93,10 +87,7 @@ export class SystemSettingService {
         return this.systemSettingRepository.updateById(id, updateData);
     }
 
-    async resetSystemSetting(
-        id: string,
-        updatedBy?: ISystemSetting["updatedBy"]
-    ) {
+    async resetSystemSetting(id: string, updatedBy?: ISystemSetting["updatedBy"]) {
         const setting = await this.systemSettingRepository.findById(id);
 
         if (!setting) {
@@ -108,16 +99,9 @@ export class SystemSettingService {
         }
 
         if (setting.defaultValue === null || setting.defaultValue === undefined) {
-            throw new AppError(
-                SystemSettingMessages.DEFAULT_VALUE_NOT_AVAILABLE,
-                400
-            );
+            throw new AppError(SystemSettingMessages.DEFAULT_VALUE_NOT_AVAILABLE, 400);
         }
 
-        return this.systemSettingRepository.resetById(
-            id,
-            setting.defaultValue,
-            updatedBy
-        );
+        return this.systemSettingRepository.resetById(id, setting.defaultValue, updatedBy);
     }
 }

@@ -117,10 +117,7 @@ export class SubscriptionUsageRepository {
         return { usage: upserted, conflict: false };
     }
 
-    async countOwnedWorkspaces(
-        ownerId: Types.ObjectId,
-        session?: ClientSession,
-    ): Promise<number> {
+    async countOwnedWorkspaces(ownerId: Types.ObjectId, session?: ClientSession): Promise<number> {
         const query = WorkspaceModel.countDocuments({
             ownerId,
             status: { $in: [WorkspaceStatus.ACTIVE, WorkspaceStatus.ARCHIVED] },
@@ -129,23 +126,17 @@ export class SubscriptionUsageRepository {
         return query.exec();
     }
 
-    async findOwnedWorkspaceIds(
-        ownerId: Types.ObjectId,
-        session?: ClientSession,
-    ): Promise<Types.ObjectId[]> {
+    async findOwnedWorkspaceIds(ownerId: Types.ObjectId, session?: ClientSession): Promise<Types.ObjectId[]> {
         const query = WorkspaceModel.find({
             ownerId,
             status: { $in: [WorkspaceStatus.ACTIVE, WorkspaceStatus.ARCHIVED] },
         }).select("_id");
         if (session) query.session(session);
         const workspaces = await query.lean().exec();
-        return workspaces.map(w => w._id as Types.ObjectId);
+        return workspaces.map((w) => w._id as Types.ObjectId);
     }
 
-    async countActiveStickyNotes(
-        workspaceIds: Types.ObjectId[],
-        session?: ClientSession,
-    ): Promise<number> {
+    async countActiveStickyNotes(workspaceIds: Types.ObjectId[], session?: ClientSession): Promise<number> {
         if (!workspaceIds.length) return 0;
         const query = StickyNoteModel.countDocuments({
             workspaceId: { $in: workspaceIds },
@@ -167,10 +158,7 @@ export class SubscriptionUsageRepository {
         return query.exec();
     }
 
-    async countFoldersInWorkspace(
-        workspaceId: Types.ObjectId,
-        session?: ClientSession,
-    ): Promise<number> {
+    async countFoldersInWorkspace(workspaceId: Types.ObjectId, session?: ClientSession): Promise<number> {
         const query = WorkspaceFolderModel.countDocuments({
             workspaceId,
             status: { $in: [WorkspaceFolderStatus.ACTIVE, WorkspaceFolderStatus.ARCHIVED] },
@@ -218,10 +206,12 @@ export class SubscriptionUsageRepository {
     ): Promise<number> {
         let noteIds: Types.ObjectId[] = [];
         if (ownedWorkspaceIds.length > 0) {
-            const notesQuery = StickyNoteModel.find({ workspaceId: { $in: ownedWorkspaceIds } }).select("_id");
+            const notesQuery = StickyNoteModel.find({ workspaceId: { $in: ownedWorkspaceIds } }).select(
+                "_id",
+            );
             if (session) notesQuery.session(session);
             const notes = await notesQuery.lean().exec();
-            noteIds = notes.map(n => n._id as Types.ObjectId);
+            noteIds = notes.map((n) => n._id as Types.ObjectId);
         }
 
         const resourceOrConditions: Record<string, unknown>[] = [
@@ -272,7 +262,7 @@ export class SubscriptionUsageRepository {
         const notesQuery = StickyNoteModel.find({ workspaceId }).select("_id");
         if (session) notesQuery.session(session);
         const notes = await notesQuery.lean().exec();
-        const noteIds = notes.map(n => n._id as Types.ObjectId);
+        const noteIds = notes.map((n) => n._id as Types.ObjectId);
 
         const resourceOrConditions: Record<string, unknown>[] = [
             { resourceType: MediaResourceType.WORKSPACE, resourceId: workspaceId },
@@ -309,10 +299,7 @@ export class SubscriptionUsageRepository {
         return Math.max(0, typeof raw === "number" && Number.isSafeInteger(raw) ? raw : Math.floor(raw || 0));
     }
 
-    async findWorkspaceById(
-        workspaceId: Types.ObjectId,
-        session?: ClientSession,
-    ) {
+    async findWorkspaceById(workspaceId: Types.ObjectId, session?: ClientSession) {
         const query = WorkspaceModel.findById(workspaceId);
         if (session) query.session(session);
         return query.lean().exec();
@@ -337,9 +324,10 @@ export class SubscriptionUsageRepository {
             query.scopeId = new Types.ObjectId(filter.search);
         }
 
-        const sortField = filter.sortBy && SUBSCRIPTION_USAGE_CONSTANTS.ALLOWED_SORT_FIELDS.includes(filter.sortBy as any)
-            ? filter.sortBy
-            : SUBSCRIPTION_USAGE_CONSTANTS.DEFAULT_SORT_BY;
+        const sortField =
+            filter.sortBy && SUBSCRIPTION_USAGE_CONSTANTS.ALLOWED_SORT_FIELDS.includes(filter.sortBy as any)
+                ? filter.sortBy
+                : SUBSCRIPTION_USAGE_CONSTANTS.DEFAULT_SORT_BY;
         const sortDirection = filter.sortOrder === "asc" ? 1 : -1;
 
         const findQuery = SubscriptionUsageModel.find(query)

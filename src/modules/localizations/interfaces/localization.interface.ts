@@ -30,6 +30,4 @@ export interface ILocalizationFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface ILocalizationDocument
-    extends ILocalization,
-    Document { }
+export interface ILocalizationDocument extends ILocalization, Document {}

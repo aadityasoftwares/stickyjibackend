@@ -4,10 +4,7 @@ import { UserPreferenceMessages } from "../constants/userPreference.messages.js"
 import { ResponseUtil } from "../../../utils/response.util.js";
 import { RequestUtil } from "../../../utils/request.util.js";
 import type { IUserPreferenceFilter } from "../interfaces/userPreference.interface.js";
-import {
-    UserPreferenceCategory,
-    UserPreferenceValueType,
-} from "../constants/userPreference.enums.js";
+import { UserPreferenceCategory, UserPreferenceValueType } from "../constants/userPreference.enums.js";
 
 export class UserPreferenceController {
     private userPreferenceService: UserPreferenceService;
@@ -25,11 +22,7 @@ export class UserPreferenceController {
         };
     }
 
-    createUserPreference = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    createUserPreference = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const preference = await this.userPreferenceService.createUserPreference(
@@ -38,46 +31,25 @@ export class UserPreferenceController {
                 this.getAuditContext(req),
             );
 
-            return res.status(201).json(
-                ResponseUtil.created(
-                    UserPreferenceMessages.CREATED,
-                    preference,
-                ),
-            );
+            return res.status(201).json(ResponseUtil.created(UserPreferenceMessages.CREATED, preference));
         } catch (error) {
             next(error);
         }
     };
 
-    getUserPreference = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    getUserPreference = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const key = RequestUtil.getParam(req.params.key);
-            const preference = await this.userPreferenceService.getUserPreference(
-                userId,
-                key,
-            );
+            const preference = await this.userPreferenceService.getUserPreference(userId, key);
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.FETCHED,
-                    preference,
-                ),
-            );
+            return res.status(200).json(ResponseUtil.success(UserPreferenceMessages.FETCHED, preference));
         } catch (error) {
             next(error);
         }
     };
 
-    getUserPreferences = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    getUserPreferences = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const filters: IUserPreferenceFilter = {
@@ -86,27 +58,17 @@ export class UserPreferenceController {
                 valueType: req.query.valueType as UserPreferenceValueType | undefined,
             };
 
-            const preferences = await this.userPreferenceService.getUserPreferences(
-                userId,
-                filters,
-            );
+            const preferences = await this.userPreferenceService.getUserPreferences(userId, filters);
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.FETCHED_ALL,
-                    preferences,
-                ),
-            );
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserPreferenceMessages.FETCHED_ALL, preferences));
         } catch (error) {
             next(error);
         }
     };
 
-    updateUserPreference = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    updateUserPreference = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const { key, value } = req.body;
@@ -118,47 +80,26 @@ export class UserPreferenceController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.UPDATED,
-                    preference,
-                ),
-            );
+            return res.status(200).json(ResponseUtil.success(UserPreferenceMessages.UPDATED, preference));
         } catch (error) {
             next(error);
         }
     };
 
-    deleteUserPreference = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    deleteUserPreference = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const key = RequestUtil.getParam(req.params.key);
 
-            await this.userPreferenceService.deleteUserPreference(
-                userId,
-                key,
-                this.getAuditContext(req),
-            );
+            await this.userPreferenceService.deleteUserPreference(userId, key, this.getAuditContext(req));
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.DELETED,
-                ),
-            );
+            return res.status(200).json(ResponseUtil.success(UserPreferenceMessages.DELETED));
         } catch (error) {
             next(error);
         }
     };
 
-    resetUserPreference = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    resetUserPreference = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
             const { key } = req.body;
@@ -169,22 +110,13 @@ export class UserPreferenceController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.RESET,
-                    preference,
-                ),
-            );
+            return res.status(200).json(ResponseUtil.success(UserPreferenceMessages.RESET, preference));
         } catch (error) {
             next(error);
         }
     };
 
-    resetAllUserPreferences = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    resetAllUserPreferences = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = req.user?.id as string;
 
@@ -193,12 +125,7 @@ export class UserPreferenceController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    UserPreferenceMessages.RESET_ALL,
-                    preferences,
-                ),
-            );
+            return res.status(200).json(ResponseUtil.success(UserPreferenceMessages.RESET_ALL, preferences));
         } catch (error) {
             next(error);
         }

@@ -63,8 +63,7 @@ WorkspaceMemberSchema.index({ userId: 1, status: 1 });
 WorkspaceMemberSchema.index({ workspaceId: 1, createdAt: -1 });
 WorkspaceMemberSchema.index({ workspaceId: 1, updatedAt: -1 });
 
-export const WorkspaceMemberModel: Model<IWorkspaceMemberDocument> =
-    mongoose.model<IWorkspaceMemberDocument>(
-        "WorkspaceMember",
-        WorkspaceMemberSchema,
-    );
+export const WorkspaceMemberModel: Model<IWorkspaceMemberDocument> = mongoose.model<IWorkspaceMemberDocument>(
+    "WorkspaceMember",
+    WorkspaceMemberSchema,
+);

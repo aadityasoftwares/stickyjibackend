@@ -1,12 +1,17 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { ICountryDocument, } from "../interfaces/country.interface.js";
-import { CountryCode, CountryCodeAlpha3, CountryNumericCode, CountryContinent, CurrencyCode, CountryDialCode, } from "../constants/country.enums.js";
-import { DEFAULT_COUNTRY_STATUS, DEFAULT_COUNTRY_SYSTEM, } from "../constants/country.constants.js";
-
+import mongoose, { Schema, Model } from "mongoose";
+import type { ICountryDocument } from "../interfaces/country.interface.js";
+import {
+    CountryCode,
+    CountryCodeAlpha3,
+    CountryNumericCode,
+    CountryContinent,
+    CurrencyCode,
+    CountryDialCode,
+} from "../constants/country.enums.js";
+import { DEFAULT_COUNTRY_STATUS, DEFAULT_COUNTRY_SYSTEM } from "../constants/country.constants.js";
 
 const CountrySchema = new Schema<ICountryDocument>(
     {
-
         name: {
             type: String,
             required: true,
@@ -104,36 +109,21 @@ const CountrySchema = new Schema<ICountryDocument>(
             ref: "User",
             default: null,
         },
-
     },
     {
         timestamps: true,
-    }
+    },
 );
-
 
 // Unique indexes
 
-CountrySchema.index(
-    { code: 1 },
-    { unique: true }
-);
+CountrySchema.index({ code: 1 }, { unique: true });
 
-CountrySchema.index(
-    { alpha3Code: 1 },
-    { unique: true }
-);
+CountrySchema.index({ alpha3Code: 1 }, { unique: true });
 
-CountrySchema.index(
-    { numericCode: 1 },
-    { unique: true }
-);
+CountrySchema.index({ numericCode: 1 }, { unique: true });
 
-CountrySchema.index(
-    { locale: 1 },
-    { unique: true }
-);
-
+CountrySchema.index({ locale: 1 }, { unique: true });
 
 // Search / filter indexes
 
@@ -174,9 +164,7 @@ CountrySchema.index({
     isDefault: 1,
 });
 
-
-export const CountryModel: Model<ICountryDocument> =
-    mongoose.model<ICountryDocument>(
-        "Country",
-        CountrySchema
-    );
+export const CountryModel: Model<ICountryDocument> = mongoose.model<ICountryDocument>(
+    "Country",
+    CountrySchema,
+);

@@ -1,11 +1,10 @@
-import type { Request, Response, NextFunction, } from "express";
-import { FeatureService, } from "../services/feature.service.js";
-import { FeatureMessages, } from "../constants/feature.messages.js";
-import { ResponseUtil, } from "../../../utils/response.util.js";
-import { RequestUtil, } from "../../../utils/request.util.js";
+import type { Request, Response, NextFunction } from "express";
+import { FeatureService } from "../services/feature.service.js";
+import { FeatureMessages } from "../constants/feature.messages.js";
+import { ResponseUtil } from "../../../utils/response.util.js";
+import { RequestUtil } from "../../../utils/request.util.js";
 
 export class FeatureController {
-
     private featureService: FeatureService;
 
     constructor() {
@@ -15,68 +14,35 @@ export class FeatureController {
     createFeature = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const feature = await this.featureService.createFeature(req.body);
-            return res.status(201).json(
-                ResponseUtil.created(
-                    FeatureMessages.CREATED,
-                    feature
-                )
-            );
+            return res.status(201).json(ResponseUtil.created(FeatureMessages.CREATED, feature));
         } catch (error) {
             next(error);
         }
     };
-
 
     getFeatureById = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const feature = await this.featureService.getFeatureById(RequestUtil.getParam(req.params.id));
 
-            const feature = await this.featureService.getFeatureById(
-                RequestUtil.getParam(
-                    req.params.id
-                )
-            );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    FeatureMessages.FETCHED,
-                    feature
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(FeatureMessages.FETCHED, feature));
         } catch (error) {
             next(error);
         }
     };
-
 
     getFeatureByCode = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
+            const feature = await this.featureService.getFeatureByCode(RequestUtil.getParam(req.params.code));
 
-            const feature = await this.featureService.getFeatureByCode(
-                RequestUtil.getParam(
-                    req.params.code
-                )
-            );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    FeatureMessages.FETCHED,
-                    feature
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(FeatureMessages.FETCHED, feature));
         } catch (error) {
             next(error);
         }
     };
 
-
     getFeatures = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const features = await this.featureService.getFeatures({
-
                 page: Number(req.query.page) || 1,
                 limit: Number(req.query.limit) || 10,
                 search: req.query.search as string,
@@ -87,87 +53,56 @@ export class FeatureController {
                 isSystem: req.query.isSystem !== undefined ? req.query.isSystem === "true" : undefined,
                 isActive: req.query.isActive !== undefined ? req.query.isActive === "true" : undefined,
                 sortBy: req.query.sortBy as string,
-                sortOrder: req.query.sortOrder as | "asc" | "desc",
+                sortOrder: req.query.sortOrder as "asc" | "desc",
             });
 
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    FeatureMessages.FETCHED_ALL,
-                    features.data,
-                    features.pagination.page,
-                    features.pagination.limit,
-                    features.pagination.total
-                )
-            );
-
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        FeatureMessages.FETCHED_ALL,
+                        features.data,
+                        features.pagination.page,
+                        features.pagination.limit,
+                        features.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
     };
-
 
     updateFeature = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const feature = await this.featureService.updateFeature(
-                RequestUtil.getParam(
-                    req.params.id
-                ),
-                req.body
+                RequestUtil.getParam(req.params.id),
+                req.body,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    FeatureMessages.UPDATED,
-                    feature
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(FeatureMessages.UPDATED, feature));
         } catch (error) {
             next(error);
         }
     };
 
-
     deleteFeature = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
+            await this.featureService.deleteFeature(RequestUtil.getParam(req.params.id));
 
-            await this.featureService.deleteFeature(
-                RequestUtil.getParam(
-                    req.params.id
-                )
-            );
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    FeatureMessages.DELETED
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(FeatureMessages.DELETED));
         } catch (error) {
             next(error);
         }
     };
 
     changeFeatureStatus = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const feature = await this.featureService.changeFeatureStatus(
-                RequestUtil.getParam(
-                    req.params.id
-                ),
-                req.body.isActive
+                RequestUtil.getParam(req.params.id),
+                req.body.isActive,
             );
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    FeatureMessages.UPDATED,
-                    feature
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(FeatureMessages.UPDATED, feature));
         } catch (error) {
             next(error);
         }

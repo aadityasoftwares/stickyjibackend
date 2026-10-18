@@ -2,14 +2,14 @@ import { z } from "zod";
 
 export const PAGINATION_DEFAULTS = { page: 1, limit: 20, maxLimit: 100 } as const;
 
-const positiveInteger = z.union([
-    z.number(),
-    z.string().trim().regex(/^\d+$/).transform(Number),
-]).pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER));
+const positiveInteger = z
+    .union([z.number(), z.string().trim().regex(/^\d+$/).transform(Number)])
+    .pipe(z.number().int().positive().max(Number.MAX_SAFE_INTEGER));
 
 export const paginationShape = {
     page: positiveInteger.default(PAGINATION_DEFAULTS.page),
-    limit: positiveInteger.transform(value => Math.min(value, PAGINATION_DEFAULTS.maxLimit))
+    limit: positiveInteger
+        .transform((value) => Math.min(value, PAGINATION_DEFAULTS.maxLimit))
         .default(PAGINATION_DEFAULTS.limit),
 };
 

@@ -1,18 +1,9 @@
-import type {
-    Document,
-    Types,
-} from "mongoose";
+import type { Document, Types } from "mongoose";
 
-import type {
-    StickyNoteChecklistItemStatus,
-} from "../constants/stickyNoteChecklistItem.enums.js";
+import type { StickyNoteChecklistItemStatus } from "../constants/stickyNoteChecklistItem.enums.js";
 
 export type StickyNoteChecklistItemSortField =
-    | "position"
-    | "title"
-    | "createdAt"
-    | "updatedAt"
-    | "completedAt";
+    "position" | "title" | "createdAt" | "updatedAt" | "completedAt";
 
 export interface IStickyNoteChecklistItem {
     checklistId: Types.ObjectId;
@@ -33,9 +24,7 @@ export interface IStickyNoteChecklistItem {
     updatedAt?: Date;
 }
 
-export interface IStickyNoteChecklistItemDocument
-    extends IStickyNoteChecklistItem,
-    Document {
+export interface IStickyNoteChecklistItemDocument extends IStickyNoteChecklistItem, Document {
     _id: Types.ObjectId;
 }
 

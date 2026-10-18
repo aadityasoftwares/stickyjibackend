@@ -15,46 +15,29 @@ const currencyController = new CurrencyController();
 currencyRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "name",
-        "code",
-        "symbol",
-        "numericCode",
-        "decimalPlaces"
-    ),
+    requireBodyFields("name", "code", "symbol", "numericCode", "decimalPlaces"),
     createCurrencyValidation,
-    currencyController.createCurrency
+    currencyController.createCurrency,
 );
 
-currencyRoutes.get(
-    "/getall",
-    currencyController.getCurrencies
-);
+currencyRoutes.get("/getall", currencyController.getCurrencies);
 
-currencyRoutes.get(
-    "/get",
-    getCurrencyValidation,
-    currencyController.getCurrencyById
-);
+currencyRoutes.get("/get", getCurrencyValidation, currencyController.getCurrencyById);
 
 currencyRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getCurrencyValidation,
-    currencyController.getCurrencyById
+    currencyController.getCurrencyById,
 );
 
-currencyRoutes.get(
-    "/get/code",
-    getCurrencyValidation,
-    currencyController.getCurrencyByCode
-);
+currencyRoutes.get("/get/code", getCurrencyValidation, currencyController.getCurrencyByCode);
 
 currencyRoutes.get(
     "/get/code/:code",
     requireRouteParam("code"),
     getCurrencyValidation,
-    currencyController.getCurrencyByCode
+    currencyController.getCurrencyByCode,
 );
 
 currencyRoutes.put(
@@ -62,7 +45,7 @@ currencyRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateCurrencyValidation,
-    currencyController.updateCurrency
+    currencyController.updateCurrency,
 );
 
 currencyRoutes.put(
@@ -70,18 +53,15 @@ currencyRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateCurrencyValidation,
-    currencyController.updateCurrency
+    currencyController.updateCurrency,
 );
 
 currencyRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeCurrencyStatusValidation,
-    currencyController.changeCurrencyStatus
+    currencyController.changeCurrencyStatus,
 );
 
 currencyRoutes.patch(
@@ -90,21 +70,21 @@ currencyRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeCurrencyStatusValidation,
-    currencyController.changeCurrencyStatus
+    currencyController.changeCurrencyStatus,
 );
 
 currencyRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteCurrencyValidation,
-    currencyController.deleteCurrency
+    currencyController.deleteCurrency,
 );
 
 currencyRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteCurrencyValidation,
-    currencyController.deleteCurrency
+    currencyController.deleteCurrency,
 );
 
 export default currencyRoutes;

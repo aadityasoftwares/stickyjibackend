@@ -9,7 +9,7 @@ export class NotesWorkspaceController {
         this.service = new NotesWorkspaceService();
     }
 
-    private getParamValue(value: | string | string[] | undefined): string {
+    private getParamValue(value: string | string[] | undefined): string {
         if (Array.isArray(value)) {
             return value[0] || "";
         }
@@ -22,11 +22,7 @@ export class NotesWorkspaceController {
     }
 
     private unauthorized(res: Response) {
-        return res.status(401).json(
-            ResponseUtil.unauthorized(
-                "User not authenticated"
-            )
-        );
+        return res.status(401).json(ResponseUtil.unauthorized("User not authenticated"));
     }
 
     createWorkspace = async (req: Request, res: Response) => {
@@ -37,21 +33,13 @@ export class NotesWorkspaceController {
                 return this.unauthorized(res);
             }
 
-            const payload = { ...req.body, owner, };
+            const payload = { ...req.body, owner };
 
             const workspace = await this.service.createWorkspace(payload);
 
-            return res.status(201).json(ResponseUtil.created(
-                "Workspace created successfully",
-                workspace
-            ));
+            return res.status(201).json(ResponseUtil.created("Workspace created successfully", workspace));
         } catch (error: any) {
-            return res.status(400).json(
-                ResponseUtil.badRequest(
-                    error.message ||
-                    "Bad request"
-                )
-            );
+            return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
         }
     };
 
@@ -65,19 +53,9 @@ export class NotesWorkspaceController {
 
             const workspaces = await this.service.getMyWorkspaces(owner);
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    "Workspaces fetched successfully",
-                    workspaces
-                )
-            );
+            return res.status(200).json(ResponseUtil.success("Workspaces fetched successfully", workspaces));
         } catch (error: any) {
-            return res.status(400).json(
-                ResponseUtil.badRequest(
-                    error.message ||
-                    "Bad request"
-                )
-            );
+            return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
         }
     };
 
@@ -92,29 +70,14 @@ export class NotesWorkspaceController {
             const id = this.getParamValue(req.params.id);
 
             if (!id) {
-                return res.status(400).json(
-                    ResponseUtil.badRequest(
-                        "Workspace ID is required"
-                    )
-                );
+                return res.status(400).json(ResponseUtil.badRequest("Workspace ID is required"));
             }
 
             const workspace = await this.service.getWorkspaceById(id, owner);
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    "Workspace fetched successfully",
-                    workspace
-                )
-            );
+            return res.status(200).json(ResponseUtil.success("Workspace fetched successfully", workspace));
         } catch (error: any) {
-            return res
-                .status(404).json(
-                    ResponseUtil.notFound(
-                        error.message ||
-                        "Workspace not found"
-                    )
-                );
+            return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace not found"));
         }
     };
 
@@ -129,28 +92,14 @@ export class NotesWorkspaceController {
             const id = this.getParamValue(req.params.id);
 
             if (!id) {
-                return res.status(400).json(
-                    ResponseUtil.badRequest(
-                        "Workspace ID is required"
-                    )
-                );
+                return res.status(400).json(ResponseUtil.badRequest("Workspace ID is required"));
             }
 
             const workspace = await this.service.updateWorkspace(id, owner, req.body);
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    "Workspace updated successfully",
-                    workspace
-                )
-            );
+            return res.status(200).json(ResponseUtil.success("Workspace updated successfully", workspace));
         } catch (error: any) {
-            return res.status(400).json(
-                ResponseUtil.badRequest(
-                    error.message ||
-                    "Bad request"
-                )
-            );
+            return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
         }
     };
 
@@ -177,12 +126,7 @@ export class NotesWorkspaceController {
     private handleWorkspaceAction = async (
         req: Request,
         res: Response,
-        action:
-            | "delete"
-            | "activate"
-            | "deactivate"
-            | "archive"
-            | "unarchive"
+        action: "delete" | "activate" | "deactivate" | "archive" | "unarchive",
     ) => {
         try {
             const owner = this.getUserId(req);
@@ -191,16 +135,10 @@ export class NotesWorkspaceController {
                 return this.unauthorized(res);
             }
 
-            const id = this.getParamValue(
-                req.params.id
-            );
+            const id = this.getParamValue(req.params.id);
 
             if (!id) {
-                return res.status(400).json(
-                    ResponseUtil.badRequest(
-                        "Workspace ID is required"
-                    )
-                );
+                return res.status(400).json(ResponseUtil.badRequest("Workspace ID is required"));
             }
 
             let data: any = {};
@@ -238,19 +176,9 @@ export class NotesWorkspaceController {
                     break;
             }
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    message,
-                    data
-                )
-            );
+            return res.status(200).json(ResponseUtil.success(message, data));
         } catch (error: any) {
-            return res.status(400).json(
-                ResponseUtil.badRequest(
-                    error.message ||
-                    "Bad request"
-                )
-            );
+            return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
         }
     };
 
@@ -266,20 +194,12 @@ export class NotesWorkspaceController {
 
             return res.status(200).json({
                 success: true,
-                message:
-                    "Workspaces filtered successfully",
+                message: "Workspaces filtered successfully",
                 data: result.workspaces,
-                pagination:
-                    result.pagination,
+                pagination: result.pagination,
             });
         } catch (error: any) {
-            return res.status(400).json(
-                ResponseUtil.badRequest(
-                    error.message ||
-                    "Bad request"
-                )
-            );
+            return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
         }
     };
-
 }

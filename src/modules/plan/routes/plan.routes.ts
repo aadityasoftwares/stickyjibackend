@@ -13,21 +13,9 @@ const planRoutes = Router();
 const planController = new PlanController();
 
 // Dedicated Subscription Plans / Pricing Catalog endpoint
-planRoutes.get(
-    "/subscriptionplans",
-    optionalAuthMiddleware,
-    planController.getSubscriptionPlans,
-);
-planRoutes.get(
-    "/pricing",
-    optionalAuthMiddleware,
-    planController.getSubscriptionPlans,
-);
-planRoutes.post(
-    "/subscriptionplans",
-    optionalAuthMiddleware,
-    planController.getSubscriptionPlans,
-);
+planRoutes.get("/subscriptionplans", optionalAuthMiddleware, planController.getSubscriptionPlans);
+planRoutes.get("/pricing", optionalAuthMiddleware, planController.getSubscriptionPlans);
+planRoutes.post("/subscriptionplans", optionalAuthMiddleware, planController.getSubscriptionPlans);
 
 planRoutes.post(
     "/create",
@@ -71,10 +59,6 @@ planRoutes.patch(
     planController.updatePlanStatus,
 );
 
-planRoutes.delete(
-    ["/delete/:id", "/delete"],
-    deletePlanValidation,
-    planController.deletePlan,
-);
+planRoutes.delete(["/delete/:id", "/delete"], deletePlanValidation, planController.deletePlan);
 
 export default planRoutes;

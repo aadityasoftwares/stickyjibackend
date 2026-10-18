@@ -23,7 +23,6 @@ export enum PermissionAction {
 }
 
 export enum PermissionAccess {
-
     GENERAL = "GENERAL",
     OWN = "OWN",
     ANY = "ANY",

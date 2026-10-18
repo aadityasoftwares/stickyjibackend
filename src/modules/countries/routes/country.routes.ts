@@ -16,61 +16,37 @@ const countryRoutes = Router();
 
 const countryController = new CountryController();
 
-
 // Create Country
 countryRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "name",
-        "code",
-        "alpha3Code",
-        "numericCode",
-        "dialCode",
-        "continent",
-        "currencyCode"
-    ),
+    requireBodyFields("name", "code", "alpha3Code", "numericCode", "dialCode", "continent", "currencyCode"),
     createCountryValidation,
-    countryController.createCountry
+    countryController.createCountry,
 );
-
 
 // Get All Countries
-countryRoutes.get(
-    "/getall",
-    countryController.getCountries
-);
-
+countryRoutes.get("/getall", countryController.getCountries);
 
 // Get Country By ID
-countryRoutes.get(
-    "/get",
-    getCountryValidation,
-    countryController.getCountryById
-);
+countryRoutes.get("/get", getCountryValidation, countryController.getCountryById);
 
 countryRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getCountryValidation,
-    countryController.getCountryById
+    countryController.getCountryById,
 );
-
 
 // Get Country By Code
-countryRoutes.get(
-    "/get/code",
-    getCountryValidation,
-    countryController.getCountryByCode
-);
+countryRoutes.get("/get/code", getCountryValidation, countryController.getCountryByCode);
 
 countryRoutes.get(
     "/get/code/:code",
     requireRouteParam("code"),
     getCountryValidation,
-    countryController.getCountryByCode
+    countryController.getCountryByCode,
 );
-
 
 // Update Country
 countryRoutes.put(
@@ -78,7 +54,7 @@ countryRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateCountryValidation,
-    countryController.updateCountry
+    countryController.updateCountry,
 );
 
 countryRoutes.put(
@@ -86,20 +62,16 @@ countryRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateCountryValidation,
-    countryController.updateCountry
+    countryController.updateCountry,
 );
-
 
 // Change Country Status
 countryRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeCountryStatusValidation,
-    countryController.changeCountryStatus
+    countryController.changeCountryStatus,
 );
 
 countryRoutes.patch(
@@ -108,24 +80,22 @@ countryRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeCountryStatusValidation,
-    countryController.changeCountryStatus
+    countryController.changeCountryStatus,
 );
-
 
 // Delete Country
 countryRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteCountryValidation,
-    countryController.deleteCountry
+    countryController.deleteCountry,
 );
 
 countryRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteCountryValidation,
-    countryController.deleteCountry
+    countryController.deleteCountry,
 );
-
 
 export default countryRoutes;

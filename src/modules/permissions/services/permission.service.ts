@@ -27,7 +27,7 @@ export class PermissionService {
 
     private toResponse(permission: any): IPermissionResponse {
         if (!permission) return null as any;
-        const id = permission._id ? permission._id.toString() : (permission.id ? permission.id.toString() : "");
+        const id = permission._id ? permission._id.toString() : permission.id ? permission.id.toString() : "";
         const raw = typeof permission.toObject === "function" ? permission.toObject() : { ...permission };
 
         return {
@@ -39,12 +39,7 @@ export class PermissionService {
         };
     }
 
-
-    async createPermission(
-        data: IPermissionCreateInput,
-        userId?: string,
-        context?: IAuditLogContext,
-    ) {
+    async createPermission(data: IPermissionCreateInput, userId?: string, context?: IAuditLogContext) {
         const name = StringHelper.normalize(data.name).toLowerCase();
         const displayName = StringHelper.normalize(data.displayName);
         const code = StringHelper.normalizeUpper(data.code);
@@ -123,9 +118,7 @@ export class PermissionService {
     }
 
     async getPermissionByCode(code: string) {
-        const permission = await this.permissionRepository.findByCode(
-            StringHelper.normalizeUpper(code),
-        );
+        const permission = await this.permissionRepository.findByCode(StringHelper.normalizeUpper(code));
 
         if (!permission) {
             throw new AppError(PermissionMessages.NOT_FOUND, 404);
@@ -199,7 +192,11 @@ export class PermissionService {
             const displayName = StringHelper.normalize(data.displayName);
             if (displayName !== permission.displayName) {
                 payload.displayName = displayName;
-                changes.push({ field: "displayName", oldValue: permission.displayName, newValue: displayName });
+                changes.push({
+                    field: "displayName",
+                    oldValue: permission.displayName,
+                    newValue: displayName,
+                });
             }
         }
 
@@ -237,11 +234,7 @@ export class PermissionService {
         const effectiveAction = payload.action ?? permission.action;
         const effectiveAccess = payload.access ?? permission.access;
 
-        if (
-            payload.module !== undefined ||
-            payload.action !== undefined ||
-            payload.access !== undefined
-        ) {
+        if (payload.module !== undefined || payload.action !== undefined || payload.access !== undefined) {
             const combination = await this.permissionRepository.findByCombination(
                 effectiveModule,
                 effectiveAction,
@@ -256,7 +249,11 @@ export class PermissionService {
             const description = StringHelper.normalizeOptional(data.description) ?? "";
             if (description !== (permission.description ?? "")) {
                 payload.description = description;
-                changes.push({ field: "description", oldValue: permission.description ?? "", newValue: description });
+                changes.push({
+                    field: "description",
+                    oldValue: permission.description ?? "",
+                    newValue: description,
+                });
             }
         }
 
@@ -310,12 +307,7 @@ export class PermissionService {
         return this.toResponse(updated);
     }
 
-    async changePermissionStatus(
-        id: string,
-        isActive: boolean,
-        userId?: string,
-        context?: IAuditLogContext,
-    ) {
+    async changePermissionStatus(id: string, isActive: boolean, userId?: string, context?: IAuditLogContext) {
         if (!Types.ObjectId.isValid(id)) {
             throw new AppError(PermissionMessages.NOT_FOUND, 404);
         }
@@ -366,11 +358,7 @@ export class PermissionService {
         return this.toResponse(updated);
     }
 
-    async deletePermission(
-        id: string,
-        userId?: string,
-        context?: IAuditLogContext,
-    ) {
+    async deletePermission(id: string, userId?: string, context?: IAuditLogContext) {
         if (!Types.ObjectId.isValid(id)) {
             throw new AppError(PermissionMessages.NOT_FOUND, 404);
         }

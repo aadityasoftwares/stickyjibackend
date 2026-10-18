@@ -1,9 +1,8 @@
 import { LanguageModel } from "../models/language.model.js";
-import type { ILanguage, ILanguageFilter, } from "../interfaces/language.interface.js";
-import { LanguageCode, } from "../constants/language.enums.js";
+import type { ILanguage, ILanguageFilter } from "../interfaces/language.interface.js";
+import { LanguageCode } from "../constants/language.enums.js";
 
 export class LanguageRepository {
-
     async create(data: Partial<ILanguage>) {
         return LanguageModel.create(data);
     }
@@ -25,7 +24,6 @@ export class LanguageRepository {
     }
 
     async findAll(filters: ILanguageFilter = {}) {
-
         const {
             page = 1,
             limit = 10,
@@ -71,36 +69,42 @@ export class LanguageRepository {
             ];
         }
 
-        if (code) { query.code = code.toLowerCase().trim(); }
+        if (code) {
+            query.code = code.toLowerCase().trim();
+        }
 
-        if (locale) { query.locale = locale.trim(); }
+        if (locale) {
+            query.locale = locale.trim();
+        }
 
-        if (direction) { query.direction = direction; }
+        if (direction) {
+            query.direction = direction;
+        }
 
-        if (isDefault !== undefined) { query.isDefault = isDefault; }
+        if (isDefault !== undefined) {
+            query.isDefault = isDefault;
+        }
 
-        if (isSystem !== undefined) { query.isSystem = isSystem; }
+        if (isSystem !== undefined) {
+            query.isSystem = isSystem;
+        }
 
-        if (isActive !== undefined) { query.isActive = isActive; }
+        if (isActive !== undefined) {
+            query.isActive = isActive;
+        }
 
         const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
-                LanguageModel.find(query)
-                    .sort({
-                        [sortBy]:
-                            sortOrder === "asc"
-                                ? 1
-                                : -1,
-                    })
-                    .skip(skip)
-                    .limit(limit),
+        const [data, total] = await Promise.all([
+            LanguageModel.find(query)
+                .sort({
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                })
+                .skip(skip)
+                .limit(limit),
 
-                LanguageModel.countDocuments(
-                    query
-                ),
-            ]);
+            LanguageModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -109,33 +113,26 @@ export class LanguageRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(
-                        total / limit
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
     async existsByCode(code: string): Promise<boolean> {
-        const exists = await LanguageModel.exists({ code: code.toLowerCase().trim() as LanguageCode, });
+        const exists = await LanguageModel.exists({ code: code.toLowerCase().trim() as LanguageCode });
         return !!exists;
     }
 
     async existsByLocale(locale: string): Promise<boolean> {
-        const exists = await LanguageModel.exists({ locale: locale.trim(), });
+        const exists = await LanguageModel.exists({ locale: locale.trim() });
         return !!exists;
     }
 
     async updateById(id: string, data: Partial<ILanguage>) {
-        return LanguageModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        return LanguageModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
 
     async deleteById(id: string) {

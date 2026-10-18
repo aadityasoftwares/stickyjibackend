@@ -4,7 +4,6 @@ import { CountryCode } from "../../countries/constants/country.enums.js";
 // Default Timezone Configuration
 // ============================================================
 
-
 export const DEFAULT_TIMEZONE_STATUS = true;
 
 export const DEFAULT_TIMEZONE_SYSTEM = true;
@@ -19,312 +18,162 @@ export const DEFAULT_TIMEZONE_OFFSET = "+05:30";
 
 export const DEFAULT_TIMEZONE_TYPE = "IANA";
 
-
 // ============================================================
 // Country → Timezone Mapping
 // ============================================================
 
 export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
-
     // ========================================================
     // Africa
     // ========================================================
 
-    [CountryCode.ALGERIA]: [
-        "Africa/Algiers",
-    ],
+    [CountryCode.ALGERIA]: ["Africa/Algiers"],
 
-    [CountryCode.ANGOLA]: [
-        "Africa/Luanda",
-    ],
+    [CountryCode.ANGOLA]: ["Africa/Luanda"],
 
-    [CountryCode.BENIN]: [
-        "Africa/Porto-Novo",
-    ],
+    [CountryCode.BENIN]: ["Africa/Porto-Novo"],
 
-    [CountryCode.BOTSWANA]: [
-        "Africa/Gaborone",
-    ],
+    [CountryCode.BOTSWANA]: ["Africa/Gaborone"],
 
-    [CountryCode.BURKINA_FASO]: [
-        "Africa/Ouagadougou",
-    ],
+    [CountryCode.BURKINA_FASO]: ["Africa/Ouagadougou"],
 
-    [CountryCode.BURUNDI]: [
-        "Africa/Bujumbura",
-    ],
+    [CountryCode.BURUNDI]: ["Africa/Bujumbura"],
 
-    [CountryCode.CABO_VERDE]: [
-        "Atlantic/Cape_Verde",
-    ],
+    [CountryCode.CABO_VERDE]: ["Atlantic/Cape_Verde"],
 
-    [CountryCode.CAMEROON]: [
-        "Africa/Douala",
-    ],
+    [CountryCode.CAMEROON]: ["Africa/Douala"],
 
-    [CountryCode.CENTRAL_AFRICAN_REPUBLIC]: [
-        "Africa/Bangui",
-    ],
+    [CountryCode.CENTRAL_AFRICAN_REPUBLIC]: ["Africa/Bangui"],
 
-    [CountryCode.CHAD]: [
-        "Africa/Ndjamena",
-    ],
+    [CountryCode.CHAD]: ["Africa/Ndjamena"],
 
-    [CountryCode.COMOROS]: [
-        "Indian/Comoro",
-    ],
+    [CountryCode.COMOROS]: ["Indian/Comoro"],
 
-    [CountryCode.CONGO]: [
-        "Africa/Brazzaville",
-    ],
+    [CountryCode.CONGO]: ["Africa/Brazzaville"],
 
-    [CountryCode.DEMOCRATIC_REPUBLIC_OF_CONGO]: [
-        "Africa/Kinshasa",
-        "Africa/Lubumbashi",
-    ],
+    [CountryCode.DEMOCRATIC_REPUBLIC_OF_CONGO]: ["Africa/Kinshasa", "Africa/Lubumbashi"],
 
-    [CountryCode.COTE_D_IVOIRE]: [
-        "Africa/Abidjan",
-    ],
+    [CountryCode.COTE_D_IVOIRE]: ["Africa/Abidjan"],
 
-    [CountryCode.DJIBOUTI]: [
-        "Africa/Djibouti",
-    ],
+    [CountryCode.DJIBOUTI]: ["Africa/Djibouti"],
 
-    [CountryCode.EGYPT]: [
-        "Africa/Cairo",
-    ],
+    [CountryCode.EGYPT]: ["Africa/Cairo"],
 
-    [CountryCode.EQUATORIAL_GUINEA]: [
-        "Africa/Malabo",
-    ],
+    [CountryCode.EQUATORIAL_GUINEA]: ["Africa/Malabo"],
 
-    [CountryCode.ERITREA]: [
-        "Africa/Asmara",
-    ],
+    [CountryCode.ERITREA]: ["Africa/Asmara"],
 
-    [CountryCode.ESWATINI]: [
-        "Africa/Mbabane",
-    ],
+    [CountryCode.ESWATINI]: ["Africa/Mbabane"],
 
-    [CountryCode.ETHIOPIA]: [
-        "Africa/Addis_Ababa",
-    ],
+    [CountryCode.ETHIOPIA]: ["Africa/Addis_Ababa"],
 
-    [CountryCode.GABON]: [
-        "Africa/Libreville",
-    ],
+    [CountryCode.GABON]: ["Africa/Libreville"],
 
-    [CountryCode.GAMBIA]: [
-        "Africa/Banjul",
-    ],
+    [CountryCode.GAMBIA]: ["Africa/Banjul"],
 
-    [CountryCode.GHANA]: [
-        "Africa/Accra",
-    ],
+    [CountryCode.GHANA]: ["Africa/Accra"],
 
-    [CountryCode.GUINEA]: [
-        "Africa/Conakry",
-    ],
+    [CountryCode.GUINEA]: ["Africa/Conakry"],
 
-    [CountryCode.GUINEA_BISSAU]: [
-        "Africa/Bissau",
-    ],
+    [CountryCode.GUINEA_BISSAU]: ["Africa/Bissau"],
 
-    [CountryCode.KENYA]: [
-        "Africa/Nairobi",
-    ],
+    [CountryCode.KENYA]: ["Africa/Nairobi"],
 
-    [CountryCode.LESOTHO]: [
-        "Africa/Maseru",
-    ],
+    [CountryCode.LESOTHO]: ["Africa/Maseru"],
 
-    [CountryCode.LIBERIA]: [
-        "Africa/Monrovia",
-    ],
+    [CountryCode.LIBERIA]: ["Africa/Monrovia"],
 
-    [CountryCode.LIBYA]: [
-        "Africa/Tripoli",
-    ],
+    [CountryCode.LIBYA]: ["Africa/Tripoli"],
 
-    [CountryCode.MADAGASCAR]: [
-        "Indian/Antananarivo",
-    ],
+    [CountryCode.MADAGASCAR]: ["Indian/Antananarivo"],
 
-    [CountryCode.MALAWI]: [
-        "Africa/Blantyre",
-    ],
+    [CountryCode.MALAWI]: ["Africa/Blantyre"],
 
-    [CountryCode.MALI]: [
-        "Africa/Bamako",
-    ],
+    [CountryCode.MALI]: ["Africa/Bamako"],
 
-    [CountryCode.MAURITANIA]: [
-        "Africa/Nouakchott",
-    ],
+    [CountryCode.MAURITANIA]: ["Africa/Nouakchott"],
 
-    [CountryCode.MAURITIUS]: [
-        "Indian/Mauritius",
-    ],
+    [CountryCode.MAURITIUS]: ["Indian/Mauritius"],
 
-    [CountryCode.MOROCCO]: [
-        "Africa/Casablanca",
-    ],
+    [CountryCode.MOROCCO]: ["Africa/Casablanca"],
 
-    [CountryCode.MOZAMBIQUE]: [
-        "Africa/Maputo",
-    ],
+    [CountryCode.MOZAMBIQUE]: ["Africa/Maputo"],
 
-    [CountryCode.NAMIBIA]: [
-        "Africa/Windhoek",
-    ],
+    [CountryCode.NAMIBIA]: ["Africa/Windhoek"],
 
-    [CountryCode.NIGER]: [
-        "Africa/Niamey",
-    ],
+    [CountryCode.NIGER]: ["Africa/Niamey"],
 
-    [CountryCode.NIGERIA]: [
-        "Africa/Lagos",
-    ],
+    [CountryCode.NIGERIA]: ["Africa/Lagos"],
 
-    [CountryCode.RWANDA]: [
-        "Africa/Kigali",
-    ],
+    [CountryCode.RWANDA]: ["Africa/Kigali"],
 
-    [CountryCode.SAO_TOME_AND_PRINCIPE]: [
-        "Africa/Sao_Tome",
-    ],
+    [CountryCode.SAO_TOME_AND_PRINCIPE]: ["Africa/Sao_Tome"],
 
-    [CountryCode.SENEGAL]: [
-        "Africa/Dakar",
-    ],
+    [CountryCode.SENEGAL]: ["Africa/Dakar"],
 
-    [CountryCode.SEYCHELLES]: [
-        "Indian/Mahe",
-    ],
+    [CountryCode.SEYCHELLES]: ["Indian/Mahe"],
 
-    [CountryCode.SIERRA_LEONE]: [
-        "Africa/Freetown",
-    ],
+    [CountryCode.SIERRA_LEONE]: ["Africa/Freetown"],
 
-    [CountryCode.SOMALIA]: [
-        "Africa/Mogadishu",
-    ],
+    [CountryCode.SOMALIA]: ["Africa/Mogadishu"],
 
-    [CountryCode.SOUTH_AFRICA]: [
-        "Africa/Johannesburg",
-    ],
+    [CountryCode.SOUTH_AFRICA]: ["Africa/Johannesburg"],
 
-    [CountryCode.SOUTH_SUDAN]: [
-        "Africa/Juba",
-    ],
+    [CountryCode.SOUTH_SUDAN]: ["Africa/Juba"],
 
-    [CountryCode.SUDAN]: [
-        "Africa/Khartoum",
-    ],
+    [CountryCode.SUDAN]: ["Africa/Khartoum"],
 
-    [CountryCode.TANZANIA]: [
-        "Africa/Dar_es_Salaam",
-    ],
+    [CountryCode.TANZANIA]: ["Africa/Dar_es_Salaam"],
 
-    [CountryCode.TOGO]: [
-        "Africa/Lome",
-    ],
+    [CountryCode.TOGO]: ["Africa/Lome"],
 
-    [CountryCode.TUNISIA]: [
-        "Africa/Tunis",
-    ],
+    [CountryCode.TUNISIA]: ["Africa/Tunis"],
 
-    [CountryCode.UGANDA]: [
-        "Africa/Kampala",
-    ],
+    [CountryCode.UGANDA]: ["Africa/Kampala"],
 
-    [CountryCode.ZAMBIA]: [
-        "Africa/Lusaka",
-    ],
+    [CountryCode.ZAMBIA]: ["Africa/Lusaka"],
 
-    [CountryCode.ZIMBABWE]: [
-        "Africa/Harare",
-    ],
-
+    [CountryCode.ZIMBABWE]: ["Africa/Harare"],
 
     // ========================================================
     // Asia
     // ========================================================
 
-    [CountryCode.AFGHANISTAN]: [
-        "Asia/Kabul",
-    ],
+    [CountryCode.AFGHANISTAN]: ["Asia/Kabul"],
 
-    [CountryCode.ARMENIA]: [
-        "Asia/Yerevan",
-    ],
+    [CountryCode.ARMENIA]: ["Asia/Yerevan"],
 
-    [CountryCode.AZERBAIJAN]: [
-        "Asia/Baku",
-    ],
+    [CountryCode.AZERBAIJAN]: ["Asia/Baku"],
 
-    [CountryCode.BAHRAIN]: [
-        "Asia/Bahrain",
-    ],
+    [CountryCode.BAHRAIN]: ["Asia/Bahrain"],
 
-    [CountryCode.BANGLADESH]: [
-        "Asia/Dhaka",
-    ],
+    [CountryCode.BANGLADESH]: ["Asia/Dhaka"],
 
-    [CountryCode.BHUTAN]: [
-        "Asia/Thimphu",
-    ],
+    [CountryCode.BHUTAN]: ["Asia/Thimphu"],
 
-    [CountryCode.BRUNEI]: [
-        "Asia/Brunei",
-    ],
+    [CountryCode.BRUNEI]: ["Asia/Brunei"],
 
-    [CountryCode.CAMBODIA]: [
-        "Asia/Phnom_Penh",
-    ],
+    [CountryCode.CAMBODIA]: ["Asia/Phnom_Penh"],
 
-    [CountryCode.CHINA]: [
-        "Asia/Shanghai",
-    ],
+    [CountryCode.CHINA]: ["Asia/Shanghai"],
 
-    [CountryCode.CYPRUS]: [
-        "Asia/Nicosia",
-    ],
+    [CountryCode.CYPRUS]: ["Asia/Nicosia"],
 
-    [CountryCode.GEORGIA]: [
-        "Asia/Tbilisi",
-    ],
+    [CountryCode.GEORGIA]: ["Asia/Tbilisi"],
 
-    [CountryCode.INDIA]: [
-        "Asia/Kolkata",
-    ],
+    [CountryCode.INDIA]: ["Asia/Kolkata"],
 
-    [CountryCode.INDONESIA]: [
-        "Asia/Jakarta",
-        "Asia/Makassar",
-        "Asia/Jayapura",
-    ],
+    [CountryCode.INDONESIA]: ["Asia/Jakarta", "Asia/Makassar", "Asia/Jayapura"],
 
-    [CountryCode.IRAN]: [
-        "Asia/Tehran",
-    ],
+    [CountryCode.IRAN]: ["Asia/Tehran"],
 
-    [CountryCode.IRAQ]: [
-        "Asia/Baghdad",
-    ],
+    [CountryCode.IRAQ]: ["Asia/Baghdad"],
 
-    [CountryCode.ISRAEL]: [
-        "Asia/Jerusalem",
-    ],
+    [CountryCode.ISRAEL]: ["Asia/Jerusalem"],
 
-    [CountryCode.JAPAN]: [
-        "Asia/Tokyo",
-    ],
+    [CountryCode.JAPAN]: ["Asia/Tokyo"],
 
-    [CountryCode.JORDAN]: [
-        "Asia/Amman",
-    ],
+    [CountryCode.JORDAN]: ["Asia/Amman"],
 
     [CountryCode.KAZAKHSTAN]: [
         "Asia/Almaty",
@@ -336,272 +185,137 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "Asia/Qyzylorda",
     ],
 
-    [CountryCode.KUWAIT]: [
-        "Asia/Kuwait",
-    ],
+    [CountryCode.KUWAIT]: ["Asia/Kuwait"],
 
-    [CountryCode.KYRGYZSTAN]: [
-        "Asia/Bishkek",
-    ],
+    [CountryCode.KYRGYZSTAN]: ["Asia/Bishkek"],
 
-    [CountryCode.LAOS]: [
-        "Asia/Vientiane",
-    ],
+    [CountryCode.LAOS]: ["Asia/Vientiane"],
 
-    [CountryCode.LEBANON]: [
-        "Asia/Beirut",
-    ],
+    [CountryCode.LEBANON]: ["Asia/Beirut"],
 
-    [CountryCode.MALAYSIA]: [
-        "Asia/Kuala_Lumpur",
-        "Asia/Kuching",
-    ],
+    [CountryCode.MALAYSIA]: ["Asia/Kuala_Lumpur", "Asia/Kuching"],
 
-    [CountryCode.MALDIVES]: [
-        "Indian/Maldives",
-    ],
+    [CountryCode.MALDIVES]: ["Indian/Maldives"],
 
-    [CountryCode.MONGOLIA]: [
-        "Asia/Ulaanbaatar",
-        "Asia/Hovd",
-        "Asia/Choibalsan",
-    ],
+    [CountryCode.MONGOLIA]: ["Asia/Ulaanbaatar", "Asia/Hovd", "Asia/Choibalsan"],
 
-    [CountryCode.MYANMAR]: [
-        "Asia/Yangon",
-    ],
+    [CountryCode.MYANMAR]: ["Asia/Yangon"],
 
-    [CountryCode.NEPAL]: [
-        "Asia/Kathmandu",
-    ],
+    [CountryCode.NEPAL]: ["Asia/Kathmandu"],
 
-    [CountryCode.NORTH_KOREA]: [
-        "Asia/Pyongyang",
-    ],
+    [CountryCode.NORTH_KOREA]: ["Asia/Pyongyang"],
 
-    [CountryCode.OMAN]: [
-        "Asia/Muscat",
-    ],
+    [CountryCode.OMAN]: ["Asia/Muscat"],
 
-    [CountryCode.PAKISTAN]: [
-        "Asia/Karachi",
-    ],
+    [CountryCode.PAKISTAN]: ["Asia/Karachi"],
 
-    [CountryCode.PALESTINE]: [
-        "Asia/Gaza",
-        "Asia/Hebron",
-    ],
+    [CountryCode.PALESTINE]: ["Asia/Gaza", "Asia/Hebron"],
 
-    [CountryCode.PHILIPPINES]: [
-        "Asia/Manila",
-    ],
+    [CountryCode.PHILIPPINES]: ["Asia/Manila"],
 
-    [CountryCode.QATAR]: [
-        "Asia/Qatar",
-    ],
+    [CountryCode.QATAR]: ["Asia/Qatar"],
 
-    [CountryCode.SAUDI_ARABIA]: [
-        "Asia/Riyadh",
-    ],
+    [CountryCode.SAUDI_ARABIA]: ["Asia/Riyadh"],
 
-    [CountryCode.SINGAPORE]: [
-        "Asia/Singapore",
-    ],
+    [CountryCode.SINGAPORE]: ["Asia/Singapore"],
 
-    [CountryCode.SOUTH_KOREA]: [
-        "Asia/Seoul",
-    ],
+    [CountryCode.SOUTH_KOREA]: ["Asia/Seoul"],
 
-    [CountryCode.SRI_LANKA]: [
-        "Asia/Colombo",
-    ],
+    [CountryCode.SRI_LANKA]: ["Asia/Colombo"],
 
-    [CountryCode.SYRIA]: [
-        "Asia/Damascus",
-    ],
+    [CountryCode.SYRIA]: ["Asia/Damascus"],
 
-    [CountryCode.TAIWAN]: [
-        "Asia/Taipei",
-    ],
+    [CountryCode.TAIWAN]: ["Asia/Taipei"],
 
-    [CountryCode.TAJIKISTAN]: [
-        "Asia/Dushanbe",
-    ],
+    [CountryCode.TAJIKISTAN]: ["Asia/Dushanbe"],
 
-    [CountryCode.THAILAND]: [
-        "Asia/Bangkok",
-    ],
+    [CountryCode.THAILAND]: ["Asia/Bangkok"],
 
-    [CountryCode.TIMOR_LESTE]: [
-        "Asia/Dili",
-    ],
+    [CountryCode.TIMOR_LESTE]: ["Asia/Dili"],
 
-    [CountryCode.TURKEY]: [
-        "Europe/Istanbul",
-    ],
+    [CountryCode.TURKEY]: ["Europe/Istanbul"],
 
-    [CountryCode.TURKMENISTAN]: [
-        "Asia/Ashgabat",
-    ],
+    [CountryCode.TURKMENISTAN]: ["Asia/Ashgabat"],
 
-    [CountryCode.UNITED_ARAB_EMIRATES]: [
-        "Asia/Dubai",
-    ],
+    [CountryCode.UNITED_ARAB_EMIRATES]: ["Asia/Dubai"],
 
-    [CountryCode.UZBEKISTAN]: [
-        "Asia/Tashkent",
-    ],
+    [CountryCode.UZBEKISTAN]: ["Asia/Tashkent"],
 
-    [CountryCode.VIETNAM]: [
-        "Asia/Ho_Chi_Minh",
-    ],
+    [CountryCode.VIETNAM]: ["Asia/Ho_Chi_Minh"],
 
-    [CountryCode.YEMEN]: [
-        "Asia/Aden",
-    ],
-
+    [CountryCode.YEMEN]: ["Asia/Aden"],
 
     // ========================================================
     // Europe
     // ========================================================
 
-    [CountryCode.ALBANIA]: [
-        "Europe/Tirane",
-    ],
+    [CountryCode.ALBANIA]: ["Europe/Tirane"],
 
-    [CountryCode.ANDORRA]: [
-        "Europe/Andorra",
-    ],
+    [CountryCode.ANDORRA]: ["Europe/Andorra"],
 
-    [CountryCode.AUSTRIA]: [
-        "Europe/Vienna",
-    ],
+    [CountryCode.AUSTRIA]: ["Europe/Vienna"],
 
-    [CountryCode.BELARUS]: [
-        "Europe/Minsk",
-    ],
+    [CountryCode.BELARUS]: ["Europe/Minsk"],
 
-    [CountryCode.BELGIUM]: [
-        "Europe/Brussels",
-    ],
+    [CountryCode.BELGIUM]: ["Europe/Brussels"],
 
-    [CountryCode.BOSNIA_AND_HERZEGOVINA]: [
-        "Europe/Sarajevo",
-    ],
+    [CountryCode.BOSNIA_AND_HERZEGOVINA]: ["Europe/Sarajevo"],
 
-    [CountryCode.BULGARIA]: [
-        "Europe/Sofia",
-    ],
+    [CountryCode.BULGARIA]: ["Europe/Sofia"],
 
-    [CountryCode.CROATIA]: [
-        "Europe/Zagreb",
-    ],
+    [CountryCode.CROATIA]: ["Europe/Zagreb"],
 
-    [CountryCode.CZECH_REPUBLIC]: [
-        "Europe/Prague",
-    ],
+    [CountryCode.CZECH_REPUBLIC]: ["Europe/Prague"],
 
-    [CountryCode.DENMARK]: [
-        "Europe/Copenhagen",
-    ],
+    [CountryCode.DENMARK]: ["Europe/Copenhagen"],
 
-    [CountryCode.ESTONIA]: [
-        "Europe/Tallinn",
-    ],
+    [CountryCode.ESTONIA]: ["Europe/Tallinn"],
 
-    [CountryCode.FINLAND]: [
-        "Europe/Helsinki",
-    ],
+    [CountryCode.FINLAND]: ["Europe/Helsinki"],
 
-    [CountryCode.FRANCE]: [
-        "Europe/Paris",
-    ],
+    [CountryCode.FRANCE]: ["Europe/Paris"],
 
-    [CountryCode.GERMANY]: [
-        "Europe/Berlin",
-    ],
+    [CountryCode.GERMANY]: ["Europe/Berlin"],
 
-    [CountryCode.GREECE]: [
-        "Europe/Athens",
-    ],
+    [CountryCode.GREECE]: ["Europe/Athens"],
 
-    [CountryCode.HOLY_SEE]: [
-        "Europe/Vatican",
-    ],
+    [CountryCode.HOLY_SEE]: ["Europe/Vatican"],
 
-    [CountryCode.HUNGARY]: [
-        "Europe/Budapest",
-    ],
+    [CountryCode.HUNGARY]: ["Europe/Budapest"],
 
-    [CountryCode.ICELAND]: [
-        "Atlantic/Reykjavik",
-    ],
+    [CountryCode.ICELAND]: ["Atlantic/Reykjavik"],
 
-    [CountryCode.IRELAND]: [
-        "Europe/Dublin",
-    ],
+    [CountryCode.IRELAND]: ["Europe/Dublin"],
 
-    [CountryCode.ITALY]: [
-        "Europe/Rome",
-    ],
+    [CountryCode.ITALY]: ["Europe/Rome"],
 
-    [CountryCode.LATVIA]: [
-        "Europe/Riga",
-    ],
+    [CountryCode.LATVIA]: ["Europe/Riga"],
 
-    [CountryCode.LIECHTENSTEIN]: [
-        "Europe/Vaduz",
-    ],
+    [CountryCode.LIECHTENSTEIN]: ["Europe/Vaduz"],
 
-    [CountryCode.LITHUANIA]: [
-        "Europe/Vilnius",
-    ],
+    [CountryCode.LITHUANIA]: ["Europe/Vilnius"],
 
-    [CountryCode.LUXEMBOURG]: [
-        "Europe/Luxembourg",
-    ],
+    [CountryCode.LUXEMBOURG]: ["Europe/Luxembourg"],
 
-    [CountryCode.MALTA]: [
-        "Europe/Malta",
-    ],
+    [CountryCode.MALTA]: ["Europe/Malta"],
 
-    [CountryCode.MOLDOVA]: [
-        "Europe/Chisinau",
-    ],
+    [CountryCode.MOLDOVA]: ["Europe/Chisinau"],
 
-    [CountryCode.MONACO]: [
-        "Europe/Monaco",
-    ],
+    [CountryCode.MONACO]: ["Europe/Monaco"],
 
-    [CountryCode.MONTENEGRO]: [
-        "Europe/Podgorica",
-    ],
+    [CountryCode.MONTENEGRO]: ["Europe/Podgorica"],
 
-    [CountryCode.NETHERLANDS]: [
-        "Europe/Amsterdam",
-    ],
+    [CountryCode.NETHERLANDS]: ["Europe/Amsterdam"],
 
-    [CountryCode.NORTH_MACEDONIA]: [
-        "Europe/Skopje",
-    ],
+    [CountryCode.NORTH_MACEDONIA]: ["Europe/Skopje"],
 
-    [CountryCode.NORWAY]: [
-        "Europe/Oslo",
-    ],
+    [CountryCode.NORWAY]: ["Europe/Oslo"],
 
-    [CountryCode.POLAND]: [
-        "Europe/Warsaw",
-    ],
+    [CountryCode.POLAND]: ["Europe/Warsaw"],
 
-    [CountryCode.PORTUGAL]: [
-        "Europe/Lisbon",
-        "Atlantic/Madeira",
-        "Atlantic/Azores",
-    ],
+    [CountryCode.PORTUGAL]: ["Europe/Lisbon", "Atlantic/Madeira", "Atlantic/Azores"],
 
-    [CountryCode.ROMANIA]: [
-        "Europe/Bucharest",
-    ],
+    [CountryCode.ROMANIA]: ["Europe/Bucharest"],
 
     [CountryCode.RUSSIA]: [
         "Europe/Moscow",
@@ -627,63 +341,35 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "Asia/Anadyr",
     ],
 
-    [CountryCode.SAN_MARINO]: [
-        "Europe/San_Marino",
-    ],
+    [CountryCode.SAN_MARINO]: ["Europe/San_Marino"],
 
-    [CountryCode.SERBIA]: [
-        "Europe/Belgrade",
-    ],
+    [CountryCode.SERBIA]: ["Europe/Belgrade"],
 
-    [CountryCode.SLOVAKIA]: [
-        "Europe/Bratislava",
-    ],
+    [CountryCode.SLOVAKIA]: ["Europe/Bratislava"],
 
-    [CountryCode.SLOVENIA]: [
-        "Europe/Ljubljana",
-    ],
+    [CountryCode.SLOVENIA]: ["Europe/Ljubljana"],
 
-    [CountryCode.SPAIN]: [
-        "Europe/Madrid",
-        "Atlantic/Canary",
-    ],
+    [CountryCode.SPAIN]: ["Europe/Madrid", "Atlantic/Canary"],
 
-    [CountryCode.SWEDEN]: [
-        "Europe/Stockholm",
-    ],
+    [CountryCode.SWEDEN]: ["Europe/Stockholm"],
 
-    [CountryCode.SWITZERLAND]: [
-        "Europe/Zurich",
-    ],
+    [CountryCode.SWITZERLAND]: ["Europe/Zurich"],
 
-    [CountryCode.UKRAINE]: [
-        "Europe/Kyiv",
-    ],
+    [CountryCode.UKRAINE]: ["Europe/Kyiv"],
 
-    [CountryCode.UNITED_KINGDOM]: [
-        "Europe/London",
-    ],
-
+    [CountryCode.UNITED_KINGDOM]: ["Europe/London"],
 
     // ========================================================
     // North America
     // ========================================================
 
-    [CountryCode.ANTIGUA_AND_BARBUDA]: [
-        "America/Antigua",
-    ],
+    [CountryCode.ANTIGUA_AND_BARBUDA]: ["America/Antigua"],
 
-    [CountryCode.BAHAMAS]: [
-        "America/Nassau",
-    ],
+    [CountryCode.BAHAMAS]: ["America/Nassau"],
 
-    [CountryCode.BARBADOS]: [
-        "America/Barbados",
-    ],
+    [CountryCode.BARBADOS]: ["America/Barbados"],
 
-    [CountryCode.BELIZE]: [
-        "America/Belize",
-    ],
+    [CountryCode.BELIZE]: ["America/Belize"],
 
     [CountryCode.CANADA]: [
         "America/St_Johns",
@@ -711,45 +397,25 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "America/Vancouver",
     ],
 
-    [CountryCode.COSTA_RICA]: [
-        "America/Costa_Rica",
-    ],
+    [CountryCode.COSTA_RICA]: ["America/Costa_Rica"],
 
-    [CountryCode.CUBA]: [
-        "America/Havana",
-    ],
+    [CountryCode.CUBA]: ["America/Havana"],
 
-    [CountryCode.DOMINICA]: [
-        "America/Dominica",
-    ],
+    [CountryCode.DOMINICA]: ["America/Dominica"],
 
-    [CountryCode.DOMINICAN_REPUBLIC]: [
-        "America/Santo_Domingo",
-    ],
+    [CountryCode.DOMINICAN_REPUBLIC]: ["America/Santo_Domingo"],
 
-    [CountryCode.EL_SALVADOR]: [
-        "America/El_Salvador",
-    ],
+    [CountryCode.EL_SALVADOR]: ["America/El_Salvador"],
 
-    [CountryCode.GRENADA]: [
-        "America/Grenada",
-    ],
+    [CountryCode.GRENADA]: ["America/Grenada"],
 
-    [CountryCode.GUATEMALA]: [
-        "America/Guatemala",
-    ],
+    [CountryCode.GUATEMALA]: ["America/Guatemala"],
 
-    [CountryCode.HAITI]: [
-        "America/Port-au-Prince",
-    ],
+    [CountryCode.HAITI]: ["America/Port-au-Prince"],
 
-    [CountryCode.HONDURAS]: [
-        "America/Tegucigalpa",
-    ],
+    [CountryCode.HONDURAS]: ["America/Tegucigalpa"],
 
-    [CountryCode.JAMAICA]: [
-        "America/Jamaica",
-    ],
+    [CountryCode.JAMAICA]: ["America/Jamaica"],
 
     [CountryCode.MEXICO]: [
         "America/Mexico_City",
@@ -765,29 +431,17 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "America/Tijuana",
     ],
 
-    [CountryCode.NICARAGUA]: [
-        "America/Managua",
-    ],
+    [CountryCode.NICARAGUA]: ["America/Managua"],
 
-    [CountryCode.PANAMA]: [
-        "America/Panama",
-    ],
+    [CountryCode.PANAMA]: ["America/Panama"],
 
-    [CountryCode.SAINT_KITTS_AND_NEVIS]: [
-        "America/St_Kitts",
-    ],
+    [CountryCode.SAINT_KITTS_AND_NEVIS]: ["America/St_Kitts"],
 
-    [CountryCode.SAINT_LUCIA]: [
-        "America/St_Lucia",
-    ],
+    [CountryCode.SAINT_LUCIA]: ["America/St_Lucia"],
 
-    [CountryCode.SAINT_VINCENT_AND_THE_GRENADINES]: [
-        "America/St_Vincent",
-    ],
+    [CountryCode.SAINT_VINCENT_AND_THE_GRENADINES]: ["America/St_Vincent"],
 
-    [CountryCode.TRINIDAD_AND_TOBAGO]: [
-        "America/Port_of_Spain",
-    ],
+    [CountryCode.TRINIDAD_AND_TOBAGO]: ["America/Port_of_Spain"],
 
     [CountryCode.UNITED_STATES]: [
         "America/New_York",
@@ -821,7 +475,6 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "Pacific/Honolulu",
     ],
 
-
     // ========================================================
     // South America
     // ========================================================
@@ -841,9 +494,7 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "America/Argentina/Ushuaia",
     ],
 
-    [CountryCode.BOLIVIA]: [
-        "America/La_Paz",
-    ],
+    [CountryCode.BOLIVIA]: ["America/La_Paz"],
 
     [CountryCode.BRAZIL]: [
         "America/Noronha",
@@ -863,45 +514,23 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "America/Rio_Branco",
     ],
 
-    [CountryCode.CHILE]: [
-        "America/Santiago",
-        "America/Punta_Arenas",
-        "Pacific/Easter",
-    ],
+    [CountryCode.CHILE]: ["America/Santiago", "America/Punta_Arenas", "Pacific/Easter"],
 
-    [CountryCode.COLOMBIA]: [
-        "America/Bogota",
-    ],
+    [CountryCode.COLOMBIA]: ["America/Bogota"],
 
-    [CountryCode.ECUADOR]: [
-        "America/Guayaquil",
-        "Pacific/Galapagos",
-    ],
+    [CountryCode.ECUADOR]: ["America/Guayaquil", "Pacific/Galapagos"],
 
-    [CountryCode.GUYANA]: [
-        "America/Guyana",
-    ],
+    [CountryCode.GUYANA]: ["America/Guyana"],
 
-    [CountryCode.PARAGUAY]: [
-        "America/Asuncion",
-    ],
+    [CountryCode.PARAGUAY]: ["America/Asuncion"],
 
-    [CountryCode.PERU]: [
-        "America/Lima",
-    ],
+    [CountryCode.PERU]: ["America/Lima"],
 
-    [CountryCode.SURINAME]: [
-        "America/Paramaribo",
-    ],
+    [CountryCode.SURINAME]: ["America/Paramaribo"],
 
-    [CountryCode.URUGUAY]: [
-        "America/Montevideo",
-    ],
+    [CountryCode.URUGUAY]: ["America/Montevideo"],
 
-    [CountryCode.VENEZUELA]: [
-        "America/Caracas",
-    ],
-
+    [CountryCode.VENEZUELA]: ["America/Caracas"],
 
     // ========================================================
     // Oceania
@@ -921,123 +550,63 @@ export const COUNTRY_TIMEZONE_MAP: Record<CountryCode, string[]> = {
         "Australia/Eucla",
     ],
 
-    [CountryCode.FIJI]: [
-        "Pacific/Fiji",
-    ],
+    [CountryCode.FIJI]: ["Pacific/Fiji"],
 
-    [CountryCode.KIRIBATI]: [
-        "Pacific/Tarawa",
-        "Pacific/Kanton",
-        "Pacific/Kiritimati",
-    ],
+    [CountryCode.KIRIBATI]: ["Pacific/Tarawa", "Pacific/Kanton", "Pacific/Kiritimati"],
 
-    [CountryCode.MARSHALL_ISLANDS]: [
-        "Pacific/Majuro",
-        "Pacific/Kwajalein",
-    ],
+    [CountryCode.MARSHALL_ISLANDS]: ["Pacific/Majuro", "Pacific/Kwajalein"],
 
-    [CountryCode.MICRONESIA]: [
-        "Pacific/Chuuk",
-        "Pacific/Pohnpei",
-        "Pacific/Kosrae",
-    ],
+    [CountryCode.MICRONESIA]: ["Pacific/Chuuk", "Pacific/Pohnpei", "Pacific/Kosrae"],
 
-    [CountryCode.NAURU]: [
-        "Pacific/Nauru",
-    ],
+    [CountryCode.NAURU]: ["Pacific/Nauru"],
 
-    [CountryCode.NEW_ZEALAND]: [
-        "Pacific/Auckland",
-        "Pacific/Chatham",
-    ],
+    [CountryCode.NEW_ZEALAND]: ["Pacific/Auckland", "Pacific/Chatham"],
 
-    [CountryCode.PALAU]: [
-        "Pacific/Palau",
-    ],
+    [CountryCode.PALAU]: ["Pacific/Palau"],
 
-    [CountryCode.PAPUA_NEW_GUINEA]: [
-        "Pacific/Port_Moresby",
-        "Pacific/Bougainville",
-    ],
+    [CountryCode.PAPUA_NEW_GUINEA]: ["Pacific/Port_Moresby", "Pacific/Bougainville"],
 
-    [CountryCode.SAMOA]: [
-        "Pacific/Apia",
-    ],
+    [CountryCode.SAMOA]: ["Pacific/Apia"],
 
-    [CountryCode.SOLOMON_ISLANDS]: [
-        "Pacific/Guadalcanal",
-    ],
+    [CountryCode.SOLOMON_ISLANDS]: ["Pacific/Guadalcanal"],
 
-    [CountryCode.TONGA]: [
-        "Pacific/Tongatapu",
-    ],
+    [CountryCode.TONGA]: ["Pacific/Tongatapu"],
 
-    [CountryCode.TUVALU]: [
-        "Pacific/Funafuti",
-    ],
+    [CountryCode.TUVALU]: ["Pacific/Funafuti"],
 
-    [CountryCode.VANUATU]: [
-        "Pacific/Efate",
-    ],
+    [CountryCode.VANUATU]: ["Pacific/Efate"],
 };
-
 
 // ============================================================
 // Timezone Helpers
 // ============================================================
 
-export const getCountryTimezones = (
-    countryCode: CountryCode
-): string[] => {
+export const getCountryTimezones = (countryCode: CountryCode): string[] => {
     return COUNTRY_TIMEZONE_MAP[countryCode] ?? [];
 };
 
-
-export const getDefaultTimezoneForCountry = (
-    countryCode: CountryCode
-): string | null => {
+export const getDefaultTimezoneForCountry = (countryCode: CountryCode): string | null => {
     const timezones = getCountryTimezones(countryCode);
 
-    return timezones.length > 0
-        ? timezones[0]
-        : null;
+    return timezones.length > 0 ? timezones[0] : null;
 };
-
 
 // ============================================================
 // Validation
 // ============================================================
 
-export const isValidTimezone = (
-    timezone: string
-): boolean => {
-
+export const isValidTimezone = (timezone: string): boolean => {
     try {
-
-        Intl.DateTimeFormat(
-            "en-US",
-            {
-                timeZone: timezone,
-            }
-        );
+        Intl.DateTimeFormat("en-US", {
+            timeZone: timezone,
+        });
 
         return true;
-
     } catch {
-
         return false;
-
     }
 };
 
-
-export const isTimezoneAvailableForCountry = (
-    countryCode: CountryCode,
-    timezone: string
-): boolean => {
-
-    return getCountryTimezones(countryCode).includes(
-        timezone
-    );
-
+export const isTimezoneAvailableForCountry = (countryCode: CountryCode, timezone: string): boolean => {
+    return getCountryTimezones(countryCode).includes(timezone);
 };

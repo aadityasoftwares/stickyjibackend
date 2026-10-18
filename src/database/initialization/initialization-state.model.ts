@@ -67,13 +67,10 @@ const InitializationStateSchema = new Schema<IInitializationStateDocument>(
     {
         timestamps: true,
         collection: "initializationstates",
-    }
+    },
 );
 
 InitializationStateSchema.index({ version: 1, status: 1 });
 
 export const InitializationStateModel: Model<IInitializationStateDocument> =
-    mongoose.model<IInitializationStateDocument>(
-        "InitializationState",
-        InitializationStateSchema
-    );
+    mongoose.model<IInitializationStateDocument>("InitializationState", InitializationStateSchema);

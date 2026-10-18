@@ -7,7 +7,10 @@ export const createWorkspaceMemberValidation = (req: Request, _res: Response, ne
     const result = createWorkspaceMemberSchema.safeParse(req.body);
     if (!result.success)
         return next(
-            new AppError(result.error.issues[0]?.message ?? WorkspaceMemberMessages.UNSUPPORTED_CREATE_FIELDS, 400),
+            new AppError(
+                result.error.issues[0]?.message ?? WorkspaceMemberMessages.UNSUPPORTED_CREATE_FIELDS,
+                400,
+            ),
         );
     req.body = result.data;
     next();

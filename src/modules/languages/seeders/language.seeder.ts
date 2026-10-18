@@ -1,11 +1,7 @@
 import { LanguageModel } from "../models/language.model.js";
-import {
-    LanguageDirection,
-    LanguageCode,
-} from "../constants/language.enums.js";
+import { LanguageDirection, LanguageCode } from "../constants/language.enums.js";
 
 export const seedLanguages = async (): Promise<void> => {
-
     await LanguageModel.findOneAndUpdate(
         {
             code: LanguageCode.ENGLISH,
@@ -28,7 +24,7 @@ export const seedLanguages = async (): Promise<void> => {
             upsert: true,
             new: true,
             setDefaultsOnInsert: true,
-        }
+        },
     );
 
     console.log("Default English language seeded successfully.");

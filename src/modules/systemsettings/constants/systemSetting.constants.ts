@@ -1,8 +1,4 @@
-import {
-    SystemSettingKey,
-    SystemSettingCategory,
-    SystemSettingValueType,
-} from "./systemSetting.enums.js";
+import { SystemSettingKey, SystemSettingCategory, SystemSettingValueType } from "./systemSetting.enums.js";
 
 export const DEFAULT_SYSTEM_SETTING_EDITABLE = true;
 export const DEFAULT_SYSTEM_SETTING_PUBLIC = false;
@@ -143,7 +139,8 @@ export const SYSTEM_SETTING_DEFAULTS = [
         value: 30,
         valueType: SystemSettingValueType.NUMBER,
         category: SystemSettingCategory.SECURITY,
-        description: "Duration in minutes for which an account remains locked after exceeding the maximum login attempts.",
+        description:
+            "Duration in minutes for which an account remains locked after exceeding the maximum login attempts.",
         defaultValue: 30,
         isEditable: true,
         isPublic: false,

@@ -10,7 +10,10 @@ export const updateWorkspaceMemberValidation = (req: Request, res: Response, nex
         const result = updateWorkspaceMemberSchema.safeParse(req.body);
         if (!result.success)
             return next(
-                new AppError(result.error.issues[0]?.message ?? WorkspaceMemberMessages.UNSUPPORTED_UPDATE_FIELDS, 400),
+                new AppError(
+                    result.error.issues[0]?.message ?? WorkspaceMemberMessages.UNSUPPORTED_UPDATE_FIELDS,
+                    400,
+                ),
             );
         req.body = result.data;
         next();

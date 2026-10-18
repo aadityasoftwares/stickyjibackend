@@ -1,11 +1,7 @@
 import mongoose, { Model, Schema } from "mongoose";
 
 import type { ISessionDocument } from "../interfaces/session.interface.js";
-import {
-    SessionRevokedReason,
-    SessionStatus,
-    SessionType,
-} from "../constants/session.constants.js";
+import { SessionRevokedReason, SessionStatus, SessionType } from "../constants/session.constants.js";
 
 const SessionSchema = new Schema<ISessionDocument>(
     {
@@ -102,7 +98,7 @@ const SessionSchema = new Schema<ISessionDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 SessionSchema.index({ userId: 1 });
@@ -111,13 +107,9 @@ SessionSchema.index({ userId: 1, deviceId: 1 });
 SessionSchema.index({ expiresAt: 1 });
 SessionSchema.index({ status: 1, expiresAt: 1 });
 
-SessionSchema.index(
-    { expiresAt: 1 },
-    { expireAfterSeconds: 0 }
-);
+SessionSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const SessionModel: Model<ISessionDocument> =
-    mongoose.model<ISessionDocument>(
-        "Session",
-        SessionSchema
-    );
+export const SessionModel: Model<ISessionDocument> = mongoose.model<ISessionDocument>(
+    "Session",
+    SessionSchema,
+);

@@ -67,7 +67,12 @@ export const createPlanValidation = (req: Request, _res: Response, next: NextFun
         }
         req.body.code = normalizedCode;
 
-        if (description === undefined || description === null || typeof description !== "string" || !description.trim()) {
+        if (
+            description === undefined ||
+            description === null ||
+            typeof description !== "string" ||
+            !description.trim()
+        ) {
             return next(new AppError(PlanMessages.DESCRIPTION_REQUIRED, 400));
         }
 

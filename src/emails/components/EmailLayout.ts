@@ -100,8 +100,9 @@ export const EmailLayout = ({
 </head>
 
 <body style="${emailStyles.body}">
-  ${preheader
-            ? `
+  ${
+      preheader
+          ? `
         <div
           style="
             display: none;
@@ -116,8 +117,8 @@ export const EmailLayout = ({
           ${preheader}
         </div>
       `
-            : ""
-        }
+          : ""
+  }
 
   <table
     role="presentation"

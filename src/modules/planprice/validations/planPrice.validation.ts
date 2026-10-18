@@ -1,12 +1,5 @@
-import {
-    BillingInterval,
-} from "../constants/planPrice.enums.js";
-
+import { BillingInterval } from "../constants/planPrice.enums.js";
 
 export const PlanPriceValidation = {
-
-    billingIntervals:
-        Object.values(
-            BillingInterval
-        ),
+    billingIntervals: Object.values(BillingInterval),
 };

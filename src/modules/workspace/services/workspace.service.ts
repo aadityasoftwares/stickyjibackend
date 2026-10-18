@@ -7,12 +7,28 @@ import type {
     IWorkspaceResponse,
     IWorkspaceUpdate,
 } from "../interfaces/workspace.interface.js";
-import { WorkspaceAccessFilter, WorkspaceStatus, WorkspaceType, WorkspaceVisibility, isWorkspaceTrashed } from "../constants/workspace.enums.js";
-import { permissionAuthorizationService, type IWorkspaceAuthorizationContext, type IGlobalAuthorizationContext } from "../../permissions/services/permissionAuthorization.service.js";
+import {
+    WorkspaceAccessFilter,
+    WorkspaceStatus,
+    WorkspaceType,
+    WorkspaceVisibility,
+    isWorkspaceTrashed,
+} from "../constants/workspace.enums.js";
+import {
+    permissionAuthorizationService,
+    type IWorkspaceAuthorizationContext,
+    type IGlobalAuthorizationContext,
+} from "../../permissions/services/permissionAuthorization.service.js";
 import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
 import { WorkspacePurgeService } from "./workspacePurge.service.js";
 import { WorkspaceMessages } from "../constants/workspace.messages.js";
-import { WORKSPACE_CONSTANTS, WORKSPACE_ACCESS_FILTER_LABELS, WORKSPACE_STATUS_FILTER_LABELS, WORKSPACE_ACCESS_LABELS, WORKSPACE_TYPE_LABELS } from "../constants/workspace.constants.js";
+import {
+    WORKSPACE_CONSTANTS,
+    WORKSPACE_ACCESS_FILTER_LABELS,
+    WORKSPACE_STATUS_FILTER_LABELS,
+    WORKSPACE_ACCESS_LABELS,
+    WORKSPACE_TYPE_LABELS,
+} from "../constants/workspace.constants.js";
 import { WorkspaceRepository } from "../repositories/workspace.repository.js";
 import { WorkspaceValidation } from "../validations/workspace.validation.js";
 import { WorkspaceMemberRepository } from "../../workspaceMember/repositories/workspaceMember.repository.js";
@@ -45,16 +61,34 @@ export class WorkspaceService {
         this.subscriptionEntitlementService = new SubscriptionEntitlementService();
     }
 
-    async createWorkspace(data: IWorkspaceCreate, ownerId: string, context?: IAuditLogContext, authorization?: IGlobalAuthorizationContext): Promise<IWorkspaceResponse> {
+    async createWorkspace(
+        data: IWorkspaceCreate,
+        ownerId: string,
+        context?: IAuditLogContext,
+        authorization?: IGlobalAuthorizationContext,
+    ): Promise<IWorkspaceResponse> {
         this.getUserObjectId(ownerId);
-        if (!WorkspaceValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, ["name", "slug", "description", "visibility"])) {
+        if (
+            !WorkspaceValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, [
+                "name",
+                "slug",
+                "description",
+                "visibility",
+            ])
+        ) {
             throw new AppError(WorkspaceMessages.UNSUPPORTED_FIELDS, 400);
         }
         if (authorization) {
-            if (authorization.userId !== ownerId) throw new AppError(WorkspaceMessages.CANNOT_ACCESS_WORKSPACE, 403);
+            if (authorization.userId !== ownerId)
+                throw new AppError(WorkspaceMessages.CANNOT_ACCESS_WORKSPACE, 403);
         }
-        const auth = authorization ?? await permissionAuthorizationService.resolveGlobalAuthorization(ownerId);
-        permissionAuthorizationService.assertPermission(auth, PermissionModule.WORKSPACE, PermissionAction.CREATE);
+        const auth =
+            authorization ?? (await permissionAuthorizationService.resolveGlobalAuthorization(ownerId));
+        permissionAuthorizationService.assertPermission(
+            auth,
+            PermissionModule.WORKSPACE,
+            PermissionAction.CREATE,
+        );
         const reservation = await this.subscriptionEntitlementService.assertCanCreateWorkspace(ownerId);
         try {
             const response = await this.persistWorkspace(data, ownerId, context);
@@ -67,7 +101,11 @@ export class WorkspaceService {
     }
 
     // Internal registration flow; this operation is never exposed by a route or a client flag.
-    async createPersonalWorkspace(data: Omit<IWorkspaceCreate, "isPersonal">, ownerId: string, context?: IAuditLogContext) {
+    async createPersonalWorkspace(
+        data: Omit<IWorkspaceCreate, "isPersonal">,
+        ownerId: string,
+        context?: IAuditLogContext,
+    ) {
         return this.persistWorkspace({ ...data, isPersonal: true }, ownerId, context);
     }
     private async persistWorkspace(
@@ -101,7 +139,11 @@ export class WorkspaceService {
             try {
                 await this.auditLogService.logCreate(
                     context ?? {},
-                    { module: AppModule.WORKSPACE, resourceId: workspace._id.toString(), resourceName: workspace.name },
+                    {
+                        module: AppModule.WORKSPACE,
+                        resourceId: workspace._id.toString(),
+                        resourceName: workspace.name,
+                    },
                     `Workspace "${workspace.name}" was created successfully.`,
                 );
             } catch (error) {
@@ -119,18 +161,36 @@ export class WorkspaceService {
         }
     }
 
-    async getWorkspaceById(id: string, userId: string, authorization?: IWorkspaceAuthorizationContext): Promise<IWorkspaceResponse> {
-        const auth = await this.authorizeWorkspace(id, userId, PermissionAction.READ, authorization, true, true);
+    async getWorkspaceById(
+        id: string,
+        userId: string,
+        authorization?: IWorkspaceAuthorizationContext,
+    ): Promise<IWorkspaceResponse> {
+        const auth = await this.authorizeWorkspace(
+            id,
+            userId,
+            PermissionAction.READ,
+            authorization,
+            true,
+            true,
+        );
         const workspace = await this.workspaceRepository.findById(id);
 
         if (!workspace) {
             throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         }
-        if (!auth.isOwner && [WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(workspace.status)) {
+        if (
+            !auth.isOwner &&
+            [WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(workspace.status)
+        ) {
             throw new AppError(WorkspaceMessages.CANNOT_ACCESS_WORKSPACE, 403);
         }
 
-        return this.toWorkspaceResponse(workspace, userId, auth.isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : auth.role.name);
+        return this.toWorkspaceResponse(
+            workspace,
+            userId,
+            auth.isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : auth.role.name,
+        );
     }
 
     async getWorkspaces(userId: string, filters: WorkspaceListFilters) {
@@ -140,11 +200,17 @@ export class WorkspaceService {
             workspaceListSchema.parse(filters),
         );
         return {
-            ...(await this.enrichWorkspaces(authenticatedUserId, result)), counts: result.counts,
-            accessFilters: Object.values(WorkspaceAccessFilter).map(value => ({
-                value, label: WORKSPACE_ACCESS_FILTER_LABELS[value], count: result.accessCounts[value],
+            ...(await this.enrichWorkspaces(authenticatedUserId, result)),
+            counts: result.counts,
+            accessFilters: Object.values(WorkspaceAccessFilter).map((value) => ({
+                value,
+                label: WORKSPACE_ACCESS_FILTER_LABELS[value],
+                count: result.accessCounts[value],
             })),
-            statusFilters: Object.entries(WORKSPACE_STATUS_FILTER_LABELS).map(([value, label]) => ({ value, label })),
+            statusFilters: Object.entries(WORKSPACE_STATUS_FILTER_LABELS).map(([value, label]) => ({
+                value,
+                label,
+            })),
         };
     }
 
@@ -167,7 +233,9 @@ export class WorkspaceService {
             normalizedFilters,
         );
 
-        const membershipMap = new Map(memberships.map((membership) => [membership.workspaceId.toString(), membership]));
+        const membershipMap = new Map(
+            memberships.map((membership) => [membership.workspaceId.toString(), membership]),
+        );
         return this.enrichWorkspaces(userId, {
             ...result,
             data: result.data.map((workspace) => ({
@@ -217,10 +285,17 @@ export class WorkspaceService {
 
                 const isPersonal = isOwner && Boolean(workspace.isPersonal);
                 const memberRole = membership?.roleName;
-                const members = [ownerPreview, ...memberSummary.members].slice(0, WORKSPACE_MEMBER_PREVIEW_LIMIT);
+                const members = [ownerPreview, ...memberSummary.members].slice(
+                    0,
+                    WORKSPACE_MEMBER_PREVIEW_LIMIT,
+                );
 
                 return {
-                    ...this.toWorkspaceResponse(workspace, userId, isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : memberRole),
+                    ...this.toWorkspaceResponse(
+                        workspace,
+                        userId,
+                        isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : memberRole,
+                    ),
                     summary: {
                         folderCount: folders.length,
                         folders,
@@ -243,10 +318,18 @@ export class WorkspaceService {
         this.validateAuditAction(AuditLogAction.UPDATE);
 
         const auth = await this.authorizeWorkspace(id, updatedBy, PermissionAction.UPDATE, authorization);
-        if (!WorkspaceValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, ["name", "slug", "description", "visibility"])) {
+        if (
+            !WorkspaceValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, [
+                "name",
+                "slug",
+                "description",
+                "visibility",
+            ])
+        ) {
             throw new AppError(WorkspaceMessages.UNSUPPORTED_FIELDS, 400);
         }
-        if (data.visibility !== undefined) permissionAuthorizationService.assertWorkspaceAccess(auth, PermissionAction.SETTINGS);
+        if (data.visibility !== undefined)
+            permissionAuthorizationService.assertWorkspaceAccess(auth, PermissionAction.SETTINGS);
         const updatedByObjectId = this.getUserObjectId(updatedBy);
         const workspace = await this.workspaceRepository.findById(id);
 
@@ -287,7 +370,11 @@ export class WorkspaceService {
             if (description !== (workspace.description ?? null)) {
                 updateData.description = description;
 
-                changes.push({ field: "description", oldValue: workspace.description ?? null, newValue: description });
+                changes.push({
+                    field: "description",
+                    oldValue: workspace.description ?? null,
+                    newValue: description,
+                });
             }
         }
 
@@ -348,21 +435,31 @@ export class WorkspaceService {
         authorization?: IWorkspaceAuthorizationContext,
     ): Promise<IWorkspaceResponse> {
         this.validateAuditAction(AuditLogAction.STATUS_CHANGE);
-        if (!WorkspaceValidation.isValidStatus(status)) throw new AppError(WorkspaceMessages.INVALID_STATUS, 400);
+        if (!WorkspaceValidation.isValidStatus(status))
+            throw new AppError(WorkspaceMessages.INVALID_STATUS, 400);
 
         if (isWorkspaceTrashed(status)) {
             throw new AppError(WorkspaceMessages.CANNOT_DELETE_THROUGH_STATUS, 400);
         }
 
-        const auth = await this.authorizeWorkspace(id, updatedBy, PermissionAction.UPDATE, authorization, false, true);
+        const auth = await this.authorizeWorkspace(
+            id,
+            updatedBy,
+            PermissionAction.UPDATE,
+            authorization,
+            false,
+            true,
+        );
         const updatedByObjectId = this.getUserObjectId(updatedBy);
         const workspace = await this.workspaceRepository.findById(id);
 
         if (!workspace) {
             throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         }
-        if ([WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(status) ||
-            [WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(workspace.status)) {
+        if (
+            [WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(status) ||
+            [WorkspaceStatus.INACTIVE, WorkspaceStatus.SUSPENDED].includes(workspace.status)
+        ) {
             permissionAuthorizationService.assertWorkspaceAccess(auth, PermissionAction.SETTINGS);
         }
 
@@ -400,7 +497,12 @@ export class WorkspaceService {
         return this.toWorkspaceResponse(updatedWorkspace, updatedBy);
     }
 
-    async deleteWorkspace(id: string, updatedBy: string, context?: IAuditLogContext, authorization?: IWorkspaceAuthorizationContext): Promise<IWorkspaceResponse> {
+    async deleteWorkspace(
+        id: string,
+        updatedBy: string,
+        context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
+    ): Promise<IWorkspaceResponse> {
         this.validateAuditAction(AuditLogAction.DELETE);
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
 
@@ -447,7 +549,12 @@ export class WorkspaceService {
         return this.toWorkspaceResponse(deletedWorkspace, updatedBy);
     }
 
-    async restoreWorkspace(id: string, updatedBy: string, context?: IAuditLogContext, authorization?: IWorkspaceAuthorizationContext): Promise<IWorkspaceResponse> {
+    async restoreWorkspace(
+        id: string,
+        updatedBy: string,
+        context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
+    ): Promise<IWorkspaceResponse> {
         this.validateAuditAction(AuditLogAction.RESTORE);
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
 
@@ -467,7 +574,10 @@ export class WorkspaceService {
             throw new AppError(WorkspaceMessages.RESTORE_WINDOW_EXPIRED, 410);
         }
 
-        const reservation = await this.subscriptionEntitlementService.assertCanRestoreWorkspace(updatedBy, id);
+        const reservation = await this.subscriptionEntitlementService.assertCanRestoreWorkspace(
+            updatedBy,
+            id,
+        );
         try {
             const previousState = this.workspaceSnapshot(workspace);
             const restoredWorkspace = await this.workspaceRepository.restore(id, updatedByObjectId);
@@ -499,18 +609,30 @@ export class WorkspaceService {
         }
     }
 
-    async permanentlyDeleteWorkspace(id: string, deletedBy: string, context?: IAuditLogContext, authorization?: IWorkspaceAuthorizationContext) {
+    async permanentlyDeleteWorkspace(
+        id: string,
+        deletedBy: string,
+        context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
+    ) {
         this.getUserObjectId(deletedBy);
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         const workspace = await this.workspaceRepository.findByIdIncludingDeleted(id);
         if (!workspace) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
         await this.authorizeWorkspace(id, deletedBy, PermissionAction.DELETE, authorization, true);
-        if (!isWorkspaceTrashed(workspace.status)) throw new AppError(WorkspaceMessages.PERMANENT_DELETE_REQUIRES_TRASH, 400);
+        if (!isWorkspaceTrashed(workspace.status))
+            throw new AppError(WorkspaceMessages.PERMANENT_DELETE_REQUIRES_TRASH, 400);
         if (workspace.isPersonal) throw new AppError(WorkspaceMessages.CANNOT_DELETE_PERSONAL_WORKSPACE, 400);
         const result = await this.workspacePurgeService.purgeById(id);
-        await this.auditLogService.logDelete(context ?? {}, {
-            module: AppModule.WORKSPACE, resourceId: id, resourceName: workspace.name,
-        }, `Workspace "${workspace.name}" was permanently deleted with its dependent workspace data.`);
+        await this.auditLogService.logDelete(
+            context ?? {},
+            {
+                module: AppModule.WORKSPACE,
+                resourceId: id,
+                resourceName: workspace.name,
+            },
+            `Workspace "${workspace.name}" was permanently deleted with its dependent workspace data.`,
+        );
         return result;
     }
 
@@ -518,16 +640,25 @@ export class WorkspaceService {
         const ids = await this.workspaceRepository.findExpiredTrashedIds(now, batchSize);
         const result = { found: ids.length, purged: 0, failed: 0, failedIds: [] as string[] };
         for (const id of ids) {
-            try { await this.workspacePurgeService.purgeById(id); result.purged += 1; }
-            catch { result.failed += 1; result.failedIds.push(id); }
+            try {
+                await this.workspacePurgeService.purgeById(id);
+                result.purged += 1;
+            } catch {
+                result.failed += 1;
+                result.failedIds.push(id);
+            }
         }
         await this.workspacePurgeService.cleanupDeletedMedia();
         return result;
     }
 
     private async authorizeWorkspace(
-        id: string, userId: string, action: PermissionAction | PermissionAction[],
-        authorization?: IWorkspaceAuthorizationContext, allowTrashed = false, allowInactive = false,
+        id: string,
+        userId: string,
+        action: PermissionAction | PermissionAction[],
+        authorization?: IWorkspaceAuthorizationContext,
+        allowTrashed = false,
+        allowInactive = false,
     ): Promise<IWorkspaceAuthorizationContext> {
         this.getUserObjectId(userId);
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMessages.NOT_FOUND, 404);
@@ -538,9 +669,20 @@ export class WorkspaceService {
         }
         // Legacy contexts without state must be resolved again; permissive READ/restore contexts
         // cannot be reused to mutate a trashed or inactive workspace.
-        const auth = authorization?.workspaceStatus !== undefined ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, id, allowTrashed, allowInactive);
-        permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!, allowTrashed, allowInactive);
+        const auth =
+            authorization?.workspaceStatus !== undefined
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      id,
+                      allowTrashed,
+                      allowInactive,
+                  );
+        permissionAuthorizationService.assertWorkspaceState(
+            auth.workspaceStatus!,
+            allowTrashed,
+            allowInactive,
+        );
         permissionAuthorizationService.assertWorkspaceAccess(auth, action);
         return auth;
     }
@@ -550,7 +692,9 @@ export class WorkspaceService {
             return [];
         }
 
-        const objectIds = ownerIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+        const objectIds = ownerIds
+            .filter((id) => Types.ObjectId.isValid(id))
+            .map((id) => new Types.ObjectId(id));
 
         if (!objectIds.length) {
             return [];
@@ -636,31 +780,35 @@ export class WorkspaceService {
         };
     }
 
-    private toWorkspaceResponse(workspace: {
-        _id: Types.ObjectId | string;
-        name: string;
-        slug: string;
-        description?: string | null;
-        ownerId: Types.ObjectId | string;
-        status: WorkspaceStatus;
-        visibility: WorkspaceVisibility;
-        isPersonal: boolean;
-        createdBy?: Types.ObjectId | string | null;
-        updatedBy?: Types.ObjectId | string | null;
-        createdAt?: Date;
-        updatedAt?: Date;
-        deletedAt?: Date | null;
-        deletedBy?: Types.ObjectId | null;
-        purgeAfter?: Date | null;
-    }, currentUserId?: string, userRole?: string): IWorkspaceResponse {
+    private toWorkspaceResponse(
+        workspace: {
+            _id: Types.ObjectId | string;
+            name: string;
+            slug: string;
+            description?: string | null;
+            ownerId: Types.ObjectId | string;
+            status: WorkspaceStatus;
+            visibility: WorkspaceVisibility;
+            isPersonal: boolean;
+            createdBy?: Types.ObjectId | string | null;
+            updatedBy?: Types.ObjectId | string | null;
+            createdAt?: Date;
+            updatedAt?: Date;
+            deletedAt?: Date | null;
+            deletedBy?: Types.ObjectId | null;
+            purgeAfter?: Date | null;
+        },
+        currentUserId?: string,
+        userRole?: string,
+    ): IWorkspaceResponse {
         const ownerId = this.resolveId(workspace.ownerId);
         const isOwner = currentUserId ? ownerId === currentUserId : true;
         const isPersonal = isOwner && Boolean(workspace.isPersonal);
         const isInvited = currentUserId ? !isOwner : false;
-        const role = isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : (userRole || WORKSPACE_ACCESS_LABELS.MEMBER);
+        const role = isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : userRole || WORKSPACE_ACCESS_LABELS.MEMBER;
         const workspaceType = isPersonal ? WorkspaceType.PERSONAL : WorkspaceType.TEAM;
         const workspaceTypeLabel = WORKSPACE_TYPE_LABELS[workspaceType];
-        const label = isPersonal ? "PERSONAL" : (isInvited ? "INVITED" : "WORKSPACE");
+        const label = isPersonal ? "PERSONAL" : isInvited ? "INVITED" : "WORKSPACE";
 
         return {
             id: this.resolveId(workspace._id),

@@ -1,7 +1,12 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { IFeatureDocument, } from "../interfaces/feature.interface.js";
-import { FeatureCode, FeatureCategory, FeatureType, } from "../constants/feature.enums.js";
-import { DEFAULT_FEATURE_STATUS, DEFAULT_FEATURE_SYSTEM, DEFAULT_FEATURE_TYPE, DEFAULT_FEATURE_CATEGORY, } from "../constants/feature.constants.js";
+import mongoose, { Schema, Model } from "mongoose";
+import type { IFeatureDocument } from "../interfaces/feature.interface.js";
+import { FeatureCode, FeatureCategory, FeatureType } from "../constants/feature.enums.js";
+import {
+    DEFAULT_FEATURE_STATUS,
+    DEFAULT_FEATURE_SYSTEM,
+    DEFAULT_FEATURE_TYPE,
+    DEFAULT_FEATURE_CATEGORY,
+} from "../constants/feature.constants.js";
 
 const FeatureSchema = new Schema<IFeatureDocument>(
     {
@@ -69,61 +74,46 @@ const FeatureSchema = new Schema<IFeatureDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
-
-FeatureSchema.index(
-    { code: 1 },
-    { unique: true }
-);
-
+FeatureSchema.index({ code: 1 }, { unique: true });
 
 FeatureSchema.index({
     name: 1,
 });
 
-
 FeatureSchema.index({
     category: 1,
 });
-
 
 FeatureSchema.index({
     type: 1,
 });
 
-
 FeatureSchema.index({
     isActive: 1,
 });
 
-
 FeatureSchema.index({
     isDefault: 1,
 });
-
 
 FeatureSchema.index({
     isSystem: 1,
 });
 
-
 FeatureSchema.index({
     isActive: 1,
     isDefault: 1,
 });
-
 
 FeatureSchema.index({
     category: 1,
     isActive: 1,
 });
 
-
-export const FeatureModel:
-    Model<IFeatureDocument> =
-    mongoose.model<IFeatureDocument>(
-        "Feature",
-        FeatureSchema
-    );
+export const FeatureModel: Model<IFeatureDocument> = mongoose.model<IFeatureDocument>(
+    "Feature",
+    FeatureSchema,
+);

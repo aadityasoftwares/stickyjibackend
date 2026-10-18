@@ -8,93 +8,52 @@ import type {
     IStickyNoteLabelUpdate,
 } from "../interfaces/stickyNoteLabel.interface.js";
 
-import {
-    StickyNoteLabelStatus,
-} from "../constants/stickyNoteLabel.enums.js";
+import { StickyNoteLabelStatus } from "../constants/stickyNoteLabel.enums.js";
 
-import {
-    StickyNoteLabelMessages,
-} from "../constants/stickyNoteLabel.messages.js";
+import { StickyNoteLabelMessages } from "../constants/stickyNoteLabel.messages.js";
 
-import {
-    StickyNoteLabelRepository,
-} from "../repositories/stickyNoteLabel.repository.js";
+import { StickyNoteLabelRepository } from "../repositories/stickyNoteLabel.repository.js";
 
-import {
-    StickyNoteLabelValidation,
-} from "../validations/stickyNoteLabel.validation.js";
+import { StickyNoteLabelValidation } from "../validations/stickyNoteLabel.validation.js";
 
-import {
-    AuditLogAction,
-} from "../../auditlog/constants/auditLog.enums.js";
+import { AuditLogAction } from "../../auditlog/constants/auditLog.enums.js";
 
-import {
-    AuditLogService,
-} from "../../auditlog/services/auditLog.service.js";
+import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
 
-import type {
-    IAuditLogContext,
-} from "../../auditlog/interfaces/auditLog.interface.js";
+import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
 
-import {
-    AppModule,
-} from "../../../utils/enums/appModule.enums.js";
+import { AppModule } from "../../../utils/enums/appModule.enums.js";
 
-import {
-    AppError,
-} from "../../../utils/errors/app.error.js";
+import { AppError } from "../../../utils/errors/app.error.js";
 
 export class StickyNoteLabelService {
     private stickyNoteLabelRepository: StickyNoteLabelRepository;
     private auditLogService: AuditLogService;
 
     constructor() {
-        this.stickyNoteLabelRepository =
-            new StickyNoteLabelRepository();
+        this.stickyNoteLabelRepository = new StickyNoteLabelRepository();
 
         this.auditLogService = new AuditLogService();
     }
 
-    async createStickyNoteLabel(
-        data: IStickyNoteLabelCreate,
-        createdBy: string,
-        context?: IAuditLogContext,
-    ) {
-        const normalizedName =
-            StickyNoteLabelValidation.normalizeName(
-                data.name,
-            );
+    async createStickyNoteLabel(data: IStickyNoteLabelCreate, createdBy: string, context?: IAuditLogContext) {
+        const normalizedName = StickyNoteLabelValidation.normalizeName(data.name);
 
-        const normalizedSlug =
-            StickyNoteLabelValidation.normalizeSlug(
-                data.slug || normalizedName,
-            );
+        const normalizedSlug = StickyNoteLabelValidation.normalizeSlug(data.slug || normalizedName);
 
-        const workspaceId =
-            typeof data.workspaceId === "string"
-                ? data.workspaceId
-                : data.workspaceId;
+        const workspaceId = typeof data.workspaceId === "string" ? data.workspaceId : data.workspaceId;
 
         await workspaceAvailabilityService.assertAvailable(workspaceId);
-        const exists =
-            await this.stickyNoteLabelRepository.existsBySlug(
-                workspaceId,
-                normalizedSlug,
-            );
+        const exists = await this.stickyNoteLabelRepository.existsBySlug(workspaceId, normalizedSlug);
 
         if (exists) {
-            throw new AppError(
-                StickyNoteLabelMessages.SLUG_ALREADY_EXISTS,
-                409,
-            );
+            throw new AppError(StickyNoteLabelMessages.SLUG_ALREADY_EXISTS, 409);
         }
 
         const labelData: Partial<IStickyNoteLabel> = {
             ...data,
 
-            workspaceId: new Types.ObjectId(
-                workspaceId,
-            ),
+            workspaceId: new Types.ObjectId(workspaceId),
 
             name: normalizedName,
 
@@ -107,10 +66,7 @@ export class StickyNoteLabelService {
             updatedBy: new Types.ObjectId(createdBy),
         };
 
-        const label =
-            await this.stickyNoteLabelRepository.create(
-                labelData,
-            );
+        const label = await this.stickyNoteLabelRepository.create(labelData);
 
         await this.auditLogService.logCreate(
             context ?? {},
@@ -126,27 +82,19 @@ export class StickyNoteLabelService {
     }
 
     async getStickyNoteLabelById(id: string) {
-        const label =
-            await this.stickyNoteLabelRepository.findById(id);
+        const label = await this.stickyNoteLabelRepository.findById(id);
 
         if (!label) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(label.workspaceId);
 
         return label;
     }
 
-    async getStickyNoteLabels(
-        filters: IStickyNoteLabelFilter = {},
-    ) {
+    async getStickyNoteLabels(filters: IStickyNoteLabelFilter = {}) {
         if (filters.workspaceId) await workspaceAvailabilityService.assertAvailable(filters.workspaceId);
-        return this.stickyNoteLabelRepository.findAll(
-            filters,
-        );
+        return this.stickyNoteLabelRepository.findAll(filters);
     }
 
     async updateStickyNoteLabel(
@@ -155,16 +103,10 @@ export class StickyNoteLabelService {
         updatedBy: string,
         context?: IAuditLogContext,
     ) {
-        const existing =
-            await this.stickyNoteLabelRepository.findById(
-                id,
-            );
+        const existing = await this.stickyNoteLabelRepository.findById(id);
 
         if (!existing) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
 
@@ -179,10 +121,7 @@ export class StickyNoteLabelService {
         }> = [];
 
         if (data.name !== undefined) {
-            const normalizedName =
-                StickyNoteLabelValidation.normalizeName(
-                    data.name,
-                );
+            const normalizedName = StickyNoteLabelValidation.normalizeName(data.name);
 
             if (existing.name !== normalizedName) {
                 changes.push({
@@ -195,29 +134,19 @@ export class StickyNoteLabelService {
             updateData.name = normalizedName;
         }
 
-        if (
-            data.slug !== undefined ||
-            data.name !== undefined
-        ) {
-            const normalizedSlug =
-                StickyNoteLabelValidation.normalizeSlug(
-                    data.slug ||
-                    data.name ||
-                    existing.name,
-                );
+        if (data.slug !== undefined || data.name !== undefined) {
+            const normalizedSlug = StickyNoteLabelValidation.normalizeSlug(
+                data.slug || data.name || existing.name,
+            );
 
-            const exists =
-                await this.stickyNoteLabelRepository.existsBySlug(
-                    existing.workspaceId,
-                    normalizedSlug,
-                    id,
-                );
+            const exists = await this.stickyNoteLabelRepository.existsBySlug(
+                existing.workspaceId,
+                normalizedSlug,
+                id,
+            );
 
             if (exists) {
-                throw new AppError(
-                    StickyNoteLabelMessages.SLUG_ALREADY_EXISTS,
-                    409,
-                );
+                throw new AppError(StickyNoteLabelMessages.SLUG_ALREADY_EXISTS, 409);
             }
 
             if (existing.slug !== normalizedSlug) {
@@ -231,10 +160,7 @@ export class StickyNoteLabelService {
             updateData.slug = normalizedSlug;
         }
 
-        if (
-            data.color !== undefined &&
-            existing.color !== data.color
-        ) {
+        if (data.color !== undefined && existing.color !== data.color) {
             changes.push({
                 field: "color",
                 oldValue: existing.color,
@@ -242,10 +168,7 @@ export class StickyNoteLabelService {
             });
         }
 
-        if (
-            data.position !== undefined &&
-            existing.position !== data.position
-        ) {
+        if (data.position !== undefined && existing.position !== data.position) {
             changes.push({
                 field: "position",
                 oldValue: existing.position,
@@ -253,22 +176,14 @@ export class StickyNoteLabelService {
             });
         }
 
-        const label =
-            await this.stickyNoteLabelRepository.updateById(
-                id,
-                {
-                    ...updateData,
-                    updatedBy: updatedBy as any,
-                },
-            );
+        const label = await this.stickyNoteLabelRepository.updateById(id, {
+            ...updateData,
+            updatedBy: updatedBy as any,
+        });
 
         if (!label) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
-
 
         if (changes.length > 0) {
             await this.auditLogService.logUpdate(
@@ -292,66 +207,38 @@ export class StickyNoteLabelService {
         updatedBy: string,
         context?: IAuditLogContext,
     ) {
-        const existing =
-            await this.stickyNoteLabelRepository
-                .findByIdIncludingDeleted(id);
+        const existing = await this.stickyNoteLabelRepository.findByIdIncludingDeleted(id);
 
         if (!existing) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
 
-        if (
-            existing.status ===
-            StickyNoteLabelStatus.DELETED
-        ) {
-            throw new AppError(
-                StickyNoteLabelMessages.ALREADY_DELETED,
-                400,
-            );
+        if (existing.status === StickyNoteLabelStatus.DELETED) {
+            throw new AppError(StickyNoteLabelMessages.ALREADY_DELETED, 400);
         }
 
         if (existing.status === status) {
-            if (
-                status ===
-                StickyNoteLabelStatus.ACTIVE
-            ) {
-                throw new AppError(
-                    StickyNoteLabelMessages.ALREADY_ACTIVE,
-                    400,
-                );
+            if (status === StickyNoteLabelStatus.ACTIVE) {
+                throw new AppError(StickyNoteLabelMessages.ALREADY_ACTIVE, 400);
             }
 
-            if (
-                status ===
-                StickyNoteLabelStatus.ARCHIVED
-            ) {
-                throw new AppError(
-                    StickyNoteLabelMessages.ALREADY_ARCHIVED,
-                    400,
-                );
+            if (status === StickyNoteLabelStatus.ARCHIVED) {
+                throw new AppError(StickyNoteLabelMessages.ALREADY_ARCHIVED, 400);
             }
         }
 
         const oldStatus = existing.status;
 
-        const label =
-            await this.stickyNoteLabelRepository.updateStatus(
-                id,
-                status,
-                new Types.ObjectId(updatedBy),
-            );
+        const label = await this.stickyNoteLabelRepository.updateStatus(
+            id,
+            status,
+            new Types.ObjectId(updatedBy),
+        );
 
         if (!label) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
-
 
         await this.auditLogService.log({
             ...context,
@@ -359,8 +246,7 @@ export class StickyNoteLabelService {
             module: AppModule.STICKY_NOTE_LABEL,
             resourceId: label._id.toString(),
             resourceName: label.name,
-            description:
-                `Sticky note label "${label.name}" status was changed from "${oldStatus}" to "${status}".`,
+            description: `Sticky note label "${label.name}" status was changed from "${oldStatus}" to "${status}".`,
             changes: [
                 {
                     field: "status",
@@ -373,37 +259,19 @@ export class StickyNoteLabelService {
         return label;
     }
 
-    async deleteStickyNoteLabel(
-        id: string,
-        updatedBy: string,
-        context?: IAuditLogContext,
-    ) {
-        const existing =
-            await this.stickyNoteLabelRepository.findById(
-                id,
-            );
+    async deleteStickyNoteLabel(id: string, updatedBy: string, context?: IAuditLogContext) {
+        const existing = await this.stickyNoteLabelRepository.findById(id);
 
         if (!existing) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
 
-        const label =
-            await this.stickyNoteLabelRepository.softDelete(
-                id,
-                new Types.ObjectId(updatedBy),
-            );
+        const label = await this.stickyNoteLabelRepository.softDelete(id, new Types.ObjectId(updatedBy));
 
         if (!label) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
-
 
         await this.auditLogService.log({
             ...context,
@@ -411,53 +279,29 @@ export class StickyNoteLabelService {
             module: AppModule.STICKY_NOTE_LABEL,
             resourceId: label._id.toString(),
             resourceName: label.name,
-            description:
-                `Sticky note label "${label.name}" was deleted successfully.`,
+            description: `Sticky note label "${label.name}" was deleted successfully.`,
         });
 
         return label;
     }
 
-    async restoreStickyNoteLabel(
-        id: string,
-        updatedBy: string,
-        context?: IAuditLogContext,
-    ) {
-        const existing =
-            await this.stickyNoteLabelRepository
-                .findByIdIncludingDeleted(id);
+    async restoreStickyNoteLabel(id: string, updatedBy: string, context?: IAuditLogContext) {
+        const existing = await this.stickyNoteLabelRepository.findByIdIncludingDeleted(id);
 
         if (!existing) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
 
-        if (
-            existing.status !==
-            StickyNoteLabelStatus.DELETED
-        ) {
-            throw new AppError(
-                StickyNoteLabelMessages.CANNOT_RESTORE_ACTIVE,
-                400,
-            );
+        if (existing.status !== StickyNoteLabelStatus.DELETED) {
+            throw new AppError(StickyNoteLabelMessages.CANNOT_RESTORE_ACTIVE, 400);
         }
 
-        const label =
-            await this.stickyNoteLabelRepository.restore(
-                id,
-                new Types.ObjectId(updatedBy),
-            );
+        const label = await this.stickyNoteLabelRepository.restore(id, new Types.ObjectId(updatedBy));
 
         if (!label) {
-            throw new AppError(
-                StickyNoteLabelMessages.NOT_FOUND,
-                404,
-            );
+            throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
-
 
         await this.auditLogService.log({
             ...context,
@@ -465,8 +309,7 @@ export class StickyNoteLabelService {
             module: AppModule.STICKY_NOTE_LABEL,
             resourceId: label._id.toString(),
             resourceName: label.name,
-            description:
-                `Sticky note label "${label.name}" was restored successfully.`,
+            description: `Sticky note label "${label.name}" was restored successfully.`,
         });
 
         return label;

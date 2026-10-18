@@ -35,7 +35,12 @@ export class WorkspaceMemberInvitationController {
             if (!isBatchRequest) {
                 return res
                     .status(201)
-                    .json(ResponseUtil.created(WorkspaceMemberInvitationMessages.CREATED, result.invitations[0]));
+                    .json(
+                        ResponseUtil.created(
+                            WorkspaceMemberInvitationMessages.CREATED,
+                            result.invitations[0],
+                        ),
+                    );
             }
 
             const statusCode = result.summary.created > 0 ? 201 : 200;
@@ -58,9 +63,13 @@ export class WorkspaceMemberInvitationController {
         try {
             res.setHeader("Cache-Control", "no-store");
 
-            const preview = await this.workspaceMemberInvitationService.validateInvitationToken(req.body.token);
+            const preview = await this.workspaceMemberInvitationService.validateInvitationToken(
+                req.body.token,
+            );
 
-            return res.status(200).json(ResponseUtil.success(WorkspaceMemberInvitationMessages.VALIDATED, preview));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(WorkspaceMemberInvitationMessages.VALIDATED, preview));
         } catch (error) {
             return next(error);
         }
@@ -83,7 +92,9 @@ export class WorkspaceMemberInvitationController {
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(ResponseUtil.success(WorkspaceMemberInvitationMessages.ACCEPTED, result));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(WorkspaceMemberInvitationMessages.ACCEPTED, result));
         } catch (error) {
             return next(error);
         }
@@ -98,7 +109,9 @@ export class WorkspaceMemberInvitationController {
                 res.locals.invitationResponse,
             );
 
-            return res.status(200).json(ResponseUtil.success(WorkspaceMemberInvitationMessages.FETCHED, invitation));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(WorkspaceMemberInvitationMessages.FETCHED, invitation));
         } catch (error) {
             return next(error);
         }
@@ -139,7 +152,9 @@ export class WorkspaceMemberInvitationController {
                 res.locals.targetInvitation,
             );
 
-            return res.status(200).json(ResponseUtil.success(WorkspaceMemberInvitationMessages.UPDATED, invitation));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(WorkspaceMemberInvitationMessages.UPDATED, invitation));
         } catch (error) {
             return next(error);
         }
@@ -155,7 +170,9 @@ export class WorkspaceMemberInvitationController {
                 res.locals.targetInvitation,
             );
 
-            return res.status(200).json(ResponseUtil.success(WorkspaceMemberInvitationMessages.CANCELLED, invitation));
+            return res
+                .status(200)
+                .json(ResponseUtil.success(WorkspaceMemberInvitationMessages.CANCELLED, invitation));
         } catch (error) {
             return next(error);
         }

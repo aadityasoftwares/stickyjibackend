@@ -5,6 +5,6 @@ import { getSubscriptionEntitlementsSchema } from "./subscriptionentitlement.sch
 const validate = validateUsingZOD(getSubscriptionEntitlementsSchema);
 
 export const getSubscriptionEntitlementsValidation = (req: Request, res: Response, next: NextFunction) => {
-    req.body = req.method === "GET" ? { ...req.query } : req.body ?? {};
+    req.body = req.method === "GET" ? { ...req.query } : (req.body ?? {});
     return validate(req, res, next);
 };

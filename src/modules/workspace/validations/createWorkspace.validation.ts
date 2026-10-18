@@ -54,7 +54,8 @@ export const createWorkspaceValidation = (req: Request, _res: Response, next: Ne
         if (
             description !== undefined &&
             description !== null &&
-            (typeof description !== "string" || description.trim().length > WORKSPACE_CONSTANTS.DESCRIPTION.MAX_LENGTH)
+            (typeof description !== "string" ||
+                description.trim().length > WORKSPACE_CONSTANTS.DESCRIPTION.MAX_LENGTH)
         ) {
             return next(new AppError(WorkspaceMessages.INVALID_DESCRIPTION, 400));
         }

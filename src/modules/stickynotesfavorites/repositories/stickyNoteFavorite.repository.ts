@@ -1,29 +1,20 @@
-import {
-    Types,
-    type PopulateOptions,
-    type QueryFilter,
-} from "mongoose";
+import { Types, type PopulateOptions, type QueryFilter } from "mongoose";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
 import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
 
-import {
-    StickyNoteFavoriteModel,
-} from "../models/stickyNoteFavorite.model.js";
+import { StickyNoteFavoriteModel } from "../models/stickyNoteFavorite.model.js";
 
 import type {
     IStickyNoteFavorite,
     IStickyNoteFavoriteFilter,
 } from "../interfaces/stickyNoteFavorite.interface.js";
 
-import {
-    StickyNoteFavoriteStatus,
-} from "../constants/stickyNoteFavorite.enums.js";
+import { StickyNoteFavoriteStatus } from "../constants/stickyNoteFavorite.enums.js";
 
 const STICKY_NOTE_SELECT =
     "_id workspaceId workspaceFolderId columnId stickyNoteNumber title content color priority shape variant backgroundPattern position rank status noteDate createdBy createdAt updatedAt";
 
-const USER_SELECT =
-    "_id firstName lastName displayName email";
+const USER_SELECT = "_id firstName lastName displayName email";
 
 const FAVORITE_POPULATE: PopulateOptions[] = [
     {
@@ -37,16 +28,11 @@ const FAVORITE_POPULATE: PopulateOptions[] = [
 ];
 
 export class StickyNoteFavoriteRepository {
-    async create(
-        data: Partial<IStickyNoteFavorite>,
-    ) {
+    async create(data: Partial<IStickyNoteFavorite>) {
         return StickyNoteFavoriteModel.create(data);
     }
 
-    async findById(
-        id: string,
-        userId: string,
-    ) {
+    async findById(id: string, userId: string) {
         if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -62,10 +48,7 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async findByIdIncludingDeleted(
-        id: string,
-        userId: string,
-    ) {
+    async findByIdIncludingDeleted(id: string, userId: string) {
         if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -78,10 +61,7 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async findByStickyNote(
-        stickyNoteId: string,
-        userId: string,
-    ) {
+    async findByStickyNote(stickyNoteId: string, userId: string) {
         if (!Types.ObjectId.isValid(stickyNoteId) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -97,10 +77,7 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async findByStickyNoteIncludingDeleted(
-        stickyNoteId: string,
-        userId: string,
-    ) {
+    async findByStickyNoteIncludingDeleted(stickyNoteId: string, userId: string) {
         if (!Types.ObjectId.isValid(stickyNoteId) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -113,9 +90,7 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async findAll(
-        filters: IStickyNoteFavoriteFilter = {},
-    ) {
+    async findAll(filters: IStickyNoteFavoriteFilter = {}) {
         const {
             page = 1,
             limit = 10,
@@ -147,8 +122,11 @@ export class StickyNoteFavoriteRepository {
         const skip = (page - 1) * limit;
         const unavailableWorkspaceIds = await new WorkspaceRepository().findUnavailableIds();
         if (unavailableWorkspaceIds.length) {
-            const notes = await StickyNoteModel.find({ workspaceId: { $in: unavailableWorkspaceIds } }).select("_id").lean().exec();
-            query.$and = [{ stickyNoteId: { $nin: notes.map(note => note._id) } }];
+            const notes = await StickyNoteModel.find({ workspaceId: { $in: unavailableWorkspaceIds } })
+                .select("_id")
+                .lean()
+                .exec();
+            query.$and = [{ stickyNoteId: { $nin: notes.map((note) => note._id) } }];
         }
         const sortDirection = sortOrder === "asc" ? 1 : -1;
 
@@ -162,9 +140,7 @@ export class StickyNoteFavoriteRepository {
                 .limit(limit)
                 .lean(),
 
-            StickyNoteFavoriteModel.countDocuments(
-                query,
-            ),
+            StickyNoteFavoriteModel.countDocuments(query),
         ]);
 
         return {
@@ -173,17 +149,12 @@ export class StickyNoteFavoriteRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(total / limit),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
-    async existsByStickyNote(
-        stickyNoteId: string,
-        userId: string,
-        excludeId?: string,
-    ): Promise<boolean> {
+    async existsByStickyNote(stickyNoteId: string, userId: string, excludeId?: string): Promise<boolean> {
         if (!Types.ObjectId.isValid(stickyNoteId) || !Types.ObjectId.isValid(userId)) {
             return false;
         }
@@ -202,18 +173,12 @@ export class StickyNoteFavoriteRepository {
             };
         }
 
-        const exists =
-            await StickyNoteFavoriteModel.exists(
-                query,
-            );
+        const exists = await StickyNoteFavoriteModel.exists(query);
 
         return Boolean(exists);
     }
 
-    async existsById(
-        id: string,
-        userId?: string,
-    ): Promise<boolean> {
+    async existsById(id: string, userId?: string): Promise<boolean> {
         if (!Types.ObjectId.isValid(id)) {
             return false;
         }
@@ -226,19 +191,12 @@ export class StickyNoteFavoriteRepository {
             query.userId = new Types.ObjectId(userId);
         }
 
-        const exists =
-            await StickyNoteFavoriteModel.exists(
-                query,
-            );
+        const exists = await StickyNoteFavoriteModel.exists(query);
 
         return Boolean(exists);
     }
 
-    async updateById(
-        id: string,
-        userId: string,
-        data: Partial<IStickyNoteFavorite>,
-    ) {
+    async updateById(id: string, userId: string, data: Partial<IStickyNoteFavorite>) {
         if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -261,11 +219,7 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async updateStatus(
-        id: string,
-        userId: string,
-        status: StickyNoteFavoriteStatus,
-    ) {
+    async updateStatus(id: string, userId: string, status: StickyNoteFavoriteStatus) {
         if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) {
             return null;
         }
@@ -278,14 +232,13 @@ export class StickyNoteFavoriteRepository {
             {
                 $set: {
                     status,
-                    ...(status ===
-                    StickyNoteFavoriteStatus.DELETED
+                    ...(status === StickyNoteFavoriteStatus.DELETED
                         ? {
-                            deletedAt: new Date(),
-                        }
+                              deletedAt: new Date(),
+                          }
                         : {
-                            deletedAt: null,
-                        }),
+                              deletedAt: null,
+                          }),
                 },
             },
             {
@@ -297,25 +250,11 @@ export class StickyNoteFavoriteRepository {
             .lean();
     }
 
-    async softDelete(
-        id: string,
-        userId: string,
-    ) {
-        return this.updateStatus(
-            id,
-            userId,
-            StickyNoteFavoriteStatus.DELETED,
-        );
+    async softDelete(id: string, userId: string) {
+        return this.updateStatus(id, userId, StickyNoteFavoriteStatus.DELETED);
     }
 
-    async restore(
-        id: string,
-        userId: string,
-    ) {
-        return this.updateStatus(
-            id,
-            userId,
-            StickyNoteFavoriteStatus.ACTIVE,
-        );
+    async restore(id: string, userId: string) {
+        return this.updateStatus(id, userId, StickyNoteFavoriteStatus.ACTIVE);
     }
 }

@@ -1,12 +1,6 @@
-import type {
-    Document,
-    Types,
-} from "mongoose";
+import type { Document, Types } from "mongoose";
 
-import type {
-    StickyNoteColumnColor,
-    StickyNoteColumnType,
-} from "../constants/stickyNoteColumn.enums.js";
+import type { StickyNoteColumnColor, StickyNoteColumnType } from "../constants/stickyNoteColumn.enums.js";
 
 export interface IStickyNoteColumn {
     workspaceId: Types.ObjectId;
@@ -27,9 +21,7 @@ export interface IStickyNoteColumn {
     updatedAt?: Date;
 }
 
-export interface IStickyNoteColumnDocument
-    extends IStickyNoteColumn,
-    Document {
+export interface IStickyNoteColumnDocument extends IStickyNoteColumn, Document {
     _id: Types.ObjectId;
 }
 

@@ -54,7 +54,8 @@ export class StickyNoteColumnController {
     getStickyNoteColumns = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const rawWorkspaceId = (req.body?.workspaceId ?? req.query?.workspaceId) as string;
-            const rawWorkspaceFolderId = (req.body?.workspaceFolderId ?? req.query?.workspaceFolderId) as string;
+            const rawWorkspaceFolderId = (req.body?.workspaceFolderId ??
+                req.query?.workspaceFolderId) as string;
             const workspaceId = RequestUtil.getParam(rawWorkspaceId);
             const workspaceFolderId = RequestUtil.getParam(rawWorkspaceFolderId);
             const userId = RequestUtil.getUserId(req);

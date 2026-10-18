@@ -3,26 +3,19 @@ import type { IWorkspacePermission } from "../interfaces/workspacepermission.int
 import type { Types } from "mongoose";
 
 export class WorkspacePermissionRepository {
-
     async create(data: Partial<IWorkspacePermission>) {
         return await WorkspacePermissionModel.create(data);
     }
-
 
     async findByKey(key: string) {
         return await WorkspacePermissionModel.findOne({ key });
     }
 
-
     async findById(id: string) {
         return await WorkspacePermissionModel.findById(id);
     }
 
-    async findAll(
-        page = 1,
-        limit = 10,
-        search = ""
-    ) {
+    async findAll(page = 1, limit = 10, search = "") {
         const filter: any = {};
 
         if (search) {
@@ -35,9 +28,7 @@ export class WorkspacePermissionRepository {
         const skip = (page - 1) * limit;
 
         const [permissions, total] = await Promise.all([
-            WorkspacePermissionModel.find(filter)
-                .skip(skip)
-                .limit(limit),
+            WorkspacePermissionModel.find(filter).skip(skip).limit(limit),
             WorkspacePermissionModel.countDocuments(filter),
         ]);
 
@@ -53,18 +44,10 @@ export class WorkspacePermissionRepository {
     }
 
     async deactivatePermission(id: string) {
-        return await WorkspacePermissionModel.findByIdAndUpdate(
-            id,
-            { isActive: false },
-            { new: true }
-        );
+        return await WorkspacePermissionModel.findByIdAndUpdate(id, { isActive: false }, { new: true });
     }
 
     async activatePermission(id: string) {
-        return await WorkspacePermissionModel.findByIdAndUpdate(
-            id,
-            { isActive: true },
-            { new: true }
-        );
+        return await WorkspacePermissionModel.findByIdAndUpdate(id, { isActive: true }, { new: true });
     }
 }

@@ -40,12 +40,21 @@ const WORKSPACE_FOLDER_SELECT = {
 
 export class WorkspaceFolderRepository {
     async findReadableWorkspaceIds(userId: string) {
-        const memberships = await new WorkspaceRepository().findReadableMemberships(userId, PermissionModule.FOLDERS);
+        const memberships = await new WorkspaceRepository().findReadableMemberships(
+            userId,
+            PermissionModule.FOLDERS,
+        );
         const workspaces = await WorkspaceModel.find({
             status: { $in: [WorkspaceStatus.ACTIVE, WorkspaceStatus.ARCHIVED] },
-            $or: [{ ownerId: new Types.ObjectId(userId) }, { _id: { $in: memberships.map(m => m.workspaceId) } }],
-        }).select("_id").lean().exec();
-        return workspaces.map(workspace => workspace._id.toString());
+            $or: [
+                { ownerId: new Types.ObjectId(userId) },
+                { _id: { $in: memberships.map((m) => m.workspaceId) } },
+            ],
+        })
+            .select("_id")
+            .lean()
+            .exec();
+        return workspaces.map((workspace) => workspace._id.toString());
     }
 
     async runInTransaction<T>(operation: (session: ClientSession) => Promise<T>): Promise<T> {
@@ -61,8 +70,14 @@ export class WorkspaceFolderRepository {
     }
 
     async deleteTrashed(id: string, workspaceId: string, session: ClientSession) {
-        return WorkspaceFolderModel.deleteOne({ _id: new Types.ObjectId(id), workspaceId: new Types.ObjectId(workspaceId),
-            status: WorkspaceFolderStatus.DELETED, isDefault: false }).session(session).exec();
+        return WorkspaceFolderModel.deleteOne({
+            _id: new Types.ObjectId(id),
+            workspaceId: new Types.ObjectId(workspaceId),
+            status: WorkspaceFolderStatus.DELETED,
+            isDefault: false,
+        })
+            .session(session)
+            .exec();
     }
     async create(data: Partial<IWorkspaceFolder>) {
         return WorkspaceFolderModel.create(data);
@@ -153,10 +168,7 @@ export class WorkspaceFolderRepository {
         };
     }
 
-    async findAccessibleByUser(
-        accessibleWorkspaceIds: string[],
-        filters: IWorkspaceFolderFilter = {},
-    ) {
+    async findAccessibleByUser(accessibleWorkspaceIds: string[], filters: IWorkspaceFolderFilter = {}) {
         const {
             page = WORKSPACE_FOLDER_CONSTANTS.PAGINATION.DEFAULT_PAGE,
             limit = WORKSPACE_FOLDER_CONSTANTS.PAGINATION.DEFAULT_LIMIT,
@@ -184,12 +196,25 @@ export class WorkspaceFolderRepository {
             counts: Array<{ _id: WorkspaceFolderStatus; count: number }>;
         }>([
             { $match: query },
-            { $facet: {
-                data: [selected, { $sort: { ...(filters.workspaceId ? {} : { isDefault: -1 as const }), [sortBy]: direction, _id: 1 } },
-                    { $skip: skip }, { $limit: limit }, { $project: WORKSPACE_FOLDER_SELECT }],
-                total: [selected, { $count: "count" }],
-                counts: [{ $group: { _id: "$status", count: { $sum: 1 } } }],
-            } },
+            {
+                $facet: {
+                    data: [
+                        selected,
+                        {
+                            $sort: {
+                                ...(filters.workspaceId ? {} : { isDefault: -1 as const }),
+                                [sortBy]: direction,
+                                _id: 1,
+                            },
+                        },
+                        { $skip: skip },
+                        { $limit: limit },
+                        { $project: WORKSPACE_FOLDER_SELECT },
+                    ],
+                    total: [selected, { $count: "count" }],
+                    counts: [{ $group: { _id: "$status", count: { $sum: 1 } } }],
+                },
+            },
         ]).exec();
         const counts = { all: 0, active: 0, inactive: 0, archived: 0, deleted: 0 };
         for (const row of result?.counts ?? []) {
@@ -199,7 +224,11 @@ export class WorkspaceFolderRepository {
             if (row._id === WorkspaceFolderStatus.DELETED) counts.deleted = row.count;
         }
         counts.all = counts.active + counts.inactive + counts.archived;
-        return { data: result?.data ?? [], pagination: paginationMeta(page, limit, result?.total[0]?.count ?? 0), counts };
+        return {
+            data: result?.data ?? [],
+            pagination: paginationMeta(page, limit, result?.total[0]?.count ?? 0),
+            counts,
+        };
     }
 
     async existsById(id: string): Promise<boolean> {
@@ -241,11 +270,7 @@ export class WorkspaceFolderRepository {
             .exec();
     }
 
-    async updateStatus(
-        id: string,
-        status: WorkspaceFolderStatus,
-        updatedBy?: IWorkspaceFolder["updatedBy"],
-    ) {
+    async updateStatus(id: string, status: WorkspaceFolderStatus, updatedBy?: IWorkspaceFolder["updatedBy"]) {
         return WorkspaceFolderModel.findOneAndUpdate(
             { _id: new Types.ObjectId(id), status: { $ne: WorkspaceFolderStatus.DELETED } },
             {
@@ -274,7 +299,9 @@ export class WorkspaceFolderRepository {
                     status: WorkspaceFolderStatus.DELETED,
                     deletedAt: now,
                     deletedBy: updatedBy ?? null,
-                    purgeAfter: new Date(now.getTime() + WORKSPACE_FOLDER_CONSTANTS.TRASH.RETENTION_DAYS * 86400000),
+                    purgeAfter: new Date(
+                        now.getTime() + WORKSPACE_FOLDER_CONSTANTS.TRASH.RETENTION_DAYS * 86400000,
+                    ),
                     ...(updatedBy !== undefined ? { updatedBy } : {}),
                 },
             },
@@ -287,8 +314,12 @@ export class WorkspaceFolderRepository {
 
     async restore(id: string, updatedBy?: IWorkspaceFolder["updatedBy"]) {
         return WorkspaceFolderModel.findOneAndUpdate(
-            { _id: new Types.ObjectId(id), status: WorkspaceFolderStatus.DELETED, isDefault: false,
-                $or: [{ purgeAfter: null }, { purgeAfter: { $gt: new Date() } }] },
+            {
+                _id: new Types.ObjectId(id),
+                status: WorkspaceFolderStatus.DELETED,
+                isDefault: false,
+                $or: [{ purgeAfter: null }, { purgeAfter: { $gt: new Date() } }],
+            },
             {
                 $set: {
                     status: WorkspaceFolderStatus.ACTIVE,
@@ -387,16 +418,12 @@ export class WorkspaceFolderRepository {
         return summaries;
     }
 
-    async getStickyNoteCountsByFolderIds(
-        folderIds: string[],
-    ): Promise<Map<string, IWorkspaceFolderSummary>> {
+    async getStickyNoteCountsByFolderIds(folderIds: string[]): Promise<Map<string, IWorkspaceFolderSummary>> {
         if (!folderIds.length) {
             return new Map();
         }
 
-        const ids = folderIds
-            .filter((id) => Types.ObjectId.isValid(id))
-            .map((id) => new Types.ObjectId(id));
+        const ids = folderIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
 
         if (!ids.length) {
             return new Map();
@@ -484,7 +511,10 @@ export class WorkspaceFolderRepository {
             ];
         }
 
-        query.status = filters.status && filters.status !== "ALL" ? filters.status : { $ne: WorkspaceFolderStatus.DELETED };
+        query.status =
+            filters.status && filters.status !== "ALL"
+                ? filters.status
+                : { $ne: WorkspaceFolderStatus.DELETED };
 
         if (filters.isDefault !== undefined) {
             query.isDefault = filters.isDefault;

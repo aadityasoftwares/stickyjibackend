@@ -1,5 +1,4 @@
 export enum CurrencyCode {
-
     AED = "AED",
     AFN = "AFN",
     ALL = "ALL",
@@ -181,7 +180,6 @@ export enum CurrencyCode {
     ZMW = "ZMW",
     ZWL = "ZWL",
 }
-
 
 export enum CurrencyType {
     FIAT = "FIAT",

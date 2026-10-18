@@ -8,41 +8,38 @@ import { emailStyles } from "../config/emailStyles.js";
 import { emailTheme } from "../config/emailTheme.js";
 
 export interface WelcomeEmailProps {
-  userName?: string;
+    userName?: string;
 }
 
 /**
  * Escape dynamic values before inserting them into HTML.
  */
 const escapeHtml = (value: string): string =>
-  value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 
-export const welcomeEmailTemplate = ({
-  userName = "there",
-}: WelcomeEmailProps = {}): string => {
-  const firstName = escapeHtml(userName.trim() || "there");
+export const welcomeEmailTemplate = ({ userName = "there" }: WelcomeEmailProps = {}): string => {
+    const firstName = escapeHtml(userName.trim() || "there");
 
-  /**
-   * Caveat is intentionally used only for small expressive areas.
-   * Email clients that don't support Caveat fall back gracefully.
-   */
-  const handwrittenFont =
-    "'Caveat', 'Comic Sans MS', 'Segoe Print', cursive";
+    /**
+     * Caveat is intentionally used only for small expressive areas.
+     * Email clients that don't support Caveat fall back gracefully.
+     */
+    const handwrittenFont = "'Caveat', 'Comic Sans MS', 'Segoe Print', cursive";
 
-  return EmailLayout({
-    title: `Welcome to ${emailTheme.brand.name}`,
-    preheader:
-      "Your workspace is ready. Capture ideas, organize tasks, and turn your notes into progress.",
+    return EmailLayout({
+        title: `Welcome to ${emailTheme.brand.name}`,
+        preheader:
+            "Your workspace is ready. Capture ideas, organize tasks, and turn your notes into progress.",
 
-    showHeader: true,
-    showFooter: true,
+        showHeader: true,
+        showFooter: true,
 
-    children: `
+        children: `
 
         <!-- =========================================================
              HERO
@@ -539,9 +536,9 @@ export const welcomeEmailTemplate = ({
         ========================================================== -->
 
         ${EmailCard({
-      variant: "yellow",
+            variant: "yellow",
 
-      content: `
+            content: `
 
                 <table
                     role="presentation"
@@ -602,7 +599,7 @@ export const welcomeEmailTemplate = ({
                 </table>
 
             `,
-    })}
+        })}
 
 
 
@@ -679,9 +676,9 @@ export const welcomeEmailTemplate = ({
         <!-- FEATURE 1 -->
 
         ${EmailCard({
-      variant: "blue",
+            variant: "blue",
 
-      content: `
+            content: `
 
                 <table
                     role="presentation"
@@ -751,7 +748,7 @@ export const welcomeEmailTemplate = ({
                 </table>
 
             `,
-    })}
+        })}
 
 
 
@@ -764,9 +761,9 @@ export const welcomeEmailTemplate = ({
         <!-- FEATURE 2 -->
 
         ${EmailCard({
-      variant: "yellow",
+            variant: "yellow",
 
-      content: `
+            content: `
 
                 <table
                     role="presentation"
@@ -839,7 +836,7 @@ export const welcomeEmailTemplate = ({
                 </table>
 
             `,
-    })}
+        })}
 
 
 
@@ -852,9 +849,9 @@ export const welcomeEmailTemplate = ({
         <!-- FEATURE 3 -->
 
         ${EmailCard({
-      variant: "green",
+            variant: "green",
 
-      content: `
+            content: `
 
                 <table
                     role="presentation"
@@ -925,7 +922,7 @@ export const welcomeEmailTemplate = ({
                 </table>
 
             `,
-    })}
+        })}
 
 
 
@@ -1087,10 +1084,10 @@ export const welcomeEmailTemplate = ({
 
 
                     ${EmailButton({
-      text: "Create My First Note",
-      href: emailAssets.links.dashboard,
-      variant: "primary",
-    })}
+                        text: "Create My First Note",
+                        href: emailAssets.links.dashboard,
+                        variant: "primary",
+                    })}
 
                 </td>
 
@@ -1172,5 +1169,5 @@ export const welcomeEmailTemplate = ({
         </table>
 
         `,
-  });
+    });
 };

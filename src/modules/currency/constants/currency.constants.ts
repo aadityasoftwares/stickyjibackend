@@ -1,4 +1,4 @@
-import { CurrencyCode, CurrencyType, } from "./currency.enums.js";
+import { CurrencyCode, CurrencyType } from "./currency.enums.js";
 
 export const DEFAULT_CURRENCY_STATUS = true;
 export const DEFAULT_CURRENCY_SYSTEM = true;
@@ -8,9 +8,7 @@ export const DEFAULT_CURRENCY_SYMBOL = "₹";
 export const DEFAULT_CURRENCY_NUMERIC_CODE = "356";
 export const DEFAULT_CURRENCY_DECIMAL_PLACES = 2;
 export const DEFAULT_CURRENCY_TYPE = CurrencyType.FIAT;
-export const CURRENCY_SYMBOL_MAP:
-    Record<CurrencyCode, string> = {
-
+export const CURRENCY_SYMBOL_MAP: Record<CurrencyCode, string> = {
     [CurrencyCode.AED]: "د.إ",
     [CurrencyCode.AFN]: "؋",
     [CurrencyCode.ALL]: "Lek",
@@ -193,9 +191,7 @@ export const CURRENCY_SYMBOL_MAP:
     [CurrencyCode.ZWL]: "$",
 };
 
-export const CURRENCY_DECIMAL_PLACES:
-    Record<string, number> = {
-
+export const CURRENCY_DECIMAL_PLACES: Record<string, number> = {
     [CurrencyCode.BIF]: 0,
     [CurrencyCode.CLP]: 0,
     [CurrencyCode.DJF]: 0,
@@ -217,7 +213,6 @@ export const CURRENCY_DECIMAL_PLACES:
     [CurrencyCode.XAF]: 0,
     [CurrencyCode.XOF]: 0,
     [CurrencyCode.XPF]: 0,
-
 };
 
 export const getCurrencySymbol = (code: CurrencyCode): string => {

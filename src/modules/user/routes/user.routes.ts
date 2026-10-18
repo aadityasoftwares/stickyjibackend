@@ -18,26 +18,18 @@ userRoutes.post(
     validateContentType("application/json"),
     requireBodyFields("email", "globalRoleId", "authProvider"),
     createUserValidation,
-    userController.createUser
+    userController.createUser,
 );
 
-userRoutes.get(
-    "/getall",
-    userController.getUsers
-);
+userRoutes.get("/getall", userController.getUsers);
 
-userRoutes.get(
-    "/get/:id",
-    requireRouteParam("id"),
-    getUserValidation,
-    userController.getUserById
-);
+userRoutes.get("/get/:id", requireRouteParam("id"), getUserValidation, userController.getUserById);
 
 userRoutes.get(
     "/get/email/:email",
     requireRouteParam("email"),
     getUserValidation,
-    userController.getUserByEmail
+    userController.getUserByEmail,
 );
 
 userRoutes.put(
@@ -45,7 +37,7 @@ userRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateUserValidation,
-    userController.updateUser
+    userController.updateUser,
 );
 
 userRoutes.patch(
@@ -54,22 +46,17 @@ userRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("status"),
     updateUserStatusValidation,
-    userController.updateUserStatus
+    userController.updateUserStatus,
 );
 
-userRoutes.delete(
-    "/delete/:id",
-    requireRouteParam("id"),
-    deleteUserValidation,
-    userController.deleteUser
-);
+userRoutes.delete("/delete/:id", requireRouteParam("id"), deleteUserValidation, userController.deleteUser);
 
 userRoutes.patch(
     "/restore/:id",
     validateContentType("application/json"),
     requireRouteParam("id"),
     restoreUserValidation,
-    userController.restoreUser
+    userController.restoreUser,
 );
 
 export default userRoutes;

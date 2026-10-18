@@ -44,7 +44,8 @@ export const WorkspaceMemberInvitationValidation = {
         }
 
         return (
-            typeof value === "string" && value.trim().length <= WORKSPACE_MEMBER_INVITATION_CONSTANTS.MESSAGE.MAX_LENGTH
+            typeof value === "string" &&
+            value.trim().length <= WORKSPACE_MEMBER_INVITATION_CONSTANTS.MESSAGE.MAX_LENGTH
         );
     },
 

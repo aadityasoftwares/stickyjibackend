@@ -1,14 +1,7 @@
-import type {
-    Document,
-    Types,
-} from "mongoose";
-import type {
-    StickyNoteFavoriteStatus,
-} from "../constants/stickyNoteFavorite.enums.js";
+import type { Document, Types } from "mongoose";
+import type { StickyNoteFavoriteStatus } from "../constants/stickyNoteFavorite.enums.js";
 
-export type StickyNoteFavoriteSortField =
-    | "createdAt"
-    | "updatedAt";
+export type StickyNoteFavoriteSortField = "createdAt" | "updatedAt";
 
 export interface IStickyNoteFavorite {
     stickyNoteId: Types.ObjectId;
@@ -19,9 +12,7 @@ export interface IStickyNoteFavorite {
     updatedAt?: Date;
 }
 
-export interface IStickyNoteFavoriteDocument
-    extends IStickyNoteFavorite,
-    Document {
+export interface IStickyNoteFavoriteDocument extends IStickyNoteFavorite, Document {
     _id: Types.ObjectId;
 }
 

@@ -1,7 +1,10 @@
 import { isWorkspaceTrashed } from "../../workspace/constants/workspace.enums.js";
 import mongoose, { Types } from "mongoose";
 import { StickyNoteColumnColor, StickyNoteColumnType } from "../constants/stickyNoteColumn.enums.js";
-import { DEFAULT_STICKY_NOTE_COLUMNS, STICKY_NOTE_COLUMN_CONSTANTS } from "../constants/stickyNoteColumn.constants.js";
+import {
+    DEFAULT_STICKY_NOTE_COLUMNS,
+    STICKY_NOTE_COLUMN_CONSTANTS,
+} from "../constants/stickyNoteColumn.constants.js";
 import { StickyNoteColumnMessages } from "../constants/stickyNoteColumn.messages.js";
 import type {
     IStickyNoteColumn,
@@ -20,7 +23,10 @@ import { WorkspaceFolderStatus } from "../../workspaceFolders/constants/workspac
 import { AuditLogAction } from "../../auditlog/constants/auditLog.enums.js";
 import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
 import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
-import { permissionAuthorizationService, type IWorkspaceAuthorizationContext } from "../../permissions/services/permissionAuthorization.service.js";
+import {
+    permissionAuthorizationService,
+    type IWorkspaceAuthorizationContext,
+} from "../../permissions/services/permissionAuthorization.service.js";
 import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
 import { AppModule } from "../../../utils/enums/appModule.enums.js";
 import { AppError } from "../../../utils/errors/app.error.js";
@@ -45,7 +51,10 @@ export class StickyNoteColumnService {
         this.validateAuditAction(AuditLogAction.CREATE);
         const userObjectId = this.getUserObjectId(createdBy);
         const workspaceId = this.toIdString(data.workspaceId, StickyNoteColumnMessages.INVALID_WORKSPACE_ID);
-        const workspaceFolderId = this.toIdString(data.workspaceFolderId, StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID);
+        const workspaceFolderId = this.toIdString(
+            data.workspaceFolderId,
+            StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
+        );
 
         await this.authorizeWorkspace(workspaceId, createdBy, PermissionAction.CREATE, authorization);
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
@@ -61,11 +70,12 @@ export class StickyNoteColumnService {
         }
 
         const normalizedName = StickyNoteColumnValidation.normalizeName(data.name);
-        const rank = data.rank && RankUtil.isValidRank(data.rank)
-            ? data.rank
-            : highestRank
-                ? RankUtil.generateRankAfter(highestRank) ?? RankUtil.generateInitialRank()
-                : RankUtil.generateInitialRank();
+        const rank =
+            data.rank && RankUtil.isValidRank(data.rank)
+                ? data.rank
+                : highestRank
+                  ? (RankUtil.generateRankAfter(highestRank) ?? RankUtil.generateInitialRank())
+                  : RankUtil.generateInitialRank();
 
         try {
             const column = await this.stickyNoteColumnRepository.create({
@@ -84,7 +94,11 @@ export class StickyNoteColumnService {
             try {
                 await this.auditLogService.logCreate(
                     context ?? {},
-                    { module: AppModule.STICKY_NOTE_COLUMN, resourceId: column._id.toString(), resourceName: column.name },
+                    {
+                        module: AppModule.STICKY_NOTE_COLUMN,
+                        resourceId: column._id.toString(),
+                        resourceName: column.name,
+                    },
                     `Sticky note column "${column.name}" was created successfully.`,
                 );
             } catch (error) {
@@ -110,7 +124,10 @@ export class StickyNoteColumnService {
 
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
 
-        const existingColumns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(workspaceId, workspaceFolderId);
+        const existingColumns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(
+            workspaceId,
+            workspaceFolderId,
+        );
         if (existingColumns.length > 0) {
             return existingColumns.map((c) => this.toStickyNoteColumnResponse(c));
         }
@@ -133,7 +150,10 @@ export class StickyNoteColumnService {
             return created.map((c) => this.toStickyNoteColumnResponse(c));
         } catch (error) {
             if (!this.isDuplicateKeyError(error)) throw error;
-            const current = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(workspaceId, workspaceFolderId);
+            const current = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(
+                workspaceId,
+                workspaceFolderId,
+            );
             return current.map((c) => this.toStickyNoteColumnResponse(c));
         }
     }
@@ -172,7 +192,10 @@ export class StickyNoteColumnService {
         }
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
 
-        const columns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(workspaceId, workspaceFolderId);
+        const columns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(
+            workspaceId,
+            workspaceFolderId,
+        );
         return columns.map((c) => this.toStickyNoteColumnResponse(c));
     }
 
@@ -196,7 +219,13 @@ export class StickyNoteColumnService {
         await this.authorizeWorkspace(workspaceId, updatedBy, PermissionAction.UPDATE, authorization);
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
 
-        if (!StickyNoteColumnValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, ["name", "color", "rank"])) {
+        if (
+            !StickyNoteColumnValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, [
+                "name",
+                "color",
+                "rank",
+            ])
+        ) {
             throw new AppError(StickyNoteColumnMessages.UNSUPPORTED_FIELDS, 400);
         }
 
@@ -234,12 +263,19 @@ export class StickyNoteColumnService {
         }
 
         try {
-            const updatedColumn = await this.stickyNoteColumnRepository.updateById(id, { ...updateData, updatedBy: userObjectId });
+            const updatedColumn = await this.stickyNoteColumnRepository.updateById(id, {
+                ...updateData,
+                updatedBy: userObjectId,
+            });
             if (!updatedColumn) throw new AppError(StickyNoteColumnMessages.NOT_FOUND, 404);
 
             await this.auditLogService.logUpdate(
                 context ?? {},
-                { module: AppModule.STICKY_NOTE_COLUMN, resourceId: updatedColumn._id.toString(), resourceName: updatedColumn.name },
+                {
+                    module: AppModule.STICKY_NOTE_COLUMN,
+                    resourceId: updatedColumn._id.toString(),
+                    resourceName: updatedColumn.name,
+                },
                 `Sticky note column "${updatedColumn.name}" was updated successfully.`,
                 changes,
             );
@@ -305,7 +341,10 @@ export class StickyNoteColumnService {
 
         let newRank: string | null;
         if (!beforeColumn && !afterColumn) {
-            const highestRank = await this.stickyNoteColumnRepository.getHighestRank(workspaceId, workspaceFolderId);
+            const highestRank = await this.stickyNoteColumnRepository.getHighestRank(
+                workspaceId,
+                workspaceFolderId,
+            );
             newRank = highestRank ? RankUtil.generateRankAfter(highestRank) : RankUtil.generateInitialRank();
         } else {
             newRank = RankUtil.generateRankBetween(beforeRank, afterRank);
@@ -317,10 +356,15 @@ export class StickyNoteColumnService {
                 data.beforeId ? this.stickyNoteColumnRepository.findById(data.beforeId) : null,
                 data.afterId ? this.stickyNoteColumnRepository.findById(data.afterId) : null,
             ]);
-            newRank = RankUtil.generateRankBetween(refBefore?.rank, refAfter?.rank) ?? RankUtil.generateInitialRank();
+            newRank =
+                RankUtil.generateRankBetween(refBefore?.rank, refAfter?.rank) ??
+                RankUtil.generateInitialRank();
         }
 
-        const updatedColumn = await this.stickyNoteColumnRepository.updateById(id, { rank: newRank, updatedBy: userObjectId });
+        const updatedColumn = await this.stickyNoteColumnRepository.updateById(id, {
+            rank: newRank,
+            updatedBy: userObjectId,
+        });
         if (!updatedColumn) throw new AppError(StickyNoteColumnMessages.NOT_FOUND, 404);
 
         await this.auditLogService.logUpdate(
@@ -342,7 +386,10 @@ export class StickyNoteColumnService {
         this.validateAuditAction(AuditLogAction.UPDATE);
         const userObjectId = this.getUserObjectId(updatedBy);
         const workspaceId = this.toIdString(data.workspaceId, StickyNoteColumnMessages.INVALID_WORKSPACE_ID);
-        const workspaceFolderId = this.toIdString(data.workspaceFolderId, StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID);
+        const workspaceFolderId = this.toIdString(
+            data.workspaceFolderId,
+            StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
+        );
         const requestedIds = data.columnIds.map((id) =>
             this.toIdString(id, StickyNoteColumnMessages.INVALID_COLUMN_IDS),
         );
@@ -350,7 +397,10 @@ export class StickyNoteColumnService {
         await this.authorizeWorkspace(workspaceId, updatedBy, PermissionAction.UPDATE, authorization);
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
 
-        const columns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(workspaceId, workspaceFolderId);
+        const columns = await this.stickyNoteColumnRepository.findAllByWorkspaceFolder(
+            workspaceId,
+            workspaceFolderId,
+        );
         const existingIds = columns.map((c) => c._id.toString());
 
         if (requestedIds.length !== existingIds.length) {
@@ -362,11 +412,20 @@ export class StickyNoteColumnService {
             throw new AppError(StickyNoteColumnMessages.COLUMN_WORKSPACE_MISMATCH, 400);
         }
 
-        const updatedColumns = await this.stickyNoteColumnRepository.reorder(workspaceId, workspaceFolderId, requestedIds, userObjectId);
+        const updatedColumns = await this.stickyNoteColumnRepository.reorder(
+            workspaceId,
+            workspaceFolderId,
+            requestedIds,
+            userObjectId,
+        );
 
         await this.auditLogService.logUpdate(
             context ?? {},
-            { module: AppModule.STICKY_NOTE_COLUMN, resourceId: workspaceFolderId, resourceName: "Sticky note columns" },
+            {
+                module: AppModule.STICKY_NOTE_COLUMN,
+                resourceId: workspaceFolderId,
+                resourceName: "Sticky note columns",
+            },
             "Sticky note columns were reordered successfully.",
             [{ field: "columnOrder", oldValue: existingIds, newValue: requestedIds }],
         );
@@ -394,7 +453,11 @@ export class StickyNoteColumnService {
         await this.authorizeWorkspace(workspaceId, updatedBy, PermissionAction.DELETE, authorization);
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
 
-        const todoColumn = await this.stickyNoteColumnRepository.findSystemByType(workspaceId, workspaceFolderId, StickyNoteColumnType.TODO);
+        const todoColumn = await this.stickyNoteColumnRepository.findSystemByType(
+            workspaceId,
+            workspaceFolderId,
+            StickyNoteColumnType.TODO,
+        );
         if (!todoColumn) throw new AppError(StickyNoteColumnMessages.DEFAULT_TODO_COLUMN_NOT_FOUND, 409);
 
         const session = await mongoose.startSession();
@@ -413,7 +476,11 @@ export class StickyNoteColumnService {
 
         await this.auditLogService.logDelete(
             context ?? {},
-            { module: AppModule.STICKY_NOTE_COLUMN, resourceId: column._id.toString(), resourceName: column.name },
+            {
+                module: AppModule.STICKY_NOTE_COLUMN,
+                resourceId: column._id.toString(),
+                resourceName: column.name,
+            },
             `Sticky note column "${column.name}" was deleted successfully.`,
         );
     }
@@ -437,11 +504,21 @@ export class StickyNoteColumnService {
             }
         }
 
-        const auth = authorization?.workspaceStatus !== undefined
-            ? authorization
-            : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId, allowTrashed, allowInactive);
+        const auth =
+            authorization?.workspaceStatus !== undefined
+                ? authorization
+                : await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                      userId,
+                      workspaceId,
+                      allowTrashed,
+                      allowInactive,
+                  );
 
-        permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!, allowTrashed, allowInactive);
+        permissionAuthorizationService.assertWorkspaceState(
+            auth.workspaceStatus!,
+            allowTrashed,
+            allowInactive,
+        );
         permissionAuthorizationService.assertPermission(auth, PermissionModule.NOTES, action);
         return auth;
     }
@@ -531,7 +608,10 @@ export class StickyNoteColumnService {
     private validateAuditAction(action: AuditLogAction): void {
         const moduleConfig = AuditLogConfig[AppModule.STICKY_NOTE_COLUMN];
         if (!moduleConfig || !moduleConfig.actions.includes(action)) {
-            throw new AppError(`Action ${action} is not allowed for module ${AppModule.STICKY_NOTE_COLUMN}.`, 400);
+            throw new AppError(
+                `Action ${action} is not allowed for module ${AppModule.STICKY_NOTE_COLUMN}.`,
+                400,
+            );
         }
     }
 

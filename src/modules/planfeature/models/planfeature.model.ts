@@ -1,4 +1,4 @@
-import mongoose, { Schema, Model, } from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 import { PlanFeatureLimitType } from "../constants/planFeature.enums.js";
 import {
     DEFAULT_PLAN_FEATURE_STATUS,
@@ -36,9 +36,7 @@ const PlanFeatureSchema = new Schema<IPlanFeatureDocument>(
 
         limitType: {
             type: String,
-            enum: Object.values(
-                PlanFeatureLimitType
-            ),
+            enum: Object.values(PlanFeatureLimitType),
             required: true,
             default: DEFAULT_PLAN_FEATURE_LIMIT_TYPE,
         },
@@ -67,7 +65,7 @@ const PlanFeatureSchema = new Schema<IPlanFeatureDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 PlanFeatureSchema.index(
@@ -77,7 +75,7 @@ PlanFeatureSchema.index(
     },
     {
         unique: true,
-    }
+    },
 );
 
 PlanFeatureSchema.index({
@@ -114,9 +112,7 @@ PlanFeatureSchema.index({
     isEnabled: 1,
 });
 
-export const PlanFeatureModel:
-    Model<IPlanFeatureDocument> =
-    mongoose.model<IPlanFeatureDocument>(
-        "PlanFeature",
-        PlanFeatureSchema
-    );
+export const PlanFeatureModel: Model<IPlanFeatureDocument> = mongoose.model<IPlanFeatureDocument>(
+    "PlanFeature",
+    PlanFeatureSchema,
+);

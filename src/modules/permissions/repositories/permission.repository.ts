@@ -9,10 +9,7 @@ import type {
     IPermissionDocument,
     IPermissionFilter,
 } from "../interfaces/permission.interface.js";
-import type {
-    PermissionAccess,
-    PermissionAction,
-} from "../constants/permission.enums.js";
+import type { PermissionAccess, PermissionAction } from "../constants/permission.enums.js";
 
 const PERMISSION_SELECT_FIELDS =
     "_id name displayName code module action access description sortOrder isSystem isActive createdAt updatedAt";
@@ -49,18 +46,12 @@ export class PermissionRepository {
 
     async create(data: Partial<IPermission>) {
         const permission = await PermissionModel.create(data);
-        return PermissionModel.findById(permission._id)
-            .select(PERMISSION_SELECT_FIELDS)
-            .lean()
-            .exec();
+        return PermissionModel.findById(permission._id).select(PERMISSION_SELECT_FIELDS).lean().exec();
     }
 
     async findById(id: string) {
         if (!Types.ObjectId.isValid(id)) return null;
-        return PermissionModel.findById(id)
-            .select(PERMISSION_SELECT_FIELDS)
-            .lean()
-            .exec();
+        return PermissionModel.findById(id).select(PERMISSION_SELECT_FIELDS).lean().exec();
     }
 
     async findByCode(code: string) {
@@ -81,11 +72,7 @@ export class PermissionRepository {
             .exec();
     }
 
-    async findByCombination(
-        module: string,
-        action: PermissionAction,
-        access: PermissionAccess,
-    ) {
+    async findByCombination(module: string, action: PermissionAction, access: PermissionAccess) {
         return PermissionModel.findOne({
             module: module.toUpperCase().trim(),
             action,
@@ -225,7 +212,7 @@ export class PermissionRepository {
         return PermissionModel.findByIdAndUpdate(
             id,
             { $set: data },
-            { returnDocument: "after", runValidators: true }
+            { returnDocument: "after", runValidators: true },
         )
             .select(PERMISSION_SELECT_FIELDS)
             .lean()

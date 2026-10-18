@@ -1,11 +1,10 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { ITimezoneDocument, } from "../interfaces/timezone.interface.js";
-import { DEFAULT_TIMEZONE_STATUS, DEFAULT_TIMEZONE_SYSTEM, } from "../constants/timezone.constants.js";
+import mongoose, { Schema, Model } from "mongoose";
+import type { ITimezoneDocument } from "../interfaces/timezone.interface.js";
+import { DEFAULT_TIMEZONE_STATUS, DEFAULT_TIMEZONE_SYSTEM } from "../constants/timezone.constants.js";
 import { CountryCode } from "../../countries/constants/country.enums.js";
 
 const TimezoneSchema = new Schema<ITimezoneDocument>(
     {
-
         name: {
             type: String,
             required: true,
@@ -59,17 +58,13 @@ const TimezoneSchema = new Schema<ITimezoneDocument>(
             ref: "User",
             default: null,
         },
-
     },
     {
         timestamps: true,
-    }
+    },
 );
 
-TimezoneSchema.index(
-    { code: 1 },
-    { unique: true }
-);
+TimezoneSchema.index({ code: 1 }, { unique: true });
 
 TimezoneSchema.index({
     countryCode: 1,
@@ -110,9 +105,7 @@ TimezoneSchema.index({
     isDefault: 1,
 });
 
-export const TimezoneModel:
-    Model<ITimezoneDocument> =
-    mongoose.model<ITimezoneDocument>(
-        "Timezone",
-        TimezoneSchema
-    );
+export const TimezoneModel: Model<ITimezoneDocument> = mongoose.model<ITimezoneDocument>(
+    "Timezone",
+    TimezoneSchema,
+);

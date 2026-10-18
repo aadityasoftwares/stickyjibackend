@@ -1,7 +1,8 @@
 export const WorkspaceFolderMessages = {
     PERMANENTLY_DELETED: "Workspace folder permanently deleted successfully.",
     PERMANENT_DELETE_REQUIRES_TRASH: "Move the workspace folder to trash before permanently deleting it.",
-    HAS_DEPENDENCIES: "Move or remove the folder's notes, columns and linked resources before permanently deleting it.",
+    HAS_DEPENDENCIES:
+        "Move or remove the folder's notes, columns and linked resources before permanently deleting it.",
     RESTORE_WINDOW_EXPIRED: "The workspace folder restore window has expired.",
     WORKSPACE_MISMATCH: "Workspace ID does not match the workspace folder.",
     CREATED: "Workspace folder created successfully.",

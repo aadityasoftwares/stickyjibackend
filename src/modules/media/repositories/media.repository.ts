@@ -4,21 +4,26 @@ import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
 import { WORKSPACE_TRASH_STATUSES } from "../../workspace/constants/workspace.enums.js";
 import { MediaResourceType } from "../constants/media.enums.js";
 
-import type {
-    IMedia,
-    IMediaFilter,
-} from "../interfaces/media.interface.js";
+import type { IMedia, IMediaFilter } from "../interfaces/media.interface.js";
 
 import { MediaStatus } from "../constants/media.enums.js";
 
 export class MediaRepository {
     async findPendingStorageDeletions() {
         return MediaModel.find({ status: MediaStatus.DELETED, storageDeletionPending: true })
-            .sort({ deletedAt: 1, _id: 1 }).limit(100).select("_id bucket storageKey").lean().exec();
+            .sort({ deletedAt: 1, _id: 1 })
+            .limit(100)
+            .select("_id bucket storageKey")
+            .lean()
+            .exec();
     }
 
     async deleteStorageTombstone(id: string) {
-        return MediaModel.deleteOne({ _id: id, status: MediaStatus.DELETED, storageDeletionPending: true }).exec();
+        return MediaModel.deleteOne({
+            _id: id,
+            status: MediaStatus.DELETED,
+            storageDeletionPending: true,
+        }).exec();
     }
     async create(data: Partial<IMedia>) {
         return MediaModel.create(data);
@@ -98,13 +103,19 @@ export class MediaRepository {
 
         const skip = (page - 1) * limit;
 
-        const workspaces = await WorkspaceModel.find({ status: { $in: WORKSPACE_TRASH_STATUSES } }).select("_id").lean().exec();
-        const workspaceIds = workspaces.map(row => row._id);
+        const workspaces = await WorkspaceModel.find({ status: { $in: WORKSPACE_TRASH_STATUSES } })
+            .select("_id")
+            .lean()
+            .exec();
+        const workspaceIds = workspaces.map((row) => row._id);
         if (workspaceIds.length) {
-            const notes = await StickyNoteModel.find({ workspaceId: { $in: workspaceIds } }).select("_id").lean().exec();
+            const notes = await StickyNoteModel.find({ workspaceId: { $in: workspaceIds } })
+                .select("_id")
+                .lean()
+                .exec();
             query.$nor = [
                 { resourceType: MediaResourceType.WORKSPACE, resourceId: { $in: workspaceIds } },
-                { resourceType: MediaResourceType.NOTE, resourceId: { $in: notes.map(row => row._id) } },
+                { resourceType: MediaResourceType.NOTE, resourceId: { $in: notes.map((row) => row._id) } },
             ];
         }
         query.storageDeletionPending = { $ne: true };

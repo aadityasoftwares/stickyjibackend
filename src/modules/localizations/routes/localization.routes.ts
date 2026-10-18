@@ -15,48 +15,30 @@ const localizationController = new LocalizationController();
 localizationRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "language",
-        "languageCode",
-        "locale",
-        "key",
-        "value",
-        "module"
-    ),
+    requireBodyFields("language", "languageCode", "locale", "key", "value", "module"),
     createLocalizationValidation,
-    localizationController.createLocalization
+    localizationController.createLocalization,
 );
 
-localizationRoutes.get(
-    "/getall",
-    localizationController.getLocalizations
-);
+localizationRoutes.get("/getall", localizationController.getLocalizations);
 
-localizationRoutes.get(
-    "/get",
-    getLocalizationValidation,
-    localizationController.getLocalizationById
-);
+localizationRoutes.get("/get", getLocalizationValidation, localizationController.getLocalizationById);
 
 localizationRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getLocalizationValidation,
-    localizationController.getLocalizationById
+    localizationController.getLocalizationById,
 );
 
-localizationRoutes.get(
-    "/get/key",
-    getLocalizationValidation,
-    localizationController.getLocalizationByKey
-);
+localizationRoutes.get("/get/key", getLocalizationValidation, localizationController.getLocalizationByKey);
 
 localizationRoutes.get(
     "/get/key/:locale/:key",
     requireRouteParam("locale"),
     requireRouteParam("key"),
     getLocalizationValidation,
-    localizationController.getLocalizationByKey
+    localizationController.getLocalizationByKey,
 );
 
 localizationRoutes.put(
@@ -64,7 +46,7 @@ localizationRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateLocalizationValidation,
-    localizationController.updateLocalization
+    localizationController.updateLocalization,
 );
 
 localizationRoutes.put(
@@ -72,18 +54,15 @@ localizationRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateLocalizationValidation,
-    localizationController.updateLocalization
+    localizationController.updateLocalization,
 );
 
 localizationRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeLocalizationStatusValidation,
-    localizationController.changeLocalizationStatus
+    localizationController.changeLocalizationStatus,
 );
 
 localizationRoutes.patch(
@@ -92,21 +71,21 @@ localizationRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeLocalizationStatusValidation,
-    localizationController.changeLocalizationStatus
+    localizationController.changeLocalizationStatus,
 );
 
 localizationRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteLocalizationValidation,
-    localizationController.deleteLocalization
+    localizationController.deleteLocalization,
 );
 
 localizationRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteLocalizationValidation,
-    localizationController.deleteLocalization
+    localizationController.deleteLocalization,
 );
 
 export default localizationRoutes;

@@ -314,7 +314,8 @@ export class PlanService {
 
         this.validatePlanBusinessRules(planToValidate);
 
-        const userObjectId = createdBy && Types.ObjectId.isValid(createdBy) ? new Types.ObjectId(createdBy) : null;
+        const userObjectId =
+            createdBy && Types.ObjectId.isValid(createdBy) ? new Types.ObjectId(createdBy) : null;
 
         const plan = await this.planRepository.create({
             ...planToValidate,
@@ -476,7 +477,8 @@ export class PlanService {
         this.validatePlanBusinessRules(mergedPlan);
 
         const previousState = this.planSnapshot(plan);
-        const userObjectId = updatedBy && Types.ObjectId.isValid(updatedBy) ? new Types.ObjectId(updatedBy) : null;
+        const userObjectId =
+            updatedBy && Types.ObjectId.isValid(updatedBy) ? new Types.ObjectId(updatedBy) : null;
 
         const updatedPlan = await this.planRepository.updateById(id, {
             ...updateData,
@@ -533,7 +535,8 @@ export class PlanService {
 
         const oldStatus = plan.isActive;
         const previousState = this.planSnapshot(plan);
-        const userObjectId = updatedBy && Types.ObjectId.isValid(updatedBy) ? new Types.ObjectId(updatedBy) : null;
+        const userObjectId =
+            updatedBy && Types.ObjectId.isValid(updatedBy) ? new Types.ObjectId(updatedBy) : null;
 
         const updatedPlan = await this.planRepository.updateStatus(id, isActive, userObjectId);
         if (!updatedPlan) {
@@ -570,10 +573,7 @@ export class PlanService {
         return this.updatePlanStatus(id, isActive, undefined, context);
     }
 
-    async deletePlan(
-        id: string,
-        context?: IAuditLogContext,
-    ): Promise<void> {
+    async deletePlan(id: string, context?: IAuditLogContext): Promise<void> {
         this.validateAuditAction(AuditLogAction.DELETE);
 
         const plan = await this.planRepository.findById(id);

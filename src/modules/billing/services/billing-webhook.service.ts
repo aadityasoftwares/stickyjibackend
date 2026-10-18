@@ -32,7 +32,11 @@ export class BillingWebhookService {
         this.subscriptionService = subscriptionService;
     }
 
-    async processWebhook(rawBody: Buffer | string, signature: string, headers: Record<string, any> = {}): Promise<{
+    async processWebhook(
+        rawBody: Buffer | string,
+        signature: string,
+        headers: Record<string, any> = {},
+    ): Promise<{
         success: boolean;
         duplicate?: boolean;
         event: string;
@@ -42,7 +46,8 @@ export class BillingWebhookService {
             throw new AppError(BillingMessages.SIGNATURE_INVALID, 400, "INVALID_SIGNATURE");
         }
 
-        const payload = typeof rawBody === "string" ? JSON.parse(rawBody) : JSON.parse(rawBody.toString("utf8"));
+        const payload =
+            typeof rawBody === "string" ? JSON.parse(rawBody) : JSON.parse(rawBody.toString("utf8"));
         const eventId = (headers["x-razorpay-event-id"] as string) || payload.event_id || payload.id || "";
         const eventType = payload.event as string;
 
@@ -50,7 +55,10 @@ export class BillingWebhookService {
             throw new AppError("Malformed webhook payload", 400, "MALFORMED_WEBHOOK");
         }
 
-        const existing = await this.repository.findEventByProviderAndId(BillingProviderName.RAZORPAY, eventId);
+        const existing = await this.repository.findEventByProviderAndId(
+            BillingProviderName.RAZORPAY,
+            eventId,
+        );
         if (existing) {
             if (existing.processingStatus === BillingEventProcessingStatus.PROCESSED) {
                 return { success: true, duplicate: true, event: eventType };
@@ -199,7 +207,10 @@ export class BillingWebhookService {
             reason: "Subscription activated via Razorpay webhook",
         });
 
-        await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.COMPLETED);
+        await this.repository.updateCheckoutIntentStatus(
+            intent.checkoutIntentId,
+            CheckoutIntentStatus.COMPLETED,
+        );
     }
 
     private async handleSubscriptionCharged(subEntity: any, paymentEntity: any): Promise<void> {
@@ -248,7 +259,10 @@ export class BillingWebhookService {
                 reason: "Subscription renewed via Razorpay charged event",
             });
 
-            await this.repository.updateCheckoutIntentStatus(intent.checkoutIntentId, CheckoutIntentStatus.COMPLETED);
+            await this.repository.updateCheckoutIntentStatus(
+                intent.checkoutIntentId,
+                CheckoutIntentStatus.COMPLETED,
+            );
         }
     }
 
@@ -373,7 +387,10 @@ export class BillingWebhookService {
 
         const providerSubscriptionId = subEntity?.id || paymentEntity.notes?.subscriptionId;
         const intent = providerSubscriptionId
-            ? await this.repository.findCheckoutIntentByProviderSubscriptionId(BillingProviderName.RAZORPAY, providerSubscriptionId)
+            ? await this.repository.findCheckoutIntentByProviderSubscriptionId(
+                  BillingProviderName.RAZORPAY,
+                  providerSubscriptionId,
+              )
             : null;
 
         if (intent) {

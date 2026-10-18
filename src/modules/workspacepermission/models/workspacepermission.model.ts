@@ -6,7 +6,7 @@ const WorkspacePermissionSchema: Schema<IWorkspacePermissionDocument> = new Sche
         key: {
             type: String,
             required: true,
-            unique: true,   // ✅ enough
+            unique: true, // ✅ enough
             trim: true,
         },
 
@@ -29,11 +29,8 @@ const WorkspacePermissionSchema: Schema<IWorkspacePermissionDocument> = new Sche
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 export const WorkspacePermissionModel: Model<IWorkspacePermissionDocument> =
-    mongoose.model<IWorkspacePermissionDocument>(
-        "WorkspacePermission",
-        WorkspacePermissionSchema
-    );
+    mongoose.model<IWorkspacePermissionDocument>("WorkspacePermission", WorkspacePermissionSchema);

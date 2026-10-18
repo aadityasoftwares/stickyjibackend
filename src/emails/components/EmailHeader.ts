@@ -33,9 +33,9 @@ export const EmailHeader = ({
         "
       >
         ${EmailLogo({
-        width: logoWidth,
-        align,
-    })}
+            width: logoWidth,
+            align,
+        })}
       </td>
     </tr>
   `;

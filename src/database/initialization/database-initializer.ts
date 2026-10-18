@@ -1,16 +1,9 @@
 import mongoose from "mongoose";
 import { randomUUID } from "node:crypto";
 import { AppError } from "../../utils/errors/app.error.js";
-import {
-    InitializationStateModel,
-    InitializationStatus,
-} from "./initialization-state.model.js";
+import { InitializationStateModel, InitializationStatus } from "./initialization-state.model.js";
 import { InitializationLockManager } from "./initialization-lock.js";
-import {
-    SEED_REGISTRY,
-    verifyDatabaseInitialization,
-    type IVerificationResult,
-} from "./seed-registry.js";
+import { SEED_REGISTRY, verifyDatabaseInitialization, type IVerificationResult } from "./seed-registry.js";
 
 export interface IInitializationReport {
     initialized: boolean;
@@ -25,9 +18,7 @@ export class DatabaseInitializer {
     public static readonly CURRENT_VERSION = 1;
     public static readonly INITIALIZATION_NAME = "v1_essential_system_seed";
 
-    constructor(
-        private readonly lockManager = new InitializationLockManager()
-    ) {}
+    constructor(private readonly lockManager = new InitializationLockManager()) {}
 
     async isInitialized(version = DatabaseInitializer.CURRENT_VERSION): Promise<boolean> {
         const state = await InitializationStateModel.findOne({
@@ -53,7 +44,7 @@ export class DatabaseInitializer {
         // 1. Check if already initialized
         if (!options?.force && (await this.isInitialized(version))) {
             console.log(
-                `[DatabaseInitializer] Database is already initialized (version: ${version}). Skipping seed.`
+                `[DatabaseInitializer] Database is already initialized (version: ${version}). Skipping seed.`,
             );
             return {
                 initialized: true,
@@ -63,9 +54,7 @@ export class DatabaseInitializer {
             };
         }
 
-        const runnerId =
-            options?.runnerId ||
-            `runner_${process.pid}_${randomUUID().substring(0, 8)}`;
+        const runnerId = options?.runnerId || `runner_${process.pid}_${randomUUID().substring(0, 8)}`;
         const timeoutMs = options?.timeoutMs || 60000;
 
         // 2. Acquire distributed lock
@@ -73,18 +62,18 @@ export class DatabaseInitializer {
 
         if (!lockAcquired) {
             console.log(
-                `[DatabaseInitializer] Another instance is currently initializing the database. Waiting for completion...`
+                `[DatabaseInitializer] Another instance is currently initializing the database. Waiting for completion...`,
             );
 
             const waitResult = await this.lockManager.waitForCompletionOrRelease(
                 () => this.isInitialized(version),
                 timeoutMs,
-                1000
+                1000,
             );
 
             if (waitResult === "COMPLETED") {
                 console.log(
-                    `[DatabaseInitializer] Database initialization completed by another instance. Proceeding.`
+                    `[DatabaseInitializer] Database initialization completed by another instance. Proceeding.`,
                 );
                 return {
                     initialized: true,
@@ -102,14 +91,14 @@ export class DatabaseInitializer {
             if (!lockAcquired) {
                 throw new AppError(
                     `[DatabaseInitializer] Failed to acquire initialization lock within ${timeoutMs}ms. Aborting startup to prevent uninitialized execution.`,
-                    504
+                    504,
                 );
             }
         }
 
         try {
             console.log(
-                `[DatabaseInitializer] Starting database initialization (version: ${version}, runner: ${runnerId})...`
+                `[DatabaseInitializer] Starting database initialization (version: ${version}, runner: ${runnerId})...`,
             );
 
             // Record PENDING state
@@ -124,7 +113,7 @@ export class DatabaseInitializer {
                         error: null,
                     },
                 },
-                { upsert: true, returnDocument: "after" }
+                { upsert: true, returnDocument: "after" },
             );
 
             // Execute seed steps in dependency order
@@ -154,11 +143,11 @@ export class DatabaseInitializer {
                         details: verification.details,
                         error: null,
                     },
-                }
+                },
             );
 
             console.log(
-                `[DatabaseInitializer] Database initialization completed successfully in ${durationMs}ms (version: ${version}).`
+                `[DatabaseInitializer] Database initialization completed successfully in ${durationMs}ms (version: ${version}).`,
             );
 
             await this.lockManager.release(runnerId);
@@ -180,7 +169,7 @@ export class DatabaseInitializer {
                             status: InitializationStatus.FAILED,
                             error: error?.message || "Unknown initialization failure",
                         },
-                    }
+                    },
                 );
             } catch (stateError) {
                 console.error("[DatabaseInitializer] Failed to record FAILED status:", stateError);

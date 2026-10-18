@@ -35,15 +35,22 @@ const currencyId = new Types.ObjectId();
 async function account(status = "ACTIVE", roleId = new Types.ObjectId()) {
     const row = await UserModel.create({
         email: new Types.ObjectId() + "@subscription.test",
-        globalRoleId: roleId, status, isDeleted: false,
+        globalRoleId: roleId,
+        status,
+        isDeleted: false,
     });
     return row._id.toString();
 }
 
 async function paid(user, changes = {}) {
     return Subscription.create({
-        user, plan: pro._id, planPriceId: monthly._id, billingInterval: "MONTHLY",
-        status: "active", isActive: true, startDate: new Date("2025-01-01"),
+        user,
+        plan: pro._id,
+        planPriceId: monthly._id,
+        billingInterval: "MONTHLY",
+        status: "active",
+        isActive: true,
+        startDate: new Date("2025-01-01"),
         endDate: new Date(Date.now() + 86_400_000),
         currentPeriodStart: new Date("2025-01-01"),
         currentPeriodEnd: new Date(Date.now() + 86_400_000),
@@ -66,19 +73,32 @@ before(async () => {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
     directory = await mkdtemp(join(tmpdir(), "subscription-test-"));
-    mongo = spawn(process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"),
-    ], { windowsHide: true, stdio: "ignore" });
+    mongo = spawn(
+        process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
     let startupError;
-    mongo.on("error", error => { startupError = error; });
+    mongo.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
             await mongoose.connect("mongodb://127.0.0.1:" + port + "/subscription_test", {
-                serverSelectionTimeoutMS: 500, autoIndex: false,
+                serverSelectionTimeoutMS: 500,
+                autoIndex: false,
             });
             break;
         } catch (error) {
@@ -87,22 +107,78 @@ before(async () => {
         }
     }
     await Subscription.createIndexes();
-    free = await PlanModel.create({ name: "Free", code: "FREE", type: "FREE", description: "Free", isActive: true, visibility: "PUBLIC", pricingModel: "FIXED" });
-    pro = await PlanModel.create({ name: "Pro", code: "PRO", type: "PAID", description: "Pro", isActive: true, visibility: "PUBLIC", pricingModel: "FIXED" });
-    team = await PlanModel.create({ name: "Team", code: "TEAM", type: "PAID", description: "Team", isActive: true, visibility: "PUBLIC", pricingModel: "FIXED" });
-    monthly = await PlanPriceModel.create({ planId: pro._id, currencyId, billingInterval: "MONTHLY", amountMinor: 12345, isActive: true });
-    yearly = await PlanPriceModel.create({ planId: pro._id, currencyId, billingInterval: "YEARLY", amountMinor: 98765, isActive: true });
-    teamPrice = await PlanPriceModel.create({ planId: team._id, currencyId, billingInterval: "MONTHLY", amountMinor: 22222, isActive: true });
-    const permissions = await PermissionModel.create(["READ", "MANAGE"].map(action => ({
-        name: "subscription_" + action.toLowerCase(), displayName: action, code: "SUBSCRIPTION_" + action,
-        module: "USER_SUBSCRIPTION", action, access: "ANY", isActive: true,
-    })));
-    const role = await RoleModel.create({ name: "subscription_admin", displayName: "Subscription admin",
-        code: "SUBSCRIPTION_ADMIN", scope: "GLOBAL", workspaceId: null, isActive: true, permissions: permissions.map(row => row._id) });
+    free = await PlanModel.create({
+        name: "Free",
+        code: "FREE",
+        type: "FREE",
+        description: "Free",
+        isActive: true,
+        visibility: "PUBLIC",
+        pricingModel: "FIXED",
+    });
+    pro = await PlanModel.create({
+        name: "Pro",
+        code: "PRO",
+        type: "PAID",
+        description: "Pro",
+        isActive: true,
+        visibility: "PUBLIC",
+        pricingModel: "FIXED",
+    });
+    team = await PlanModel.create({
+        name: "Team",
+        code: "TEAM",
+        type: "PAID",
+        description: "Team",
+        isActive: true,
+        visibility: "PUBLIC",
+        pricingModel: "FIXED",
+    });
+    monthly = await PlanPriceModel.create({
+        planId: pro._id,
+        currencyId,
+        billingInterval: "MONTHLY",
+        amountMinor: 12345,
+        isActive: true,
+    });
+    yearly = await PlanPriceModel.create({
+        planId: pro._id,
+        currencyId,
+        billingInterval: "YEARLY",
+        amountMinor: 98765,
+        isActive: true,
+    });
+    teamPrice = await PlanPriceModel.create({
+        planId: team._id,
+        currencyId,
+        billingInterval: "MONTHLY",
+        amountMinor: 22222,
+        isActive: true,
+    });
+    const permissions = await PermissionModel.create(
+        ["READ", "MANAGE"].map((action) => ({
+            name: "subscription_" + action.toLowerCase(),
+            displayName: action,
+            code: "SUBSCRIPTION_" + action,
+            module: "USER_SUBSCRIPTION",
+            action,
+            access: "ANY",
+            isActive: true,
+        })),
+    );
+    const role = await RoleModel.create({
+        name: "subscription_admin",
+        displayName: "Subscription admin",
+        code: "SUBSCRIPTION_ADMIN",
+        scope: "GLOBAL",
+        workspaceId: null,
+        isActive: true,
+        permissions: permissions.map((row) => row._id),
+    });
     admin = await account("ACTIVE", role._id);
     owner = await account();
     stranger = await account();
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "test" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test" }));
     const app = express();
     app.use(express.json());
     app.use("/usersubscription", routes);
@@ -113,7 +189,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) await new Promise((resolve) => server.close(resolve));
     mock.restoreAll();
     await mongoose.disconnect();
     if (mongo?.pid && mongo.exitCode === null) {
@@ -130,8 +206,10 @@ after(async () => {
 });
 
 test("Free initialization is concurrent, idempotent, non-expiring, provider independent and audited", async () => {
-    const results = await Promise.all(Array.from({ length: 12 }, () => service.ensureFreeSubscription(owner)));
-    assert.equal(new Set(results.map(row => String(row._id))).size, 1);
+    const results = await Promise.all(
+        Array.from({ length: 12 }, () => service.ensureFreeSubscription(owner)),
+    );
+    assert.equal(new Set(results.map((row) => String(row._id))).size, 1);
     assert.equal(await Subscription.countDocuments({ user: owner }), 1);
     assert.equal(results[0].endDate, null);
     assert.equal(results[0].planPriceId, null);
@@ -175,7 +253,7 @@ test("inactive accounts cannot request, cancel or undo changes; registration sup
         assert.equal((await request(path, { user, body })).status, 403);
     }
     await UserModel.updateOne({ _id: user }, { status: "SUSPENDED" });
-    await assert.rejects(service.ensureFreeSubscription(user), error => error.statusCode === 403);
+    await assert.rejects(service.ensureFreeSubscription(user), (error) => error.statusCode === 403);
 });
 
 test("plan selection validates existence, personal eligibility, active state, price and interval", async () => {
@@ -190,10 +268,24 @@ test("plan selection validates existence, personal eligibility, active state, pr
     ];
     for (const body of cases) assert.equal((await request("/change-plan", { body })).status, 422);
     await PlanPriceModel.updateOne({ _id: monthly._id }, { isActive: false });
-    assert.equal((await request("/change-plan", { body: { plan: String(pro._id), planPriceId: String(monthly._id), billingInterval: "MONTHLY" } })).status, 422);
+    assert.equal(
+        (
+            await request("/change-plan", {
+                body: { plan: String(pro._id), planPriceId: String(monthly._id), billingInterval: "MONTHLY" },
+            })
+        ).status,
+        422,
+    );
     await PlanPriceModel.updateOne({ _id: monthly._id }, { isActive: true });
     await PlanModel.updateOne({ _id: pro._id }, { isActive: false });
-    assert.equal((await request("/change-plan", { body: { plan: String(pro._id), planPriceId: String(monthly._id), billingInterval: "MONTHLY" } })).status, 422);
+    assert.equal(
+        (
+            await request("/change-plan", {
+                body: { plan: String(pro._id), planPriceId: String(monthly._id), billingInterval: "MONTHLY" },
+            })
+        ).status,
+        422,
+    );
     await PlanModel.updateOne({ _id: pro._id }, { isActive: true });
 });
 
@@ -212,11 +304,17 @@ test("paid changes stay pending, duplicate requests are idempotent and no provid
 
 test("mass assignment and all client paid activation paths are rejected", async () => {
     for (const key of ["status", "providerSubscriptionId", "paidAt", "currentPeriodEnd", "user"]) {
-        assert.equal((await request("/change-plan", { body: { plan: String(pro._id), [key]: "active" } })).status, 400);
+        assert.equal(
+            (await request("/change-plan", { body: { plan: String(pro._id), [key]: "active" } })).status,
+            400,
+        );
     }
-    assert.equal((await request("/activate/" + new Types.ObjectId(), { body: {}, method: "PUT" })).status, 404);
+    assert.equal(
+        (await request("/activate/" + new Types.ObjectId(), { body: {}, method: "PUT" })).status,
+        404,
+    );
     assert.equal((await request("/delete/" + new Types.ObjectId(), { method: "DELETE" })).status, 404);
-    await assert.rejects(service.applyVerifiedBillingEvent(), error => error.statusCode === 503);
+    await assert.rejects(service.applyVerifiedBillingEvent(), (error) => error.statusCode === 503);
 });
 
 test("canceling an incomplete paid request preserves Free access", async () => {
@@ -243,7 +341,10 @@ test("paid cancellation preserves period and undo restores the previous renewal 
     const undo = await request("/undo-cancel", { user, body: {} });
     assert.equal(undo.body.data.cancelAtPeriodEnd, false);
     assert.equal(undo.body.data.autoRenew, false);
-    assert.equal((await request("/undo-cancel", { user, body: {} })).body.data.revision, undo.body.data.revision);
+    assert.equal(
+        (await request("/undo-cancel", { user, body: {} })).body.data.revision,
+        undo.body.data.revision,
+    );
 });
 
 test("Free downgrade is scheduled without overwriting the paid plan or period", async () => {
@@ -259,10 +360,15 @@ test("Free downgrade is scheduled without overwriting the paid plan or period", 
 });
 
 test("unique current and partial provider indexes reject conflicts but allow null provider references", async () => {
-    await assert.rejects(paid(owner), error => error.code === 11000);
-    const a = await account(), b = await account(), c = await account();
+    await assert.rejects(paid(owner), (error) => error.code === 11000);
+    const a = await account(),
+        b = await account(),
+        c = await account();
     await paid(a, { paymentProvider: "example", providerSubscriptionId: "same-ref" });
-    await assert.rejects(paid(b, { paymentProvider: "example", providerSubscriptionId: "same-ref" }), error => error.code === 11000);
+    await assert.rejects(
+        paid(b, { paymentProvider: "example", providerSubscriptionId: "same-ref" }),
+        (error) => error.code === 11000,
+    );
     await paid(b);
     await paid(c);
 });
@@ -275,14 +381,20 @@ test("period boundaries preserve reconciliation delay without claiming paid acce
     assert.equal(current.effectivePlan.code, "FREE");
     assert.equal(current.accessState, "awaiting_reconciliation");
     const due = await repository.findDue(new Date(), 500);
-    assert.ok(!due.some(item => String(item._id) === String(row._id)));
-    await assert.rejects(service.undoScheduledCancellation(user), error => error.statusCode === 409);
+    assert.ok(!due.some((item) => String(item._id) === String(row._id)));
+    await assert.rejects(service.undoScheduledCancellation(user), (error) => error.statusCode === 409);
 });
 
 test("reconciliation distinguishes cancellation and expiry, retains history, is repeatable and bounded", async () => {
-    const canceledUser = await account(), expiredUser = await account();
+    const canceledUser = await account(),
+        expiredUser = await account();
     const end = new Date(Date.now() - 3 * 86_400_000);
-    const canceled = await paid(canceledUser, { endDate: end, currentPeriodEnd: end, cancelAtPeriodEnd: true, cancellationEffectiveAt: end });
+    const canceled = await paid(canceledUser, {
+        endDate: end,
+        currentPeriodEnd: end,
+        cancelAtPeriodEnd: true,
+        cancellationEffectiveAt: end,
+    });
     const expired = await paid(expiredUser, { endDate: end, currentPeriodEnd: end });
     const first = await service.reconcileExpiredSubscriptions(1);
     assert.equal(first.scanned, 1);
@@ -294,7 +406,7 @@ test("reconciliation distinguishes cancellation and expiry, retains history, is 
     assert.equal((await service.reconcileExpiredSubscriptions()).updated, 0);
     assert.equal((await service.getSubscriptionHistory(canceledUser)).data.length, 1);
     assert.equal((await service.getCurrentSubscription(canceledUser)).effectivePlan.code, "FREE");
-    await assert.rejects(service.requestCancellation(expiredUser), error => error.statusCode === 404);
+    await assert.rejects(service.requestCancellation(expiredUser), (error) => error.statusCode === 404);
 });
 
 test("stale concurrent mutations cannot overwrite a newer subscription revision", async () => {
@@ -302,8 +414,17 @@ test("stale concurrent mutations cannot overwrite a newer subscription revision"
     await paid(user);
     const stale = await repository.findCurrentByUser(user);
     await service.requestCancellation(user, { reason: "First writer" });
-    const event = { _id: new Types.ObjectId(), actorId: new Types.ObjectId(user), actorType: "USER",
-        action: "UPDATE", reason: "Stale writer", before: {}, after: {}, occurredAt: new Date(), requestId: null };
+    const event = {
+        _id: new Types.ObjectId(),
+        actorId: new Types.ObjectId(user),
+        actorType: "USER",
+        action: "UPDATE",
+        reason: "Stale writer",
+        before: {},
+        after: {},
+        occurredAt: new Date(),
+        requestId: null,
+    };
     assert.equal(await repository.compareAndSet(stale, { autoRenew: true }, event), null);
     assert.equal((await repository.findCurrentByUser(user)).autoRenew, false);
 });
@@ -313,22 +434,29 @@ test("reconciliation does not overwrite a renewed period after its batch read", 
     const end = new Date(Date.now() - 3 * 86_400_000);
     const row = await paid(user, { endDate: end, currentPeriodEnd: end });
     const original = UserSubscriptionRepository.prototype.findDue;
-    const intercept = mock.method(UserSubscriptionRepository.prototype, "findDue", async function(...args) {
+    const intercept = mock.method(UserSubscriptionRepository.prototype, "findDue", async function (...args) {
         const rows = await original.apply(this, args);
         const nextEnd = new Date(Date.now() + 86_400_000);
-        await Subscription.updateOne({ _id: row._id }, { $set: { endDate: nextEnd, currentPeriodEnd: nextEnd }, $inc: { revision: 1 } });
+        await Subscription.updateOne(
+            { _id: row._id },
+            { $set: { endDate: nextEnd, currentPeriodEnd: nextEnd }, $inc: { revision: 1 } },
+        );
         return rows;
     });
     try {
         const result = await service.reconcileExpiredSubscriptions();
         assert.equal(result.conflicts, 1);
         assert.equal((await Subscription.findById(row._id)).status, "active");
-    } finally { intercept.mock.restore(); }
+    } finally {
+        intercept.mock.restore();
+    }
 });
 
 test("GET and POST lists share filters, sorting, pagination and strict validation", async () => {
     const get = await request("/getall?limit=1&page=1&sortBy=createdAt&sortOrder=asc&status=active");
-    const post = await request("/getall", { body: { limit: 1, page: 1, sortBy: "createdAt", sortOrder: "asc", status: "active" } });
+    const post = await request("/getall", {
+        body: { limit: 1, page: 1, sortBy: "createdAt", sortOrder: "asc", status: "active" },
+    });
     assert.equal(get.status, 200);
     assert.deepEqual(get.body, post.body);
     assert.equal(get.body.data.length, 1);
@@ -345,14 +473,24 @@ test("admin endpoints require explicit global permissions and a reconciliation r
     assert.equal(listed.status, 200);
     assert.equal(listed.body.meta.total, 1);
     assert.equal((await request("/admin/reconcile", { user: admin, body: {} })).status, 400);
-    assert.equal((await request("/admin/reconcile", { user: admin, body: { reason: "Support reconciliation" } })).status, 200);
+    assert.equal(
+        (await request("/admin/reconcile", { user: admin, body: { reason: "Support reconciliation" } }))
+            .status,
+        200,
+    );
 });
 
 test("audit failure preserves a durable intent, retry delivers it without rolling back changes", async () => {
     const user = await account();
     await paid(user);
-    const failing = mock.method(AuditLogService.prototype, "log", async () => { throw new Error("audit unavailable"); });
-    const result = await service.requestCancellation(user, { reason: "Audit outage" }, { requestId: "request-123" });
+    const failing = mock.method(AuditLogService.prototype, "log", async () => {
+        throw new Error("audit unavailable");
+    });
+    const result = await service.requestCancellation(
+        user,
+        { reason: "Audit outage" },
+        { requestId: "request-123" },
+    );
     failing.mock.restore();
     const stored = await Subscription.findById(result._id).select("+auditOutbox").lean();
     assert.equal(stored.cancelAtPeriodEnd, true);
@@ -372,17 +510,25 @@ test("lifecycle rejects terminal reactivation and inconsistent periods", () => {
     }
     UserSubscriptionValidation.assertTransition("active", "past_due");
     UserSubscriptionValidation.assertTransition("past_due", "active");
-    assert.throws(() => UserSubscriptionValidation.assertPeriod({
-        startDate: new Date("2026-02-01"), endDate: new Date("2026-01-01"),
-        currentPeriodStart: null, currentPeriodEnd: null,
-    }), /dates/);
+    assert.throws(
+        () =>
+            UserSubscriptionValidation.assertPeriod({
+                startDate: new Date("2026-02-01"),
+                endDate: new Date("2026-01-01"),
+                currentPeriodStart: null,
+                currentPeriodEnd: null,
+            }),
+        /dates/,
+    );
 });
 
 test("changing paid interval records new intent without replacing paid access", async () => {
     const user = await account();
     const current = await paid(user);
     const result = await service.requestPlanChange(user, {
-        plan: String(pro._id), planPriceId: String(yearly._id), billingInterval: "YEARLY",
+        plan: String(pro._id),
+        planPriceId: String(yearly._id),
+        billingInterval: "YEARLY",
     });
     assert.equal(String(result.planPriceId), String(monthly._id));
     assert.equal(result.billingInterval, "MONTHLY");
@@ -394,12 +540,22 @@ test("changing paid interval records new intent without replacing paid access", 
 
 test("an OWN global permission cannot authorize access to all subscribers", async () => {
     const permission = await PermissionModel.create({
-        name: "subscription_read_own", displayName: "Read own", code: "SUBSCRIPTION_READ_OWN",
-        module: "USER_SUBSCRIPTION", action: "READ", access: "OWN", isActive: true,
+        name: "subscription_read_own",
+        displayName: "Read own",
+        code: "SUBSCRIPTION_READ_OWN",
+        module: "USER_SUBSCRIPTION",
+        action: "READ",
+        access: "OWN",
+        isActive: true,
     });
     const role = await RoleModel.create({
-        name: "own_subscriptions", displayName: "Own subscriptions", code: "OWN_SUBSCRIPTIONS",
-        scope: "GLOBAL", workspaceId: null, isActive: true, permissions: [permission._id],
+        name: "own_subscriptions",
+        displayName: "Own subscriptions",
+        code: "OWN_SUBSCRIPTIONS",
+        scope: "GLOBAL",
+        workspaceId: null,
+        isActive: true,
+        permissions: [permission._id],
     });
     const user = await account("ACTIVE", role._id);
     assert.equal((await request("/admin/getall", { user })).status, 403);
@@ -410,15 +566,21 @@ test("reconciliation continues after a row failure and retries that row on a lat
     const failed = await paid(await account(), { endDate: end, currentPeriodEnd: end });
     const succeeded = await paid(await account(), { endDate: end, currentPeriodEnd: end });
     const original = UserSubscriptionRepository.prototype.compareAndSet;
-    const intercept = mock.method(UserSubscriptionRepository.prototype, "compareAndSet", async function(previous, ...args) {
-        if (String(previous._id) === String(failed._id)) throw new Error("Transient database failure");
-        return original.call(this, previous, ...args);
-    });
+    const intercept = mock.method(
+        UserSubscriptionRepository.prototype,
+        "compareAndSet",
+        async function (previous, ...args) {
+            if (String(previous._id) === String(failed._id)) throw new Error("Transient database failure");
+            return original.call(this, previous, ...args);
+        },
+    );
     try {
         const result = await service.reconcileExpiredSubscriptions();
         assert.ok(result.failed.includes(String(failed._id)));
         assert.equal((await Subscription.findById(succeeded._id)).status, "expired");
-    } finally { intercept.mock.restore(); }
+    } finally {
+        intercept.mock.restore();
+    }
     assert.equal((await service.reconcileExpiredSubscriptions()).updated, 1);
     assert.equal((await Subscription.findById(failed._id)).status, "expired");
 });

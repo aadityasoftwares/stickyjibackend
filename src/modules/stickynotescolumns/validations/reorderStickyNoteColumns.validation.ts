@@ -19,21 +19,25 @@ export const reorderStickyNoteColumnsValidation = (req: Request, _res: Response,
         const { workspaceId, workspaceFolderId, columnIds } = req.body;
 
         if (!StickyNoteColumnValidation.isValidObjectId(workspaceId)) {
-            return next(new AppError(
-                workspaceId === undefined
-                    ? StickyNoteColumnMessages.WORKSPACE_ID_REQUIRED
-                    : StickyNoteColumnMessages.INVALID_WORKSPACE_ID,
-                400,
-            ));
+            return next(
+                new AppError(
+                    workspaceId === undefined
+                        ? StickyNoteColumnMessages.WORKSPACE_ID_REQUIRED
+                        : StickyNoteColumnMessages.INVALID_WORKSPACE_ID,
+                    400,
+                ),
+            );
         }
 
         if (!StickyNoteColumnValidation.isValidObjectId(workspaceFolderId)) {
-            return next(new AppError(
-                workspaceFolderId === undefined
-                    ? StickyNoteColumnMessages.WORKSPACE_FOLDER_ID_REQUIRED
-                    : StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
-                400,
-            ));
+            return next(
+                new AppError(
+                    workspaceFolderId === undefined
+                        ? StickyNoteColumnMessages.WORKSPACE_FOLDER_ID_REQUIRED
+                        : StickyNoteColumnMessages.INVALID_WORKSPACE_FOLDER_ID,
+                    400,
+                ),
+            );
         }
 
         if (!Array.isArray(columnIds) || columnIds.length === 0) {

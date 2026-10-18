@@ -67,7 +67,7 @@ const NotesWorkspaceSchema = new Schema<INotesWorkspaceDocument>(
     {
         timestamps: true,
         versionKey: false,
-    }
+    },
 );
 
 NotesWorkspaceSchema.index({
@@ -84,7 +84,4 @@ NotesWorkspaceSchema.index({
     visibility: 1,
 });
 
-export const NotesWorkspaceModel = model<INotesWorkspaceDocument>(
-    "NotesWorkspace",
-    NotesWorkspaceSchema
-);
+export const NotesWorkspaceModel = model<INotesWorkspaceDocument>("NotesWorkspace", NotesWorkspaceSchema);

@@ -1,17 +1,8 @@
-import {
-    Types,
-} from "mongoose";
+import { Types } from "mongoose";
 
-import type {
-    AnyBulkWriteOperation,
-    ClientSession,
-    PopulateOptions,
-    QueryFilter,
-} from "mongoose";
+import type { AnyBulkWriteOperation, ClientSession, PopulateOptions, QueryFilter } from "mongoose";
 
-import {
-    StickyNoteAssigneeStatus,
-} from "../constants/stickyNoteAssignee.enums.js";
+import { StickyNoteAssigneeStatus } from "../constants/stickyNoteAssignee.enums.js";
 
 import type {
     IStickyNoteAssignee,
@@ -19,9 +10,7 @@ import type {
     IStickyNoteAssigneeFilter,
 } from "../interfaces/stickyNoteAssignee.interface.js";
 
-import {
-    StickyNoteAssigneeModel,
-} from "../models/stickyNoteAssignee.model.js";
+import { StickyNoteAssigneeModel } from "../models/stickyNoteAssignee.model.js";
 
 const STICKY_NOTE_ASSIGNEE_SELECT = [
     "workspaceId",
@@ -36,66 +25,42 @@ const STICKY_NOTE_ASSIGNEE_SELECT = [
     "updatedAt",
 ].join(" ");
 
-const USER_SELECT =
-    "_id firstName lastName displayName email";
+const USER_SELECT = "_id firstName lastName displayName email";
 
-const ASSIGNEE_USER_POPULATE:
-    PopulateOptions[] = [
-        {
-            path: "userId",
-            select: USER_SELECT,
-        },
-    ];
+const ASSIGNEE_USER_POPULATE: PopulateOptions[] = [
+    {
+        path: "userId",
+        select: USER_SELECT,
+    },
+];
 
-const ASSIGNEE_DETAIL_POPULATE:
-    PopulateOptions[] = [
-        ...ASSIGNEE_USER_POPULATE,
-        {
-            path: "assignedBy",
-            select: USER_SELECT,
-        },
-        {
-            path: "removedBy",
-            select: USER_SELECT,
-        },
-    ];
+const ASSIGNEE_DETAIL_POPULATE: PopulateOptions[] = [
+    ...ASSIGNEE_USER_POPULATE,
+    {
+        path: "assignedBy",
+        select: USER_SELECT,
+    },
+    {
+        path: "removedBy",
+        select: USER_SELECT,
+    },
+];
 
 export class StickyNoteAssigneeRepository {
-    async findById(
-        id: string,
-    ) {
-        return StickyNoteAssigneeModel
-            .findById(id)
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_DETAIL_POPULATE,
-            )
+    async findById(id: string) {
+        return StickyNoteAssigneeModel.findById(id)
+            .select(STICKY_NOTE_ASSIGNEE_SELECT)
+            .populate(ASSIGNEE_DETAIL_POPULATE)
             .exec();
     }
 
-    async findByNoteAndUser(
-        stickyNoteId: string,
-        userId: string,
-    ) {
-        return StickyNoteAssigneeModel
-            .findOne({
-                stickyNoteId:
-                    new Types.ObjectId(
-                        stickyNoteId,
-                    ),
-                userId:
-                    new Types.ObjectId(
-                        userId,
-                    ),
-            })
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_DETAIL_POPULATE,
-            )
+    async findByNoteAndUser(stickyNoteId: string, userId: string) {
+        return StickyNoteAssigneeModel.findOne({
+            stickyNoteId: new Types.ObjectId(stickyNoteId),
+            userId: new Types.ObjectId(userId),
+        })
+            .select(STICKY_NOTE_ASSIGNEE_SELECT)
+            .populate(ASSIGNEE_DETAIL_POPULATE)
             .exec();
     }
 
@@ -106,238 +71,139 @@ export class StickyNoteAssigneeRepository {
         assignedBy: string,
         session?: ClientSession,
     ) {
-        const now =
-            new Date();
+        const now = new Date();
 
-        const query =
-            StickyNoteAssigneeModel
-                .findOneAndUpdate(
-                    {
-                        stickyNoteId:
-                            new Types.ObjectId(
-                                stickyNoteId,
-                            ),
-                        userId:
-                            new Types.ObjectId(
-                                userId,
-                            ),
-                    },
-                    {
-                        $set: {
-                            workspaceId:
-                                new Types.ObjectId(
-                                    workspaceId,
-                                ),
-                            status:
-                                StickyNoteAssigneeStatus.ACTIVE,
-                            assignedBy:
-                                new Types.ObjectId(
-                                    assignedBy,
-                                ),
-                            assignedAt:
-                                now,
-                            removedBy:
-                                null,
-                            removedAt:
-                                null,
-                        },
-                    },
-                    {
-                        new: true,
-                        upsert: true,
-                        setDefaultsOnInsert: true,
-                        runValidators: true,
-                    },
-                );
+        const query = StickyNoteAssigneeModel.findOneAndUpdate(
+            {
+                stickyNoteId: new Types.ObjectId(stickyNoteId),
+                userId: new Types.ObjectId(userId),
+            },
+            {
+                $set: {
+                    workspaceId: new Types.ObjectId(workspaceId),
+                    status: StickyNoteAssigneeStatus.ACTIVE,
+                    assignedBy: new Types.ObjectId(assignedBy),
+                    assignedAt: now,
+                    removedBy: null,
+                    removedAt: null,
+                },
+            },
+            {
+                new: true,
+                upsert: true,
+                setDefaultsOnInsert: true,
+                runValidators: true,
+            },
+        );
 
         if (session) {
             query.session(session);
         }
 
-        return query
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_DETAIL_POPULATE,
-            )
-            .exec();
+        return query.select(STICKY_NOTE_ASSIGNEE_SELECT).populate(ASSIGNEE_DETAIL_POPULATE).exec();
     }
 
-    async removeById(
-        id: string,
-        removedBy: string,
-        session?: ClientSession,
-    ) {
-        const query =
-            StickyNoteAssigneeModel
-                .findOneAndUpdate(
-                    {
-                        _id:
-                            new Types.ObjectId(
-                                id,
-                            ),
-                        status:
-                            StickyNoteAssigneeStatus.ACTIVE,
-                    },
-                    {
-                        $set: {
-                            status:
-                                StickyNoteAssigneeStatus.REMOVED,
-                            removedBy:
-                                new Types.ObjectId(
-                                    removedBy,
-                                ),
-                            removedAt:
-                                new Date(),
-                        },
-                    },
-                    {
-                        new: true,
-                        runValidators: true,
-                    },
-                );
+    async removeById(id: string, removedBy: string, session?: ClientSession) {
+        const query = StickyNoteAssigneeModel.findOneAndUpdate(
+            {
+                _id: new Types.ObjectId(id),
+                status: StickyNoteAssigneeStatus.ACTIVE,
+            },
+            {
+                $set: {
+                    status: StickyNoteAssigneeStatus.REMOVED,
+                    removedBy: new Types.ObjectId(removedBy),
+                    removedAt: new Date(),
+                },
+            },
+            {
+                new: true,
+                runValidators: true,
+            },
+        );
 
         if (session) {
             query.session(session);
         }
 
-        return query
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_DETAIL_POPULATE,
-            )
-            .exec();
+        return query.select(STICKY_NOTE_ASSIGNEE_SELECT).populate(ASSIGNEE_DETAIL_POPULATE).exec();
     }
 
-    async restoreById(
-        id: string,
-        assignedBy: string,
-        session?: ClientSession,
-    ) {
-        const query =
-            StickyNoteAssigneeModel
-                .findOneAndUpdate(
-                    {
-                        _id:
-                            new Types.ObjectId(
-                                id,
-                            ),
-                        status:
-                            StickyNoteAssigneeStatus.REMOVED,
-                    },
-                    {
-                        $set: {
-                            status:
-                                StickyNoteAssigneeStatus.ACTIVE,
-                            assignedBy:
-                                new Types.ObjectId(
-                                    assignedBy,
-                                ),
-                            assignedAt:
-                                new Date(),
-                            removedBy:
-                                null,
-                            removedAt:
-                                null,
-                        },
-                    },
-                    {
-                        new: true,
-                        runValidators: true,
-                    },
-                );
+    async restoreById(id: string, assignedBy: string, session?: ClientSession) {
+        const query = StickyNoteAssigneeModel.findOneAndUpdate(
+            {
+                _id: new Types.ObjectId(id),
+                status: StickyNoteAssigneeStatus.REMOVED,
+            },
+            {
+                $set: {
+                    status: StickyNoteAssigneeStatus.ACTIVE,
+                    assignedBy: new Types.ObjectId(assignedBy),
+                    assignedAt: new Date(),
+                    removedBy: null,
+                    removedAt: null,
+                },
+            },
+            {
+                new: true,
+                runValidators: true,
+            },
+        );
 
         if (session) {
             query.session(session);
         }
 
-        return query
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_DETAIL_POPULATE,
-            )
-            .exec();
+        return query.select(STICKY_NOTE_ASSIGNEE_SELECT).populate(ASSIGNEE_DETAIL_POPULATE).exec();
     }
 
-    async findAll(
-        filters:
-            IStickyNoteAssigneeFilter = {},
-    ) {
+    async findAll(filters: IStickyNoteAssigneeFilter = {}) {
         const {
             page = 1,
             limit = 20,
             workspaceId,
             stickyNoteId,
             userId,
-            status =
-            StickyNoteAssigneeStatus.ACTIVE,
+            status = StickyNoteAssigneeStatus.ACTIVE,
             sortBy = "assignedAt",
             sortOrder = "desc",
         } = filters;
 
-        const query:
-            QueryFilter<IStickyNoteAssignee> = {};
+        const query: QueryFilter<IStickyNoteAssignee> = {};
 
         if (workspaceId) {
-            query.workspaceId =
-                new Types.ObjectId(
-                    String(workspaceId),
-                );
+            query.workspaceId = new Types.ObjectId(String(workspaceId));
         }
 
         if (stickyNoteId) {
-            query.stickyNoteId =
-                new Types.ObjectId(
-                    String(stickyNoteId),
-                );
+            query.stickyNoteId = new Types.ObjectId(String(stickyNoteId));
         }
 
         if (userId) {
-            query.userId =
-                new Types.ObjectId(
-                    String(userId),
-                );
+            query.userId = new Types.ObjectId(String(userId));
         }
 
         if (status) {
             query.status = status;
         }
 
-        const skip =
-            (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
-        const sortDirection =
-            sortOrder === "asc"
-                ? 1
-                : -1;
+        const sortDirection = sortOrder === "asc" ? 1 : -1;
 
-        const [data, total] =
-            await Promise.all([
-                StickyNoteAssigneeModel
-                    .find(query)
-                    .select(
-                        STICKY_NOTE_ASSIGNEE_SELECT,
-                    )
-                    .populate(
-                        ASSIGNEE_USER_POPULATE,
-                    )
-                    .sort({
-                        [sortBy]:
-                            sortDirection,
-                    })
-                    .skip(skip)
-                    .limit(limit)
-                    .exec(),
+        const [data, total] = await Promise.all([
+            StickyNoteAssigneeModel.find(query)
+                .select(STICKY_NOTE_ASSIGNEE_SELECT)
+                .populate(ASSIGNEE_USER_POPULATE)
+                .sort({
+                    [sortBy]: sortDirection,
+                })
+                .skip(skip)
+                .limit(limit)
+                .exec(),
 
-                StickyNoteAssigneeModel
-                    .countDocuments(query)
-                    .exec(),
-            ]);
+            StickyNoteAssigneeModel.countDocuments(query).exec(),
+        ]);
 
         return {
             data,
@@ -345,72 +211,39 @@ export class StickyNoteAssigneeRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(
-                        total / limit,
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
-    async countActiveByStickyNote(
-        stickyNoteId: string,
-    ): Promise<number> {
-        return StickyNoteAssigneeModel
-            .countDocuments({
-                stickyNoteId:
-                    new Types.ObjectId(
-                        stickyNoteId,
-                    ),
-                status:
-                    StickyNoteAssigneeStatus.ACTIVE,
+    async countActiveByStickyNote(stickyNoteId: string): Promise<number> {
+        return StickyNoteAssigneeModel.countDocuments({
+            stickyNoteId: new Types.ObjectId(stickyNoteId),
+            status: StickyNoteAssigneeStatus.ACTIVE,
+        }).exec();
+    }
+
+    async findActiveUserIdsByStickyNote(stickyNoteId: string): Promise<string[]> {
+        const rows = await StickyNoteAssigneeModel.find({
+            stickyNoteId: new Types.ObjectId(stickyNoteId),
+            status: StickyNoteAssigneeStatus.ACTIVE,
+        })
+            .select({
+                userId: 1,
             })
+            .lean()
             .exec();
+
+        return rows.map((row) => row.userId.toString());
     }
 
-    async findActiveUserIdsByStickyNote(
-        stickyNoteId: string,
-    ): Promise<string[]> {
-        const rows =
-            await StickyNoteAssigneeModel
-                .find({
-                    stickyNoteId:
-                        new Types.ObjectId(
-                            stickyNoteId,
-                        ),
-                    status:
-                        StickyNoteAssigneeStatus.ACTIVE,
-                })
-                .select({
-                    userId: 1,
-                })
-                .lean()
-                .exec();
-
-        return rows.map(
-            row =>
-                row.userId.toString(),
-        );
-    }
-
-    async findActiveByStickyNote(
-        stickyNoteId: string,
-    ) {
-        return StickyNoteAssigneeModel
-            .find({
-                stickyNoteId:
-                    new Types.ObjectId(
-                        stickyNoteId,
-                    ),
-                status:
-                    StickyNoteAssigneeStatus.ACTIVE,
-            })
-            .select(
-                STICKY_NOTE_ASSIGNEE_SELECT,
-            )
-            .populate(
-                ASSIGNEE_USER_POPULATE,
-            )
+    async findActiveByStickyNote(stickyNoteId: string) {
+        return StickyNoteAssigneeModel.find({
+            stickyNoteId: new Types.ObjectId(stickyNoteId),
+            status: StickyNoteAssigneeStatus.ACTIVE,
+        })
+            .select(STICKY_NOTE_ASSIGNEE_SELECT)
+            .populate(ASSIGNEE_USER_POPULATE)
             .sort({
                 assignedAt: 1,
                 createdAt: 1,
@@ -418,28 +251,19 @@ export class StickyNoteAssigneeRepository {
             .exec();
     }
 
-    async findActiveByStickyNoteIds(
-        stickyNoteIds:
-            readonly Types.ObjectId[],
-    ) {
+    async findActiveByStickyNoteIds(stickyNoteIds: readonly Types.ObjectId[]) {
         if (stickyNoteIds.length === 0) {
             return [];
         }
 
-        return StickyNoteAssigneeModel
-            .find({
-                stickyNoteId: {
-                    $in: stickyNoteIds,
-                },
-                status:
-                    StickyNoteAssigneeStatus.ACTIVE,
-            })
-            .select(
-                "stickyNoteId userId assignedAt",
-            )
-            .populate(
-                ASSIGNEE_USER_POPULATE,
-            )
+        return StickyNoteAssigneeModel.find({
+            stickyNoteId: {
+                $in: stickyNoteIds,
+            },
+            status: StickyNoteAssigneeStatus.ACTIVE,
+        })
+            .select("stickyNoteId userId assignedAt")
+            .populate(ASSIGNEE_USER_POPULATE)
             .sort({
                 stickyNoteId: 1,
                 assignedAt: 1,
@@ -458,54 +282,27 @@ export class StickyNoteAssigneeRepository {
         },
         session?: ClientSession,
     ) {
-        const {
-            workspaceId,
-            stickyNoteId,
-            addUserIds,
-            removeUserIds,
-            actorId,
-        } = options;
+        const { workspaceId, stickyNoteId, addUserIds, removeUserIds, actorId } = options;
 
-        const now =
-            new Date();
+        const now = new Date();
 
-        const operations:
-            AnyBulkWriteOperation<IStickyNoteAssigneeDocument>[] =
-            [];
+        const operations: AnyBulkWriteOperation<IStickyNoteAssigneeDocument>[] = [];
 
-        for (
-            const userId of addUserIds
-        ) {
+        for (const userId of addUserIds) {
             operations.push({
                 updateOne: {
                     filter: {
-                        stickyNoteId:
-                            new Types.ObjectId(
-                                stickyNoteId,
-                            ),
-                        userId:
-                            new Types.ObjectId(
-                                userId,
-                            ),
+                        stickyNoteId: new Types.ObjectId(stickyNoteId),
+                        userId: new Types.ObjectId(userId),
                     },
                     update: {
                         $set: {
-                            workspaceId:
-                                new Types.ObjectId(
-                                    workspaceId,
-                                ),
-                            status:
-                                StickyNoteAssigneeStatus.ACTIVE,
-                            assignedBy:
-                                new Types.ObjectId(
-                                    actorId,
-                                ),
-                            assignedAt:
-                                now,
-                            removedBy:
-                                null,
-                            removedAt:
-                                null,
+                            workspaceId: new Types.ObjectId(workspaceId),
+                            status: StickyNoteAssigneeStatus.ACTIVE,
+                            assignedBy: new Types.ObjectId(actorId),
+                            assignedAt: now,
+                            removedBy: null,
+                            removedAt: null,
                         },
                     },
                     upsert: true,
@@ -513,38 +310,21 @@ export class StickyNoteAssigneeRepository {
             });
         }
 
-        if (
-            removeUserIds.length > 0
-        ) {
+        if (removeUserIds.length > 0) {
             operations.push({
                 updateMany: {
                     filter: {
-                        stickyNoteId:
-                            new Types.ObjectId(
-                                stickyNoteId,
-                            ),
+                        stickyNoteId: new Types.ObjectId(stickyNoteId),
                         userId: {
-                            $in:
-                                removeUserIds.map(
-                                    userId =>
-                                        new Types.ObjectId(
-                                            userId,
-                                        ),
-                                ),
+                            $in: removeUserIds.map((userId) => new Types.ObjectId(userId)),
                         },
-                        status:
-                            StickyNoteAssigneeStatus.ACTIVE,
+                        status: StickyNoteAssigneeStatus.ACTIVE,
                     },
                     update: {
                         $set: {
-                            status:
-                                StickyNoteAssigneeStatus.REMOVED,
-                            removedBy:
-                                new Types.ObjectId(
-                                    actorId,
-                                ),
-                            removedAt:
-                                now,
+                            status: StickyNoteAssigneeStatus.REMOVED,
+                            removedBy: new Types.ObjectId(actorId),
+                            removedAt: now,
                         },
                     },
                 },
@@ -555,18 +335,14 @@ export class StickyNoteAssigneeRepository {
             return null;
         }
 
-        return StickyNoteAssigneeModel
-            .bulkWrite(
-                operations,
-                {
-                    ordered: false,
-                    ...(session
-                        ? {
-                            session,
-                        }
-                        : {}),
-                },
-            );
+        return StickyNoteAssigneeModel.bulkWrite(operations, {
+            ordered: false,
+            ...(session
+                ? {
+                      session,
+                  }
+                : {}),
+        });
     }
 
     async removeAllByWorkspaceAndUser(
@@ -575,38 +351,24 @@ export class StickyNoteAssigneeRepository {
         removedBy: string,
         session?: ClientSession,
     ) {
-        return StickyNoteAssigneeModel
-            .updateMany(
-                {
-                    workspaceId:
-                        new Types.ObjectId(
-                            workspaceId,
-                        ),
-                    userId:
-                        new Types.ObjectId(
-                            userId,
-                        ),
-                    status:
-                        StickyNoteAssigneeStatus.ACTIVE,
+        return StickyNoteAssigneeModel.updateMany(
+            {
+                workspaceId: new Types.ObjectId(workspaceId),
+                userId: new Types.ObjectId(userId),
+                status: StickyNoteAssigneeStatus.ACTIVE,
+            },
+            {
+                $set: {
+                    status: StickyNoteAssigneeStatus.REMOVED,
+                    removedBy: new Types.ObjectId(removedBy),
+                    removedAt: new Date(),
                 },
-                {
-                    $set: {
-                        status:
-                            StickyNoteAssigneeStatus.REMOVED,
-                        removedBy:
-                            new Types.ObjectId(
-                                removedBy,
-                            ),
-                        removedAt:
-                            new Date(),
-                    },
-                },
-                session
-                    ? {
-                        session,
-                    }
-                    : undefined,
-            )
-            .exec();
+            },
+            session
+                ? {
+                      session,
+                  }
+                : undefined,
+        ).exec();
     }
 }

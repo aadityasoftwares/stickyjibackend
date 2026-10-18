@@ -12,24 +12,63 @@ import { reconcileSubscriptionUsageValidation } from "../validations/reconcileSu
 const subscriptionUsageRoutes = Router();
 const controller = new SubscriptionUsageController();
 const json = validateContentType("application/json");
-const adminPermission = (action: PermissionAction) => requirePermission({
-    module: PermissionModule.SUBSCRIPTION_USAGE,
-    action,
-    scope: "global",
-});
+const adminPermission = (action: PermissionAction) =>
+    requirePermission({
+        module: PermissionModule.SUBSCRIPTION_USAGE,
+        action,
+        scope: "global",
+    });
 
 subscriptionUsageRoutes.use(authMiddleware);
 
 subscriptionUsageRoutes.get(["/me", "/current"], getSubscriptionUsageValidation, controller.getMyUsage);
 subscriptionUsageRoutes.get("/summary", getSubscriptionUsageValidation, controller.getSummary);
-subscriptionUsageRoutes.get("/workspace/:workspaceId", getWorkspaceUsageValidation, controller.getWorkspaceUsage);
+subscriptionUsageRoutes.get(
+    "/workspace/:workspaceId",
+    getWorkspaceUsageValidation,
+    controller.getWorkspaceUsage,
+);
 
-subscriptionUsageRoutes.get("/admin/getall", adminPermission(PermissionAction.READ), getSubscriptionUsageListValidation, controller.getAdminUsageList);
-subscriptionUsageRoutes.post("/admin/getall", json, adminPermission(PermissionAction.READ), getSubscriptionUsageListValidation, controller.getAdminUsageList);
-subscriptionUsageRoutes.get("/getall", adminPermission(PermissionAction.READ), getSubscriptionUsageListValidation, controller.getAdminUsageList);
-subscriptionUsageRoutes.post("/getall", json, adminPermission(PermissionAction.READ), getSubscriptionUsageListValidation, controller.getAdminUsageList);
+subscriptionUsageRoutes.get(
+    "/admin/getall",
+    adminPermission(PermissionAction.READ),
+    getSubscriptionUsageListValidation,
+    controller.getAdminUsageList,
+);
+subscriptionUsageRoutes.post(
+    "/admin/getall",
+    json,
+    adminPermission(PermissionAction.READ),
+    getSubscriptionUsageListValidation,
+    controller.getAdminUsageList,
+);
+subscriptionUsageRoutes.get(
+    "/getall",
+    adminPermission(PermissionAction.READ),
+    getSubscriptionUsageListValidation,
+    controller.getAdminUsageList,
+);
+subscriptionUsageRoutes.post(
+    "/getall",
+    json,
+    adminPermission(PermissionAction.READ),
+    getSubscriptionUsageListValidation,
+    controller.getAdminUsageList,
+);
 
-subscriptionUsageRoutes.post("/admin/reconcile", json, adminPermission(PermissionAction.MANAGE), reconcileSubscriptionUsageValidation, controller.reconcileUsage);
-subscriptionUsageRoutes.post("/reconcile", json, adminPermission(PermissionAction.MANAGE), reconcileSubscriptionUsageValidation, controller.reconcileUsage);
+subscriptionUsageRoutes.post(
+    "/admin/reconcile",
+    json,
+    adminPermission(PermissionAction.MANAGE),
+    reconcileSubscriptionUsageValidation,
+    controller.reconcileUsage,
+);
+subscriptionUsageRoutes.post(
+    "/reconcile",
+    json,
+    adminPermission(PermissionAction.MANAGE),
+    reconcileSubscriptionUsageValidation,
+    controller.reconcileUsage,
+);
 
 export default subscriptionUsageRoutes;

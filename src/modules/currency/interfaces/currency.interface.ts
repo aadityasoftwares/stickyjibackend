@@ -1,5 +1,5 @@
-import { Document, Types, } from "mongoose";
-import { CurrencyCode, CurrencyType, } from "../constants/currency.enums.js";
+import { Document, Types } from "mongoose";
+import { CurrencyCode, CurrencyType } from "../constants/currency.enums.js";
 
 export interface ICurrency {
     name: string;
@@ -17,7 +17,6 @@ export interface ICurrency {
     updatedAt?: Date;
 }
 
-
 export interface ICurrencyFilter {
     page?: number;
     limit?: number;
@@ -33,7 +32,7 @@ export interface ICurrencyFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface ICurrencyDocument extends ICurrency, Document { }
+export interface ICurrencyDocument extends ICurrency, Document {}
 
 export interface ICurrencyPaginatedResult {
     data: ICurrencyDocument[];

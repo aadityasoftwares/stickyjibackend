@@ -1,4 +1,4 @@
-import { PlanFeatureValueType, PlanFeatureLimitType, } from "./planFeature.enums.js";
+import { PlanFeatureValueType, PlanFeatureLimitType } from "./planFeature.enums.js";
 
 export const DEFAULT_PLAN_FEATURE_STATUS = true;
 export const DEFAULT_PLAN_FEATURE_VALUE_TYPE = PlanFeatureValueType.BOOLEAN;

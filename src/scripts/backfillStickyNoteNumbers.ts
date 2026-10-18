@@ -15,10 +15,7 @@ export async function backfillStickyNoteNumbers(): Promise<{
     console.log("\n--- Backfilling Sticky Note Numbers ---");
 
     const notesWithoutNumber = await StickyNoteModel.find({
-        $or: [
-            { stickyNoteNumber: { $exists: false } },
-            { stickyNoteNumber: null },
-        ],
+        $or: [{ stickyNoteNumber: { $exists: false } }, { stickyNoteNumber: null }],
     })
         .select({
             _id: 1,
@@ -73,10 +70,7 @@ export async function backfillStickyNoteNumbers(): Promise<{
             key: "STICKY_NOTE",
         }).lean();
 
-        let currentSequence = Math.max(
-            highestNote?.stickyNoteNumber ?? 0,
-            existingCounter?.sequence ?? 0,
-        );
+        let currentSequence = Math.max(highestNote?.stickyNoteNumber ?? 0, existingCounter?.sequence ?? 0);
 
         console.log(
             `Workspace ${workspaceIdStr}: starting sequence at ${currentSequence} for ${notes.length} unnumbered notes.`,

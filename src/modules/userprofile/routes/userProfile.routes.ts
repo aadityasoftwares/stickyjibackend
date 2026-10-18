@@ -15,29 +15,24 @@ userProfileRoutes.post(
     authMiddleware,
     validateContentType("application/json"),
     createUserProfileValidation,
-    userProfileController.createProfile
+    userProfileController.createProfile,
 );
 
-userProfileRoutes.get(
-    "/me",
-    authMiddleware,
-    getUserProfileValidation,
-    userProfileController.getMyProfile
-);
+userProfileRoutes.get("/me", authMiddleware, getUserProfileValidation, userProfileController.getMyProfile);
 
 userProfileRoutes.put(
     "/update",
     authMiddleware,
     validateContentType("application/json"),
     updateUserProfileValidation,
-    userProfileController.updateMyProfile
+    userProfileController.updateMyProfile,
 );
 
 userProfileRoutes.get(
     "/get/:id",
     authMiddleware,
     getUserProfileValidation,
-    userProfileController.getProfileById
+    userProfileController.getProfileById,
 );
 
 userProfileRoutes.put(
@@ -45,13 +40,9 @@ userProfileRoutes.put(
     authMiddleware,
     validateContentType("application/json"),
     updateUserProfileValidation,
-    userProfileController.updateProfile
+    userProfileController.updateProfile,
 );
 
-userProfileRoutes.get(
-    "/getall",
-    authMiddleware,
-    userProfileController.getProfiles
-);
+userProfileRoutes.get("/getall", authMiddleware, userProfileController.getProfiles);
 
 export default userProfileRoutes;

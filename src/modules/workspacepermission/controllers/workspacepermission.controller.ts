@@ -20,7 +20,9 @@ export class WorkspacePermissionController {
             return res
                 .status(400)
                 .json(
-                    ResponseUtil.badRequest(typeof error.message === "string" ? error.message : "Bad request")
+                    ResponseUtil.badRequest(
+                        typeof error.message === "string" ? error.message : "Bad request",
+                    ),
                 );
         }
     };
@@ -39,13 +41,24 @@ export class WorkspacePermissionController {
 
             return res
                 .status(200)
-                .json(ResponseUtil.paginated("Workspace permissions fetched successfully", permissions, page, limit, total));
+                .json(
+                    ResponseUtil.paginated(
+                        "Workspace permissions fetched successfully",
+                        permissions,
+                        page,
+                        limit,
+                        total,
+                    ),
+                );
         } catch (error: any) {
             console.error(error);
             return res
                 .status(500)
                 .json(
-                    ResponseUtil.serverError(typeof error.message === "string" ? error.message : "Internal server error", error)
+                    ResponseUtil.serverError(
+                        typeof error.message === "string" ? error.message : "Internal server error",
+                        error,
+                    ),
                 );
         }
     };
@@ -56,10 +69,14 @@ export class WorkspacePermissionController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Permission ID is required"));
 
             const permission = await this.workspacePermissionService.getPermissionById(id);
-            return res.status(200).json(ResponseUtil.success("Workspace permission fetched successfully", permission));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace permission fetched successfully", permission));
         } catch (error: any) {
             console.error(error);
-            return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
+            return res
+                .status(404)
+                .json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
         }
     };
 
@@ -69,7 +86,9 @@ export class WorkspacePermissionController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Permission ID is required"));
 
             const updatedPermission = await this.workspacePermissionService.updatePermission(id, req.body);
-            return res.status(200).json(ResponseUtil.success("Workspace permission updated successfully", updatedPermission));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace permission updated successfully", updatedPermission));
         } catch (error: any) {
             console.error(error);
             return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
@@ -82,10 +101,14 @@ export class WorkspacePermissionController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Permission ID is required"));
 
             await this.workspacePermissionService.deletePermission(id);
-            return res.status(200).json(ResponseUtil.success("Workspace permission deleted successfully", {}));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace permission deleted successfully", {}));
         } catch (error: any) {
             console.error(error);
-            return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
+            return res
+                .status(404)
+                .json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
         }
     };
 
@@ -95,10 +118,14 @@ export class WorkspacePermissionController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Permission ID is required"));
 
             const permission = await this.workspacePermissionService.deactivatePermission(id);
-            return res.status(200).json(ResponseUtil.success("Workspace permission deactivated successfully", permission));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace permission deactivated successfully", permission));
         } catch (error: any) {
             console.error(error);
-            return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
+            return res
+                .status(404)
+                .json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
         }
     };
 
@@ -108,10 +135,14 @@ export class WorkspacePermissionController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Permission ID is required"));
 
             const permission = await this.workspacePermissionService.activatePermission(id);
-            return res.status(200).json(ResponseUtil.success("Workspace permission activated successfully", permission));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace permission activated successfully", permission));
         } catch (error: any) {
             console.error(error);
-            return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
+            return res
+                .status(404)
+                .json(ResponseUtil.notFound(error.message || "Workspace permission not found"));
         }
     };
 }

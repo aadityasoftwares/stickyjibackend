@@ -1,113 +1,88 @@
-import mongoose, {
-    Model,
-    Schema,
-} from "mongoose";
+import mongoose, { Model, Schema } from "mongoose";
 
-import {
-    StickyNoteAssigneeStatus,
-} from "../constants/stickyNoteAssignee.enums.js";
+import { StickyNoteAssigneeStatus } from "../constants/stickyNoteAssignee.enums.js";
 
-import type {
-    IStickyNoteAssigneeDocument,
-} from "../interfaces/stickyNoteAssignee.interface.js";
+import type { IStickyNoteAssigneeDocument } from "../interfaces/stickyNoteAssignee.interface.js";
 
-const StickyNoteAssigneeSchema =
-    new Schema<IStickyNoteAssigneeDocument>(
-        {
-            workspaceId: {
-                type: Schema.Types.ObjectId,
-                ref: "Workspace",
-                required: true,
-            },
+const StickyNoteAssigneeSchema = new Schema<IStickyNoteAssigneeDocument>(
+    {
+        workspaceId: {
+            type: Schema.Types.ObjectId,
+            ref: "Workspace",
+            required: true,
+        },
 
-            stickyNoteId: {
-                type: Schema.Types.ObjectId,
-                ref: "StickyNote",
-                required: true,
-            },
+        stickyNoteId: {
+            type: Schema.Types.ObjectId,
+            ref: "StickyNote",
+            required: true,
+        },
 
-            userId: {
-                type: Schema.Types.ObjectId,
-                ref: "User",
-                required: true,
-            },
+        userId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
 
-            status: {
-                type: String,
-                enum: Object.values(
-                    StickyNoteAssigneeStatus,
-                ),
-                required: true,
-                default:
-                    StickyNoteAssigneeStatus.ACTIVE,
-            },
+        status: {
+            type: String,
+            enum: Object.values(StickyNoteAssigneeStatus),
+            required: true,
+            default: StickyNoteAssigneeStatus.ACTIVE,
+        },
 
-            assignedBy: {
-                type: Schema.Types.ObjectId,
-                ref: "User",
-                required: true,
-            },
+        assignedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
 
-            removedBy: {
-                type: Schema.Types.ObjectId,
-                ref: "User",
-                default: null,
-            },
+        removedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
 
-            assignedAt: {
-                type: Date,
-                required: true,
-                default: Date.now,
-            },
+        assignedAt: {
+            type: Date,
+            required: true,
+            default: Date.now,
+        },
 
-            removedAt: {
-                type: Date,
-                default: null,
+        removedAt: {
+            type: Date,
+            default: null,
+        },
+    },
+    {
+        timestamps: true,
+        versionKey: false,
+
+        toJSON: {
+            virtuals: true,
+            transform: (_document, returnedObject) => {
+                const { _id, __v: _version, ...rest } = returnedObject;
+
+                return {
+                    ...rest,
+                    id: _id.toString(),
+                };
             },
         },
-        {
-            timestamps: true,
-            versionKey: false,
 
-            toJSON: {
-                virtuals: true,
-                transform: (
-                    _document,
-                    returnedObject,
-                ) => {
-                    const {
-                        _id,
-                        __v: _version,
-                        ...rest
-                    } = returnedObject;
+        toObject: {
+            virtuals: true,
+            transform: (_document, returnedObject) => {
+                const { _id, __v: _version, ...rest } = returnedObject;
 
-                    return {
-                        ...rest,
-                        id: _id.toString(),
-                    };
-                },
-            },
-
-            toObject: {
-                virtuals: true,
-                transform: (
-                    _document,
-                    returnedObject,
-                ) => {
-                    const {
-                        _id,
-                        __v: _version,
-                        ...rest
-                    } = returnedObject;
-
-                    return {
-                        ...rest,
-                        id: _id.toString(),
-                    };
-                },
+                return {
+                    ...rest,
+                    id: _id.toString(),
+                };
             },
         },
-    );
+    },
+);
 
 /**
  * One relation per note + user for the full lifetime of the note.
@@ -120,8 +95,7 @@ StickyNoteAssigneeSchema.index(
     },
     {
         unique: true,
-        name:
-            "sticky_note_assignee_note_user_unique",
+        name: "sticky_note_assignee_note_user_unique",
     },
 );
 
@@ -135,8 +109,7 @@ StickyNoteAssigneeSchema.index(
         assignedAt: 1,
     },
     {
-        name:
-            "sticky_note_assignee_note_status_assigned_at",
+        name: "sticky_note_assignee_note_status_assigned_at",
     },
 );
 
@@ -151,8 +124,7 @@ StickyNoteAssigneeSchema.index(
         assignedAt: -1,
     },
     {
-        name:
-            "sticky_note_assignee_workspace_user_status_assigned_at",
+        name: "sticky_note_assignee_workspace_user_status_assigned_at",
     },
 );
 
@@ -166,14 +138,9 @@ StickyNoteAssigneeSchema.index(
         assignedAt: -1,
     },
     {
-        name:
-            "sticky_note_assignee_workspace_status_assigned_at",
+        name: "sticky_note_assignee_workspace_status_assigned_at",
     },
 );
 
-export const StickyNoteAssigneeModel:
-    Model<IStickyNoteAssigneeDocument> =
-    mongoose.model<IStickyNoteAssigneeDocument>(
-        "StickyNoteAssignee",
-        StickyNoteAssigneeSchema,
-    );
+export const StickyNoteAssigneeModel: Model<IStickyNoteAssigneeDocument> =
+    mongoose.model<IStickyNoteAssigneeDocument>("StickyNoteAssignee", StickyNoteAssigneeSchema);

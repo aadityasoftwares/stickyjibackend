@@ -1,12 +1,6 @@
-import {
-    Document,
-    Types,
-} from "mongoose";
+import { Document, Types } from "mongoose";
 
-import {
-    RoleType,
-    RoleScope,
-} from "../constants/role.enums.js";
+import { RoleType, RoleScope } from "../constants/role.enums.js";
 
 export interface IRole {
     name: string;
@@ -96,9 +90,7 @@ export interface IRoleFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface IRoleDocument
-    extends IRole,
-    Document { }
+export interface IRoleDocument extends IRole, Document {}
 
 export interface IRoleResponse {
     id: string;
@@ -119,4 +111,4 @@ export interface IRoleResponse {
     updatedBy?: string | null;
     createdAt?: Date;
     updatedAt?: Date;
-}
+}

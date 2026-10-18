@@ -1,137 +1,114 @@
-import mongoose, {
-    Schema,
-    Model,
-} from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
-import type {
-    IPermissionDocument,
-} from "../interfaces/permission.interface.js";
+import type { IPermissionDocument } from "../interfaces/permission.interface.js";
 
-import {
-    PermissionAccess,
-    PermissionAction,
-} from "../constants/permission.enums.js";
+import { PermissionAccess, PermissionAction } from "../constants/permission.enums.js";
 
-import {
-    DEFAULT_PERMISSION_STATUS,
-} from "../constants/permission.constants.js";
+import { DEFAULT_PERMISSION_STATUS } from "../constants/permission.constants.js";
 
-const PermissionSchema =
-    new Schema<IPermissionDocument>(
-        {
-            name: {
-                type: String,
-                required: true,
-                trim: true,
-                lowercase: true,
-            },
-
-            displayName: {
-                type: String,
-                required: true,
-                trim: true,
-            },
-
-            code: {
-                type: String,
-                required: true,
-                uppercase: true,
-                trim: true,
-            },
-
-            /**
-             * The application feature.
-             *
-             * WORKSPACE
-             * ROLES
-             * MEMBERS
-             * NOTES
-             * FOLDERS
-             * TASKS
-             */
-            module: {
-                type: String,
-                required: true,
-                uppercase: true,
-                trim: true,
-            },
-
-            action: {
-                type: String,
-                enum:
-                    Object.values(
-                        PermissionAction
-                    ),
-                required: true,
-            },
-
-            /**
-             * GENERAL
-             * OWN
-             * ANY
-             */
-            access: {
-                type: String,
-                enum:
-                    Object.values(
-                        PermissionAccess
-                    ),
-                required: true,
-                default:
-                    PermissionAccess.GENERAL,
-            },
-
-            description: {
-                type: String,
-                trim: true,
-                default: "",
-            },
-
-            /**
-             * Used by frontend when rendering
-             * permissions inside role builder.
-             */
-            sortOrder: {
-                type: Number,
-                default: 0,
-            },
-
-            /**
-             * System permissions represent
-             * application capabilities and should
-             * not be editable by normal users.
-             */
-            isSystem: {
-                type: Boolean,
-                default: true,
-            },
-
-            isActive: {
-                type: Boolean,
-                default:
-                    DEFAULT_PERMISSION_STATUS,
-            },
-
-            createdBy: {
-                type:
-                    Schema.Types
-                        .ObjectId,
-                ref: "User",
-                default: null,
-            },
-
-            updatedBy: {
-                type:
-                    Schema.Types
-                        .ObjectId,
-                ref: "User",
-                default: null,
-            },
+const PermissionSchema = new Schema<IPermissionDocument>(
+    {
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
         },
-        {
-            timestamps: true,
-        }
-    );
+
+        displayName: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        code: {
+            type: String,
+            required: true,
+            uppercase: true,
+            trim: true,
+        },
+
+        /**
+         * The application feature.
+         *
+         * WORKSPACE
+         * ROLES
+         * MEMBERS
+         * NOTES
+         * FOLDERS
+         * TASKS
+         */
+        module: {
+            type: String,
+            required: true,
+            uppercase: true,
+            trim: true,
+        },
+
+        action: {
+            type: String,
+            enum: Object.values(PermissionAction),
+            required: true,
+        },
+
+        /**
+         * GENERAL
+         * OWN
+         * ANY
+         */
+        access: {
+            type: String,
+            enum: Object.values(PermissionAccess),
+            required: true,
+            default: PermissionAccess.GENERAL,
+        },
+
+        description: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+
+        /**
+         * Used by frontend when rendering
+         * permissions inside role builder.
+         */
+        sortOrder: {
+            type: Number,
+            default: 0,
+        },
+
+        /**
+         * System permissions represent
+         * application capabilities and should
+         * not be editable by normal users.
+         */
+        isSystem: {
+            type: Boolean,
+            default: true,
+        },
+
+        isActive: {
+            type: Boolean,
+            default: DEFAULT_PERMISSION_STATUS,
+        },
+
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+
+        updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+    },
+    {
+        timestamps: true,
+    },
+);
 
 PermissionSchema.index(
     {
@@ -139,7 +116,7 @@ PermissionSchema.index(
     },
     {
         unique: true,
-    }
+    },
 );
 
 PermissionSchema.index(
@@ -148,7 +125,7 @@ PermissionSchema.index(
     },
     {
         unique: true,
-    }
+    },
 );
 
 PermissionSchema.index({
@@ -187,7 +164,7 @@ PermissionSchema.index(
     },
     {
         unique: true,
-    }
+    },
 );
 
 PermissionSchema.index({
@@ -196,9 +173,7 @@ PermissionSchema.index({
     sortOrder: 1,
 });
 
-export const PermissionModel:
-    Model<IPermissionDocument> =
-    mongoose.model<IPermissionDocument>(
-        "Permission",
-        PermissionSchema
-    );
+export const PermissionModel: Model<IPermissionDocument> = mongoose.model<IPermissionDocument>(
+    "Permission",
+    PermissionSchema,
+);

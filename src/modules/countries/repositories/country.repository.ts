@@ -1,10 +1,8 @@
 import { CountryModel } from "../models/country.model.js";
-import type { ICountry, ICountryFilter, } from "../interfaces/country.interface.js";
-import { CountryCode, CountryCodeAlpha3, CountryNumericCode, } from "../constants/country.enums.js";
-
+import type { ICountry, ICountryFilter } from "../interfaces/country.interface.js";
+import { CountryCode, CountryCodeAlpha3, CountryNumericCode } from "../constants/country.enums.js";
 
 export class CountryRepository {
-
     async create(data: Partial<ICountry>) {
         return CountryModel.create(data);
     }
@@ -19,7 +17,6 @@ export class CountryRepository {
         });
     }
 
-
     async findByAlpha3Code(alpha3Code: CountryCodeAlpha3 | string) {
         return CountryModel.findOne({
             alpha3Code: alpha3Code as CountryCodeAlpha3,
@@ -31,7 +28,6 @@ export class CountryRepository {
             numericCode: numericCode as CountryNumericCode,
         });
     }
-
 
     async findByLocale(locale: string) {
         return CountryModel.findOne({
@@ -113,46 +109,37 @@ export class CountryRepository {
             ];
         }
 
-
         if (code) {
             query.code = code;
         }
-
 
         if (alpha3Code) {
             query.alpha3Code = alpha3Code;
         }
 
-
         if (numericCode) {
             query.numericCode = numericCode;
         }
-
 
         if (dialCode) {
             query.dialCode = dialCode;
         }
 
-
         if (continent) {
             query.continent = continent;
         }
-
 
         if (currencyCode) {
             query.currencyCode = currencyCode;
         }
 
-
         if (locale) {
             query.locale = locale;
         }
 
-
         if (isDefault !== undefined) {
             query.isDefault = isDefault;
         }
-
 
         if (isSystem !== undefined) {
             query.isSystem = isSystem;
@@ -162,26 +149,18 @@ export class CountryRepository {
             query.isActive = isActive;
         }
 
-        const skip =
-            (page - 1) * limit;
+        const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
-                CountryModel
-                    .find(query)
-                    .sort({
-                        [sortBy]:
-                            sortOrder === "asc"
-                                ? 1
-                                : -1,
-                    })
-                    .skip(skip)
-                    .limit(limit),
+        const [data, total] = await Promise.all([
+            CountryModel.find(query)
+                .sort({
+                    [sortBy]: sortOrder === "asc" ? 1 : -1,
+                })
+                .skip(skip)
+                .limit(limit),
 
-                CountryModel.countDocuments(
-                    query
-                ),
-            ]);
+            CountryModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -189,51 +168,39 @@ export class CountryRepository {
                 page,
                 limit,
                 total,
-                totalPages:Math.ceil(total / limit),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
-
-    async existsByCode(
-        code: string): Promise<boolean> {
-        const exists = await CountryModel.exists({code: code as CountryCode});
+    async existsByCode(code: string): Promise<boolean> {
+        const exists = await CountryModel.exists({ code: code as CountryCode });
         return !!exists;
     }
-
 
     async existsByAlpha3Code(alpha3Code: string): Promise<boolean> {
-        const exists = await CountryModel.exists({alpha3Code:alpha3Code as CountryCodeAlpha3,});
+        const exists = await CountryModel.exists({ alpha3Code: alpha3Code as CountryCodeAlpha3 });
         return !!exists;
     }
-
 
     async existsByNumericCode(numericCode: string): Promise<boolean> {
-        const exists = await CountryModel.exists({numericCode:numericCode as CountryNumericCode,});
+        const exists = await CountryModel.exists({ numericCode: numericCode as CountryNumericCode });
         return !!exists;
     }
-
 
     async existsByLocale(locale: string): Promise<boolean> {
-        const exists = await CountryModel.exists({locale,});
+        const exists = await CountryModel.exists({ locale });
         return !!exists;
     }
 
-
-    async updateById(id: string,data: Partial<ICountry>) {
-        return CountryModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+    async updateById(id: string, data: Partial<ICountry>) {
+        return CountryModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
-
 
     async deleteById(id: string) {
         return CountryModel.findByIdAndDelete(id);
     }
-
 }

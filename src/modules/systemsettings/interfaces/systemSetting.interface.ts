@@ -5,12 +5,7 @@ import {
     SystemSettingValueType,
 } from "../constants/systemSetting.enums.js";
 
-export type SystemSettingValue =
-    | string
-    | number
-    | boolean
-    | Record<string, unknown>
-    | null;
+export type SystemSettingValue = string | number | boolean | Record<string, unknown> | null;
 
 export interface ISystemSetting {
     key: SystemSettingKey;
@@ -40,7 +35,7 @@ export interface ISystemSettingFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface ISystemSettingDocument extends ISystemSetting, Document { }
+export interface ISystemSettingDocument extends ISystemSetting, Document {}
 
 export interface ISystemSettingPaginatedResult {
     data: ISystemSettingDocument[];

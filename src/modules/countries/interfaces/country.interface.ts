@@ -1,6 +1,12 @@
-import { Document, Types, } from "mongoose";
-import { CountryCode, CountryCodeAlpha3, CountryNumericCode, CountryContinent, CurrencyCode, CountryDialCode, } from "../constants/country.enums.js";
-
+import { Document, Types } from "mongoose";
+import {
+    CountryCode,
+    CountryCodeAlpha3,
+    CountryNumericCode,
+    CountryContinent,
+    CurrencyCode,
+    CountryDialCode,
+} from "../constants/country.enums.js";
 
 export interface ICountry {
     name: string;
@@ -22,7 +28,6 @@ export interface ICountry {
     updatedAt?: Date;
 }
 
-
 export interface ICountryFilter {
     page?: number;
     limit?: number;
@@ -41,7 +46,4 @@ export interface ICountryFilter {
     sortOrder?: "asc" | "desc";
 }
 
-
-export interface ICountryDocument
-    extends ICountry,
-    Document { }
+export interface ICountryDocument extends ICountry, Document {}

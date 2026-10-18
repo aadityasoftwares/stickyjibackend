@@ -1,366 +1,162 @@
-import type {
-    Request,
-    Response,
-    NextFunction,
-} from "express";
+import type { Request, Response, NextFunction } from "express";
 
-import {
-    PlanPriceService,
-} from "../services/planPrice.service.js";
+import { PlanPriceService } from "../services/planPrice.service.js";
 
-import {
-    PlanPriceMessages,
-} from "../constants/planPrice.messages.js";
+import { PlanPriceMessages } from "../constants/planPrice.messages.js";
 
-import {
-    RequestUtil,
-} from "../../../utils/request.util.js";
+import { RequestUtil } from "../../../utils/request.util.js";
 
-import type {
-    IPlanPriceFilter,
-} from "../interfaces/planPrice.interface.js";
-
+import type { IPlanPriceFilter } from "../interfaces/planPrice.interface.js";
 
 export class PlanPriceController {
-
-    private planPriceService:
-        PlanPriceService;
-
+    private planPriceService: PlanPriceService;
 
     constructor() {
-        this.planPriceService =
-            new PlanPriceService();
+        this.planPriceService = new PlanPriceService();
     }
 
-
-    createPlanPrice = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    createPlanPrice = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const data = await this.planPriceService.createPlanPrice(req.body, this.getAuditContext(req));
 
-            const data =
-                await this.planPriceService
-                    .createPlanPrice(
-                        req.body,
-                        this.getAuditContext(
-                            req
-                        )
-                    );
+            return res.status(201).json({
+                success: true,
 
+                message: PlanPriceMessages.CREATED,
 
-            return res
-                .status(
-                    201
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.CREATED,
-
-                    data,
-                });
-
+                data,
+            });
         } catch (error) {
-
-            next(
-                error
-            );
+            next(error);
         }
     };
 
-
-    getPlanPriceById = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    getPlanPriceById = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const data = await this.planPriceService.getPlanPriceById(RequestUtil.getParam(req.params.id));
 
-            const data =
-                await this.planPriceService
-                    .getPlanPriceById(
-                        RequestUtil.getParam(
-                            req.params.id
-                        )
-                    );
+            return res.status(200).json({
+                success: true,
 
+                message: PlanPriceMessages.FETCHED,
 
-            return res
-                .status(
-                    200
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.FETCHED,
-
-                    data,
-                });
-
+                data,
+            });
         } catch (error) {
-
-            next(
-                error
-            );
+            next(error);
         }
     };
 
-
-    getPlanPrices = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    getPlanPrices = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const filters: IPlanPriceFilter = {
+                planId: req.query.planId?.toString(),
 
-            const filters:
-                IPlanPriceFilter = {
+                currencyId: req.query.currencyId?.toString(),
 
-                planId:
-                    req.query.planId
-                        ?.toString(),
+                billingInterval: req.query.billingInterval as any,
 
-                currencyId:
-                    req.query.currencyId
-                        ?.toString(),
+                isActive: req.query.isActive === undefined ? undefined : req.query.isActive === "true",
 
-                billingInterval:
-                    req.query
-                        .billingInterval as any,
+                page: req.query.page ? Number(req.query.page) : 1,
 
-                isActive:
-                    req.query.isActive ===
-                        undefined
-                        ? undefined
-                        : req.query
-                            .isActive ===
-                        "true",
+                limit: req.query.limit ? Number(req.query.limit) : 10,
 
-                page:
-                    req.query.page
-                        ? Number(
-                            req.query.page
-                        )
-                        : 1,
-
-                limit:
-                    req.query.limit
-                        ? Number(
-                            req.query.limit
-                        )
-                        : 10,
-
-                sortBy:
-                    req.query.sortBy
-                        ?.toString(),
+                sortBy: req.query.sortBy?.toString(),
 
                 sortOrder:
-                    req.query
-                        .sortOrder ===
-                        "asc"
+                    req.query.sortOrder === "asc"
                         ? "asc"
-                        : req.query
-                            .sortOrder ===
-                            "desc"
-                            ? "desc"
-                            : undefined,
+                        : req.query.sortOrder === "desc"
+                          ? "desc"
+                          : undefined,
             };
 
+            const data = await this.planPriceService.getPlanPrices(filters);
 
-            const data =
-                await this.planPriceService
-                    .getPlanPrices(
-                        filters
-                    );
+            return res.status(200).json({
+                success: true,
 
+                message: PlanPriceMessages.LIST_FETCHED,
 
-            return res
-                .status(
-                    200
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.LIST_FETCHED,
-
-                    ...data,
-                });
-
+                ...data,
+            });
         } catch (error) {
-
-            next(
-                error
-            );
+            next(error);
         }
     };
 
-
-    updatePlanPrice = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    updatePlanPrice = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const data = await this.planPriceService.updatePlanPrice(
+                RequestUtil.getParam(req.params.id),
 
-            const data =
-                await this.planPriceService
-                    .updatePlanPrice(
-                        RequestUtil.getParam(
-                            req.params.id
-                        ),
+                req.body,
 
-                        req.body,
-
-                        this.getAuditContext(
-                            req
-                        )
-                    );
-
-
-            return res
-                .status(
-                    200
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.UPDATED,
-
-                    data,
-                });
-
-        } catch (error) {
-
-            next(
-                error
+                this.getAuditContext(req),
             );
+
+            return res.status(200).json({
+                success: true,
+
+                message: PlanPriceMessages.UPDATED,
+
+                data,
+            });
+        } catch (error) {
+            next(error);
         }
     };
 
-
-    changePlanPriceStatus = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    changePlanPriceStatus = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const data = await this.planPriceService.changePlanPriceStatus(
+                RequestUtil.getParam(req.params.id),
 
-            const data =
-                await this.planPriceService
-                    .changePlanPriceStatus(
-                        RequestUtil.getParam(
-                            req.params.id
-                        ),
+                req.body.isActive,
 
-                        req.body
-                            .isActive,
-
-                        this.getAuditContext(
-                            req
-                        )
-                    );
-
-
-            return res
-                .status(
-                    200
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.STATUS_CHANGED,
-
-                    data,
-                });
-
-        } catch (error) {
-
-            next(
-                error
+                this.getAuditContext(req),
             );
+
+            return res.status(200).json({
+                success: true,
+
+                message: PlanPriceMessages.STATUS_CHANGED,
+
+                data,
+            });
+        } catch (error) {
+            next(error);
         }
     };
 
-
-    deletePlanPrice = async (
-        req: Request,
-        res: Response,
-        next: NextFunction
-    ) => {
-
+    deletePlanPrice = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const data = await this.planPriceService.deletePlanPrice(
+                RequestUtil.getParam(req.params.id),
 
-            const data =
-                await this.planPriceService
-                    .deletePlanPrice(
-                        RequestUtil.getParam(
-                            req.params.id
-                        ),
-
-                        this.getAuditContext(
-                            req
-                        )
-                    );
-
-
-            return res
-                .status(
-                    200
-                )
-                .json({
-                    success:
-                        true,
-
-                    message:
-                        PlanPriceMessages.DELETED,
-
-                    data,
-                });
-
-        } catch (error) {
-
-            next(
-                error
+                this.getAuditContext(req),
             );
+
+            return res.status(200).json({
+                success: true,
+
+                message: PlanPriceMessages.DELETED,
+
+                data,
+            });
+        } catch (error) {
+            next(error);
         }
     };
 
-
-    private getAuditContext(
-        req: Request
-    ) {
-
+    private getAuditContext(req: Request) {
         return {
-            actorId:
-                req.user?.id ??
-                null,
+            actorId: req.user?.id ?? null,
 
-            ipAddress:
-                req.ip ??
-                null,
+            ipAddress: req.ip ?? null,
 
-            userAgent:
-                req.get(
-                    "user-agent"
-                ) ??
-                null,
+            userAgent: req.get("user-agent") ?? null,
         };
     }
 }

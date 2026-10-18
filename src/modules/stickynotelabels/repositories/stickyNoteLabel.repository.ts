@@ -1,14 +1,9 @@
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
 import { StickyNoteLabelModel } from "../models/stickyNoteLabel.model.js";
 
-import type {
-    IStickyNoteLabel,
-    IStickyNoteLabelFilter,
-} from "../interfaces/stickyNoteLabel.interface.js";
+import type { IStickyNoteLabel, IStickyNoteLabelFilter } from "../interfaces/stickyNoteLabel.interface.js";
 
-import {
-    StickyNoteLabelStatus,
-} from "../constants/stickyNoteLabel.enums.js";
+import { StickyNoteLabelStatus } from "../constants/stickyNoteLabel.enums.js";
 
 export class StickyNoteLabelRepository {
     async create(data: Partial<IStickyNoteLabel>) {
@@ -96,7 +91,10 @@ export class StickyNoteLabelRepository {
         }
 
         if (!workspaceId) {
-            query.$and = [...(Array.isArray(query.$and) ? query.$and : []), { workspaceId: { $nin: await new WorkspaceRepository().findUnavailableIds() } }];
+            query.$and = [
+                ...(Array.isArray(query.$and) ? query.$and : []),
+                { workspaceId: { $nin: await new WorkspaceRepository().findUnavailableIds() } },
+            ];
         }
 
         const skip = (page - 1) * limit;
@@ -126,11 +124,7 @@ export class StickyNoteLabelRepository {
         };
     }
 
-    async existsBySlug(
-        workspaceId: any,
-        slug: string,
-        excludeId?: string,
-    ): Promise<boolean> {
+    async existsBySlug(workspaceId: any, slug: string, excludeId?: string): Promise<boolean> {
         const query: Record<any, unknown> = {
             workspaceId,
             slug: slug.toLowerCase().trim(),
@@ -158,10 +152,7 @@ export class StickyNoteLabelRepository {
         return !!exists;
     }
 
-    async updateById(
-        id: string,
-        data: Partial<IStickyNoteLabel>,
-    ) {
+    async updateById(id: string, data: Partial<IStickyNoteLabel>) {
         return StickyNoteLabelModel.findOneAndUpdate(
             {
                 _id: id,
@@ -180,11 +171,7 @@ export class StickyNoteLabelRepository {
             .populate("updatedBy");
     }
 
-    async updateStatus(
-        id: string,
-        status: StickyNoteLabelStatus,
-        updatedBy?: IStickyNoteLabel["updatedBy"],
-    ) {
+    async updateStatus(id: string, status: StickyNoteLabelStatus, updatedBy?: IStickyNoteLabel["updatedBy"]) {
         return StickyNoteLabelModel.findOneAndUpdate(
             {
                 _id: id,
@@ -193,20 +180,20 @@ export class StickyNoteLabelRepository {
                 status,
                 ...(status === StickyNoteLabelStatus.ARCHIVED
                     ? {
-                        archivedAt: new Date(),
-                    }
+                          archivedAt: new Date(),
+                      }
                     : {
-                        archivedAt: null,
-                    }),
+                          archivedAt: null,
+                      }),
                 ...(status === StickyNoteLabelStatus.DELETED
                     ? {
-                        deletedAt: new Date(),
-                    }
+                          deletedAt: new Date(),
+                      }
                     : {}),
                 ...(updatedBy !== undefined
                     ? {
-                        updatedBy,
-                    }
+                          updatedBy,
+                      }
                     : {}),
             },
             {
@@ -219,10 +206,7 @@ export class StickyNoteLabelRepository {
             .populate("updatedBy");
     }
 
-    async softDelete(
-        id: string,
-        updatedBy?: IStickyNoteLabel["updatedBy"],
-    ) {
+    async softDelete(id: string, updatedBy?: IStickyNoteLabel["updatedBy"]) {
         return StickyNoteLabelModel.findOneAndUpdate(
             {
                 _id: id,
@@ -232,8 +216,8 @@ export class StickyNoteLabelRepository {
                 deletedAt: new Date(),
                 ...(updatedBy !== undefined
                     ? {
-                        updatedBy,
-                    }
+                          updatedBy,
+                      }
                     : {}),
             },
             {
@@ -246,10 +230,7 @@ export class StickyNoteLabelRepository {
             .populate("updatedBy");
     }
 
-    async restore(
-        id: string,
-        updatedBy?: IStickyNoteLabel["updatedBy"],
-    ) {
+    async restore(id: string, updatedBy?: IStickyNoteLabel["updatedBy"]) {
         return StickyNoteLabelModel.findOneAndUpdate(
             {
                 _id: id,
@@ -260,8 +241,8 @@ export class StickyNoteLabelRepository {
                 deletedAt: null,
                 ...(updatedBy !== undefined
                     ? {
-                        updatedBy,
-                    }
+                          updatedBy,
+                      }
                     : {}),
             },
             {

@@ -1,5 +1,5 @@
-import type { Document, Types, } from "mongoose";
-import type { BillingInterval, } from "../constants/planPrice.enums.js";
+import type { Document, Types } from "mongoose";
+import type { BillingInterval } from "../constants/planPrice.enums.js";
 
 export interface IPlanPrice {
     planId: Types.ObjectId;
@@ -39,10 +39,7 @@ export interface IPlanPriceFilter {
     sortOrder?: "asc" | "desc";
 }
 
-export interface IPlanPriceDocument
-    extends IPlanPrice,
-    Document {
-}
+export interface IPlanPriceDocument extends IPlanPrice, Document {}
 
 export interface IPlanPricePaginatedResult {
     data: IPlanPriceDocument[];

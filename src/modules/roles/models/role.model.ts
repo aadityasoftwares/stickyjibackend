@@ -1,153 +1,127 @@
-import mongoose, {
-    Schema,
-    Model,
-} from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
-import type {
-    IRoleDocument,
-} from "../interfaces/role.interface.js";
+import type { IRoleDocument } from "../interfaces/role.interface.js";
 
-import {
-    RoleType,
-    RoleScope,
-} from "../constants/role.enums.js";
+import { RoleType, RoleScope } from "../constants/role.enums.js";
 
-import {
-    DEFAULT_ROLE_STATUS,
-} from "../constants/role.constants.js";
+import { DEFAULT_ROLE_STATUS } from "../constants/role.constants.js";
 
-const RoleSchema =
-    new Schema<IRoleDocument>(
-        {
-            name: {
-                type: String,
-                required: true,
-                trim: true,
-                lowercase: true,
-            },
-
-            displayName: {
-                type: String,
-                required: true,
-                trim: true,
-            },
-
-            code: {
-                type: String,
-                required: true,
-                uppercase: true,
-                trim: true,
-            },
-
-            description: {
-                type: String,
-                trim: true,
-                default: "",
-            },
-
-            type: {
-                type: String,
-                enum: Object.values(
-                    RoleType
-                ),
-                required: true,
-                default:
-                    RoleType.CUSTOM,
-            },
-
-            scope: {
-                type: String,
-                enum: Object.values(
-                    RoleScope
-                ),
-                required: true,
-                default:
-                    RoleScope.WORKSPACE,
-            },
-
-            /**
-             * null:
-             * System/global role.
-             *
-             * ObjectId:
-             * Role belongs to one workspace.
-             */
-            workspaceId: {
-                type:
-                    Schema.Types
-                        .ObjectId,
-                ref: "Workspace",
-                default: null,
-            },
-
-            permissions: {
-                type: [
-                    {
-                        type:
-                            Schema.Types
-                                .ObjectId,
-                        ref: "Permission",
-                    },
-                ],
-                default: [],
-            },
-
-            isSystem: {
-                type: Boolean,
-                default: false,
-            },
-
-            /**
-             * Currently used by seeded system roles.
-             *
-             * WORKSPACE_MEMBER is the default
-             * role when someone joins.
-             */
-            isDefault: {
-                type: Boolean,
-                default: false,
-            },
-
-            /**
-             * Helpful later when preventing
-             * lower roles from assigning higher roles.
-             *
-             * OWNER 100
-             * ADMIN 80
-             * MEMBER 50
-             * VIEWER 10
-             */
-            priority: {
-                type: Number,
-                default: 0,
-            },
-
-            isActive: {
-                type: Boolean,
-                default:
-                    DEFAULT_ROLE_STATUS,
-            },
-
-            createdBy: {
-                type:
-                    Schema.Types
-                        .ObjectId,
-                ref: "User",
-                default: null,
-            },
-
-            updatedBy: {
-                type:
-                    Schema.Types
-                        .ObjectId,
-                ref: "User",
-                default: null,
-            },
+const RoleSchema = new Schema<IRoleDocument>(
+    {
+        name: {
+            type: String,
+            required: true,
+            trim: true,
+            lowercase: true,
         },
-        {
-            timestamps: true,
-        }
-    );
+
+        displayName: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+
+        code: {
+            type: String,
+            required: true,
+            uppercase: true,
+            trim: true,
+        },
+
+        description: {
+            type: String,
+            trim: true,
+            default: "",
+        },
+
+        type: {
+            type: String,
+            enum: Object.values(RoleType),
+            required: true,
+            default: RoleType.CUSTOM,
+        },
+
+        scope: {
+            type: String,
+            enum: Object.values(RoleScope),
+            required: true,
+            default: RoleScope.WORKSPACE,
+        },
+
+        /**
+         * null:
+         * System/global role.
+         *
+         * ObjectId:
+         * Role belongs to one workspace.
+         */
+        workspaceId: {
+            type: Schema.Types.ObjectId,
+            ref: "Workspace",
+            default: null,
+        },
+
+        permissions: {
+            type: [
+                {
+                    type: Schema.Types.ObjectId,
+                    ref: "Permission",
+                },
+            ],
+            default: [],
+        },
+
+        isSystem: {
+            type: Boolean,
+            default: false,
+        },
+
+        /**
+         * Currently used by seeded system roles.
+         *
+         * WORKSPACE_MEMBER is the default
+         * role when someone joins.
+         */
+        isDefault: {
+            type: Boolean,
+            default: false,
+        },
+
+        /**
+         * Helpful later when preventing
+         * lower roles from assigning higher roles.
+         *
+         * OWNER 100
+         * ADMIN 80
+         * MEMBER 50
+         * VIEWER 10
+         */
+        priority: {
+            type: Number,
+            default: 0,
+        },
+
+        isActive: {
+            type: Boolean,
+            default: DEFAULT_ROLE_STATUS,
+        },
+
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+
+        updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            default: null,
+        },
+    },
+    {
+        timestamps: true,
+    },
+);
 
 /**
  * System role codes must be globally unique.
@@ -168,7 +142,7 @@ RoleSchema.index(
         partialFilterExpression: {
             isSystem: true,
         },
-    }
+    },
 );
 
 /**
@@ -187,15 +161,14 @@ RoleSchema.index(
     },
     {
         unique: true,
-        name:
-            "uniq_workspace_role_code",
+        name: "uniq_workspace_role_code",
         partialFilterExpression: {
             isSystem: false,
             workspaceId: {
                 $type: "objectId",
             },
         },
-    }
+    },
 );
 
 RoleSchema.index(
@@ -205,15 +178,14 @@ RoleSchema.index(
     },
     {
         unique: true,
-        name:
-            "uniq_workspace_role_name",
+        name: "uniq_workspace_role_name",
         partialFilterExpression: {
             isSystem: false,
             workspaceId: {
                 $type: "objectId",
             },
         },
-    }
+    },
 );
 
 RoleSchema.index({
@@ -252,8 +224,4 @@ RoleSchema.index({
     type: 1,
 });
 
-export const RoleModel: Model<IRoleDocument> =
-    mongoose.model<IRoleDocument>(
-        "Role",
-        RoleSchema
-    );
+export const RoleModel: Model<IRoleDocument> = mongoose.model<IRoleDocument>("Role", RoleSchema);

@@ -125,7 +125,8 @@ export class WorkspaceMemberService {
         try {
             member = await this.workspaceMemberRepository.create(memberData);
         } catch (error) {
-            if (this.isDuplicateKeyError(error)) throw new AppError(WorkspaceMemberMessages.ALREADY_EXISTS, 409);
+            if (this.isDuplicateKeyError(error))
+                throw new AppError(WorkspaceMemberMessages.ALREADY_EXISTS, 409);
             throw error;
         }
 
@@ -152,7 +153,11 @@ export class WorkspaceMemberService {
         return member;
     }
 
-    async getWorkspaceMemberById(id: string, requesterUserId: string, authorization?: IWorkspaceAuthorizationContext) {
+    async getWorkspaceMemberById(
+        id: string,
+        requesterUserId: string,
+        authorization?: IWorkspaceAuthorizationContext,
+    ) {
         if (!Types.ObjectId.isValid(id)) throw new AppError(WorkspaceMemberMessages.NOT_FOUND, 400);
         const member = await this.workspaceMemberRepository.findById(id);
 
@@ -188,7 +193,10 @@ export class WorkspaceMemberService {
 
         const parsed = workspaceMemberListSchema.safeParse(filters);
         if (!parsed.success) {
-            throw new AppError(parsed.error.issues[0]?.message ?? WorkspaceMemberMessages.INVALID_WORKSPACE_ID, 400);
+            throw new AppError(
+                parsed.error.issues[0]?.message ?? WorkspaceMemberMessages.INVALID_WORKSPACE_ID,
+                400,
+            );
         }
         filters = parsed.data;
         const workspaceId = filters.workspaceId?.trim();
@@ -269,7 +277,12 @@ export class WorkspaceMemberService {
 
         this.assertAssignableWorkspaceRole(role, workspaceId);
 
-        const actorAuth = await this.authorizeMember(updatedBy, workspaceId, PermissionAction.ASSIGN, authorization);
+        const actorAuth = await this.authorizeMember(
+            updatedBy,
+            workspaceId,
+            PermissionAction.ASSIGN,
+            authorization,
+        );
         const targetMemberRole = await this.workspaceMemberRepository.findRoleById(
             this.extractObjectId(member.roleId),
         );
@@ -341,7 +354,12 @@ export class WorkspaceMemberService {
         }
 
         const workspaceId = this.extractObjectId(member.workspaceId);
-        const actorAuth = await this.authorizeMember(updatedBy, workspaceId, PermissionAction.REMOVE, authorization);
+        const actorAuth = await this.authorizeMember(
+            updatedBy,
+            workspaceId,
+            PermissionAction.REMOVE,
+            authorization,
+        );
         const targetMemberRole = await this.workspaceMemberRepository.findRoleById(
             this.extractObjectId(member.roleId),
         );
@@ -373,7 +391,9 @@ export class WorkspaceMemberService {
                 resourceName: "Workspace Member",
                 description: "Workspace member was removed successfully.",
                 metadata: { workspaceId, userId: this.extractObjectId(member.userId) },
-                changes: [{ field: "status", oldValue: member.status, newValue: WorkspaceMemberStatus.REMOVED }],
+                changes: [
+                    { field: "status", oldValue: member.status, newValue: WorkspaceMemberStatus.REMOVED },
+                ],
             });
         } catch (error) {
             await this.workspaceMemberRepository.updateStatus(
@@ -402,7 +422,8 @@ export class WorkspaceMemberService {
             throw new AppError(WorkspaceMemberMessages.NOT_FOUND, 404);
         }
 
-        if (this.isOwnerMember(member)) throw new AppError(WorkspaceMemberMessages.CANNOT_CHANGE_OWNER_ROLE, 400);
+        if (this.isOwnerMember(member))
+            throw new AppError(WorkspaceMemberMessages.CANNOT_CHANGE_OWNER_ROLE, 400);
         const workspaceId = this.extractObjectId(member.workspaceId);
         const actorAuth = await this.authorizeMember(
             updatedBy,
@@ -632,7 +653,8 @@ export class WorkspaceMemberService {
         }
 
         return Boolean(
-            workspace?.ownerId && this.extractObjectId(workspace.ownerId) === this.extractObjectId(member.userId),
+            workspace?.ownerId &&
+            this.extractObjectId(workspace.ownerId) === this.extractObjectId(member.userId),
         );
     }
 

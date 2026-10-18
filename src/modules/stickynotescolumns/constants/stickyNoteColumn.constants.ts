@@ -1,7 +1,4 @@
-import {
-    StickyNoteColumnColor,
-    StickyNoteColumnType,
-} from "./stickyNoteColumn.enums.js";
+import { StickyNoteColumnColor, StickyNoteColumnType } from "./stickyNoteColumn.enums.js";
 
 export const STICKY_NOTE_COLUMN_CONSTANTS = {
     NAME: {

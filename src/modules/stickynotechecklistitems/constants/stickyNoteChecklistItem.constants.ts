@@ -24,11 +24,5 @@ export const STICKY_NOTE_CHECKLIST_ITEM_CONSTANTS = {
 
     MAX_ITEMS_PER_CHECKLIST: 500,
 
-    SORT_FIELDS: [
-        "position",
-        "title",
-        "createdAt",
-        "updatedAt",
-        "completedAt",
-    ],
+    SORT_FIELDS: ["position", "title", "createdAt", "updatedAt", "completedAt"],
 } as const;

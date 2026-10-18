@@ -1,7 +1,10 @@
 import type { Document, Types } from "mongoose";
 import type { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
 import type { IBillingScope } from "../../subscriptionusage/interfaces/subscriptionusage.interface.js";
-import type { EntitlementDecisionReason, ReservationStatus } from "../constants/subscriptionentitlement.enums.js";
+import type {
+    EntitlementDecisionReason,
+    ReservationStatus,
+} from "../constants/subscriptionentitlement.enums.js";
 
 export interface IEntitlementDecision {
     allowed: boolean;

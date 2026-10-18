@@ -1,0 +1,11 @@
+node_modules
+dist
+build
+coverage
+tmp
+temp
+logs
+*.log
+package-lock.json
+.git
+.cache

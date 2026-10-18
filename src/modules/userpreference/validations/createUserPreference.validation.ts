@@ -4,11 +4,7 @@ import { UserPreferenceMessages } from "../constants/userPreference.messages.js"
 import { UserPreferenceValidation } from "./userPreference.validation.js";
 import type { UserPreferenceValue } from "../interfaces/userPreference.interface.js";
 
-export const createUserPreferenceValidation = (
-    req: Request,
-    res: Response,
-    next: NextFunction,
-) => {
+export const createUserPreferenceValidation = (req: Request, res: Response, next: NextFunction) => {
     try {
         const { key, value } = req.body ?? {};
 
@@ -37,7 +33,10 @@ export const createUserPreferenceValidation = (
         }
 
         // Normalize and domain-validate; write normalized value back to req.body
-        const normalizedValue = UserPreferenceValidation.normalizeValue(canonicalKey, value as UserPreferenceValue);
+        const normalizedValue = UserPreferenceValidation.normalizeValue(
+            canonicalKey,
+            value as UserPreferenceValue,
+        );
         const domainError = UserPreferenceValidation.validateDomainValue(canonicalKey, normalizedValue);
 
         if (domainError) {

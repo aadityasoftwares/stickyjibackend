@@ -2,7 +2,6 @@ import nodemailer, { type Transporter } from "nodemailer";
 import ejs from "ejs";
 import path from "path";
 
-
 const TEMPLATES_DIR = path.join(__dirname, "templates");
 
 interface MailConfig {
@@ -13,7 +12,6 @@ interface MailConfig {
 }
 
 export interface WorkspaceInvitationData {
-
     appName: string;
     appUrl: string;
     currentYear: number;
@@ -37,7 +35,6 @@ export interface WorkspaceInvitationData {
     expiresAt: string;
 }
 
-
 function getInitials(name: string): string {
     return name
         .split(" ")
@@ -56,7 +53,6 @@ function formatExpiry(date: Date): string {
         hour12: true,
     });
 }
-
 
 export class EmailService {
     private transporter: Transporter;
@@ -78,7 +74,10 @@ export class EmailService {
             to,
             subject,
             html,
-            text: html.replace(/<[^>]+>/g, " ").replace(/\s{2,}/g, " ").trim(),
+            text: html
+                .replace(/<[^>]+>/g, " ")
+                .replace(/\s{2,}/g, " ")
+                .trim(),
         });
     }
 
@@ -182,7 +181,7 @@ export function getEmailService(): EmailService {
                     pass: process.env.SMTP_PASS ?? "",
                 },
             },
-            process.env.MAIL_FROM ?? `"${process.env.APP_NAME}" <no-reply@yourapp.com>`
+            process.env.MAIL_FROM ?? `"${process.env.APP_NAME}" <no-reply@yourapp.com>`,
         );
     }
     return _emailService;

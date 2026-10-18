@@ -125,6 +125,4 @@ router.use("/stickynoteassignees", stickyNoteAssigneeRoutes);
 //MANAGE AUDIT LOGS
 router.use("/auditlogs", auditLogRoutes);
 
-
-
 export default router;

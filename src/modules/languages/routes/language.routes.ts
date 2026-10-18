@@ -17,45 +17,29 @@ const languageController = new LanguageController();
 languageRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "name",
-        "nativeName",
-        "code",
-        "locale"
-    ),
+    requireBodyFields("name", "nativeName", "code", "locale"),
     createLanguageValidation,
-    languageController.createLanguage
+    languageController.createLanguage,
 );
 
-languageRoutes.get(
-    "/getall",
-    languageController.getLanguages
-);
+languageRoutes.get("/getall", languageController.getLanguages);
 
-languageRoutes.get(
-    "/get",
-    getLanguageValidation,
-    languageController.getLanguageById
-);
+languageRoutes.get("/get", getLanguageValidation, languageController.getLanguageById);
 
 languageRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getLanguageValidation,
-    languageController.getLanguageById
+    languageController.getLanguageById,
 );
 
-languageRoutes.get(
-    "/get/code",
-    getLanguageValidation,
-    languageController.getLanguageByCode
-);
+languageRoutes.get("/get/code", getLanguageValidation, languageController.getLanguageByCode);
 
 languageRoutes.get(
     "/get/code/:code",
     requireRouteParam("code"),
     getLanguageValidation,
-    languageController.getLanguageByCode
+    languageController.getLanguageByCode,
 );
 
 languageRoutes.put(
@@ -63,7 +47,7 @@ languageRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateLanguageValidation,
-    languageController.updateLanguage
+    languageController.updateLanguage,
 );
 
 languageRoutes.put(
@@ -71,18 +55,15 @@ languageRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateLanguageValidation,
-    languageController.updateLanguage
+    languageController.updateLanguage,
 );
 
 languageRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeLanguageStatusValidation,
-    languageController.changeLanguageStatus
+    languageController.changeLanguageStatus,
 );
 
 languageRoutes.patch(
@@ -91,21 +72,21 @@ languageRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeLanguageStatusValidation,
-    languageController.changeLanguageStatus
+    languageController.changeLanguageStatus,
 );
 
 languageRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteLanguageValidation,
-    languageController.deleteLanguage
+    languageController.deleteLanguage,
 );
 
 languageRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteLanguageValidation,
-    languageController.deleteLanguage
+    languageController.deleteLanguage,
 );
 
 export default languageRoutes;

@@ -1,14 +1,8 @@
 import { UserModel } from "../models/user.model.js";
 
-import type {
-    IUser,
-    IUserFilter,
-} from "../interfaces/user.interface.js";
+import type { IUser, IUserFilter } from "../interfaces/user.interface.js";
 
-import type {
-    UserAuthProvider,
-    UserStatus,
-} from "../constants/user.enums.js";
+import type { UserAuthProvider, UserStatus } from "../constants/user.enums.js";
 
 export class UserRepository {
     async create(data: Partial<IUser>) {
@@ -58,7 +52,9 @@ export class UserRepository {
                 $gt: new Date(),
             },
             isDeleted: false,
-        }).populate("globalRoleId");
+        })
+            .select("+emailVerificationTokenHash +emailVerificationExpiresAt")
+            .populate("globalRoleId");
     }
 
     async findByPasswordResetToken(tokenHash: string) {
@@ -69,16 +65,11 @@ export class UserRepository {
             },
             isDeleted: false,
         })
-            .select(
-                "+passwordResetTokenHash +passwordResetExpiresAt"
-            )
+            .select("+passwordResetTokenHash +passwordResetExpiresAt")
             .populate("globalRoleId");
     }
 
-    async findByProvider(
-        authProvider: UserAuthProvider,
-        providerId: string
-    ) {
+    async findByProvider(authProvider: UserAuthProvider, providerId: string) {
         return UserModel.findOne({
             authProvider,
             providerId,
@@ -195,10 +186,7 @@ export class UserRepository {
         return !!exists;
     }
 
-    async updateById(
-        id: string,
-        data: Partial<IUser>
-    ) {
+    async updateById(id: string, data: Partial<IUser>) {
         return UserModel.findOneAndUpdate(
             {
                 _id: id,
@@ -208,15 +196,11 @@ export class UserRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate("globalRoleId");
     }
 
-    async updateStatus(
-        id: string,
-        status: UserStatus,
-        updatedBy?: IUser["updatedBy"]
-    ) {
+    async updateStatus(id: string, status: UserStatus, updatedBy?: IUser["updatedBy"]) {
         return UserModel.findOneAndUpdate(
             {
                 _id: id,
@@ -224,21 +208,16 @@ export class UserRepository {
             },
             {
                 status,
-                ...(updatedBy !== undefined
-                    ? { updatedBy }
-                    : {}),
+                ...(updatedBy !== undefined ? { updatedBy } : {}),
             },
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate("globalRoleId");
     }
 
-    async softDelete(
-        id: string,
-        updatedBy?: IUser["updatedBy"]
-    ) {
+    async softDelete(id: string, updatedBy?: IUser["updatedBy"]) {
         return UserModel.findOneAndUpdate(
             {
                 _id: id,
@@ -248,21 +227,16 @@ export class UserRepository {
                 isDeleted: true,
                 deletedAt: new Date(),
                 status: "INACTIVE",
-                ...(updatedBy !== undefined
-                    ? { updatedBy }
-                    : {}),
+                ...(updatedBy !== undefined ? { updatedBy } : {}),
             },
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate("globalRoleId");
     }
 
-    async restore(
-        id: string,
-        updatedBy?: IUser["updatedBy"]
-    ) {
+    async restore(id: string, updatedBy?: IUser["updatedBy"]) {
         return UserModel.findOneAndUpdate(
             {
                 _id: id,
@@ -272,14 +246,12 @@ export class UserRepository {
                 isDeleted: false,
                 deletedAt: null,
                 status: "ACTIVE",
-                ...(updatedBy !== undefined
-                    ? { updatedBy }
-                    : {}),
+                ...(updatedBy !== undefined ? { updatedBy } : {}),
             },
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         ).populate("globalRoleId");
     }
 

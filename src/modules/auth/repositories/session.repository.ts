@@ -1,9 +1,8 @@
 import { SessionModel } from "../models/session.model.js";
 import type { ISessionDocument } from "../interfaces/session.interface.js";
-import { SessionStatus, SessionType, } from "../constants/session.constants.js";
+import { SessionStatus } from "../constants/session.constants.js";
 
 export class SessionRepository {
-
     async create(data: Partial<ISessionDocument>): Promise<ISessionDocument> {
         return SessionModel.create(data);
     }
@@ -48,7 +47,7 @@ export class SessionRepository {
         sessionId: string,
         refreshTokenHash: string,
         refreshTokenVersion: number,
-        lastIpAddress?: string
+        lastIpAddress?: string,
     ): Promise<ISessionDocument | null> {
         return SessionModel.findOneAndUpdate(
             {
@@ -67,12 +66,11 @@ export class SessionRepository {
             {
                 new: true,
                 runValidators: true,
-            }
+            },
         );
     }
 
     async updateLastUsed(sessionId: string, lastIpAddress?: string): Promise<ISessionDocument | null> {
-
         return SessionModel.findOneAndUpdate(
             {
                 _id: sessionId,
@@ -80,18 +78,15 @@ export class SessionRepository {
             },
             {
                 lastUsedAt: new Date(),
-                ...(lastIpAddress !== undefined
-                    ? { lastIpAddress }
-                    : {}),
+                ...(lastIpAddress !== undefined ? { lastIpAddress } : {}),
             },
             {
                 new: true,
-            }
+            },
         );
     }
 
     async revoke(sessionId: string, revokedAt = new Date()): Promise<ISessionDocument | null> {
-
         return SessionModel.findOneAndUpdate(
             {
                 _id: sessionId,
@@ -103,12 +98,11 @@ export class SessionRepository {
             },
             {
                 new: true,
-            }
+            },
         );
     }
 
     async revokeAllByUserId(userId: string): Promise<{ modifiedCount: number }> {
-
         const result = await SessionModel.updateMany(
             {
                 userId,
@@ -117,7 +111,7 @@ export class SessionRepository {
             {
                 status: SessionStatus.REVOKED,
                 revokedAt: new Date(),
-            }
+            },
         );
 
         return {

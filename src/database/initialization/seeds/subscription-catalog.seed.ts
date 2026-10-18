@@ -13,10 +13,7 @@ export const executeSubscriptionCatalogSeed = async (): Promise<void> => {
 
     if (!report.valid || !report.applied) {
         const issues = [...report.conflicts, ...report.errors].join("; ");
-        throw new AppError(
-            `Subscription catalog seeding failed: ${issues || "Validation failed"}`,
-            409
-        );
+        throw new AppError(`Subscription catalog seeding failed: ${issues || "Validation failed"}`, 409);
     }
 
     console.log(
@@ -26,6 +23,6 @@ export const executeSubscriptionCatalogSeed = async (): Promise<void> => {
             `Features created: ${report.counts.features.created}, unchanged: ${report.counts.features.unchanged}`,
             `PlanFeatures created: ${report.counts.planFeatures.created}, unchanged: ${report.counts.planFeatures.unchanged}`,
             `PlanPrices created: ${report.counts.planPrices.created}, unchanged: ${report.counts.planPrices.unchanged}`,
-        ].join(" ")
+        ].join(" "),
     );
 };

@@ -42,14 +42,11 @@ const InitializationLockSchema = new Schema<IInitializationLockDocument>(
     {
         timestamps: true,
         collection: "initializationlocks",
-    }
+    },
 );
 
 export const InitializationLockModel: Model<IInitializationLockDocument> =
-    mongoose.model<IInitializationLockDocument>(
-        "InitializationLock",
-        InitializationLockSchema
-    );
+    mongoose.model<IInitializationLockDocument>("InitializationLock", InitializationLockSchema);
 
 export class InitializationLockManager {
     private readonly lockId: string;
@@ -67,10 +64,7 @@ export class InitializationLockManager {
         const updated = await InitializationLockModel.findOneAndUpdate(
             {
                 _id: this.lockId,
-                $or: [
-                    { locked: false },
-                    { expiresAt: { $lt: now } },
-                ],
+                $or: [{ locked: false }, { expiresAt: { $lt: now } }],
             },
             {
                 $set: {
@@ -80,7 +74,7 @@ export class InitializationLockManager {
                     expiresAt,
                 },
             },
-            { returnDocument: "after" }
+            { returnDocument: "after" },
         );
 
         if (updated && updated.lockedBy === runnerId) {
@@ -113,7 +107,7 @@ export class InitializationLockManager {
         const result = await InitializationLockModel.findOneAndUpdate(
             { _id: this.lockId, lockedBy: runnerId },
             { $set: { locked: false, expiresAt: new Date(0) } },
-            { returnDocument: "after" }
+            { returnDocument: "after" },
         );
         return !!result;
     }
@@ -125,7 +119,7 @@ export class InitializationLockManager {
         const result = await InitializationLockModel.findOneAndUpdate(
             { _id: this.lockId, locked: true, lockedBy: runnerId },
             { $set: { expiresAt } },
-            { returnDocument: "after" }
+            { returnDocument: "after" },
         );
         return !!result;
     }
@@ -156,7 +150,7 @@ export class InitializationLockManager {
     async waitForCompletionOrRelease(
         checkCompleted: () => Promise<boolean>,
         maxWaitMs = 60000,
-        pollIntervalMs = 1000
+        pollIntervalMs = 1000,
     ): Promise<"COMPLETED" | "LOCK_RELEASED" | "TIMEOUT"> {
         const startTime = Date.now();
 

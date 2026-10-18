@@ -16,45 +16,29 @@ const featureController = new FeatureController();
 featureRoutes.post(
     "/create",
     validateContentType("application/json"),
-    requireBodyFields(
-        "name",
-        "code",
-        "description",
-        "category"
-    ),
+    requireBodyFields("name", "code", "description", "category"),
     createFeatureValidation,
-    featureController.createFeature
+    featureController.createFeature,
 );
 
-featureRoutes.get(
-    "/getall",
-    featureController.getFeatures
-);
+featureRoutes.get("/getall", featureController.getFeatures);
 
-featureRoutes.get(
-    "/get",
-    getFeatureValidation,
-    featureController.getFeatureById
-);
+featureRoutes.get("/get", getFeatureValidation, featureController.getFeatureById);
 
 featureRoutes.get(
     "/get/:id",
     requireRouteParam("id"),
     getFeatureValidation,
-    featureController.getFeatureById
+    featureController.getFeatureById,
 );
 
-featureRoutes.get(
-    "/get/code",
-    getFeatureValidation,
-    featureController.getFeatureByCode
-);
+featureRoutes.get("/get/code", getFeatureValidation, featureController.getFeatureByCode);
 
 featureRoutes.get(
     "/get/code/:code",
     requireRouteParam("code"),
     getFeatureValidation,
-    featureController.getFeatureByCode
+    featureController.getFeatureByCode,
 );
 
 featureRoutes.put(
@@ -62,7 +46,7 @@ featureRoutes.put(
     validateContentType("application/json"),
     requireBodyFields("id"),
     updateFeatureValidation,
-    featureController.updateFeature
+    featureController.updateFeature,
 );
 
 featureRoutes.put(
@@ -70,18 +54,15 @@ featureRoutes.put(
     validateContentType("application/json"),
     requireRouteParam("id"),
     updateFeatureValidation,
-    featureController.updateFeature
+    featureController.updateFeature,
 );
 
 featureRoutes.patch(
     "/update/status",
     validateContentType("application/json"),
-    requireBodyFields(
-        "id",
-        "isActive"
-    ),
+    requireBodyFields("id", "isActive"),
     changeFeatureStatusValidation,
-    featureController.changeFeatureStatus
+    featureController.changeFeatureStatus,
 );
 
 featureRoutes.patch(
@@ -90,21 +71,21 @@ featureRoutes.patch(
     requireRouteParam("id"),
     requireBodyFields("isActive"),
     changeFeatureStatusValidation,
-    featureController.changeFeatureStatus
+    featureController.changeFeatureStatus,
 );
 
 featureRoutes.delete(
     "/delete",
     requireBodyFields("id"),
     deleteFeatureValidation,
-    featureController.deleteFeature
+    featureController.deleteFeature,
 );
 
 featureRoutes.delete(
     "/delete/:id",
     requireRouteParam("id"),
     deleteFeatureValidation,
-    featureController.deleteFeature
+    featureController.deleteFeature,
 );
 
 export default featureRoutes;

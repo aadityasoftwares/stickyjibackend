@@ -1,7 +1,7 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { ILanguageDocument, } from "../interfaces/language.interface.js";
-import { LanguageDirection, LanguageCode, } from "../constants/language.enums.js";
-import { DEFAULT_LANGUAGE_STATUS, DEFAULT_LANGUAGE_DIRECTION, } from "../constants/language.constants.js";
+import mongoose, { Schema, Model } from "mongoose";
+import type { ILanguageDocument } from "../interfaces/language.interface.js";
+import { LanguageDirection, LanguageCode } from "../constants/language.enums.js";
+import { DEFAULT_LANGUAGE_STATUS, DEFAULT_LANGUAGE_DIRECTION } from "../constants/language.constants.js";
 
 const LanguageSchema = new Schema<ILanguageDocument>(
     {
@@ -69,18 +69,12 @@ const LanguageSchema = new Schema<ILanguageDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
-LanguageSchema.index(
-    { code: 1 },
-    { unique: true }
-);
+LanguageSchema.index({ code: 1 }, { unique: true });
 
-LanguageSchema.index(
-    { locale: 1 },
-    { unique: true }
-);
+LanguageSchema.index({ locale: 1 }, { unique: true });
 
 LanguageSchema.index({
     name: 1,
@@ -107,9 +101,7 @@ LanguageSchema.index({
     isDefault: 1,
 });
 
-export const LanguageModel:
-    Model<ILanguageDocument> =
-    mongoose.model<ILanguageDocument>(
-        "Language",
-        LanguageSchema
-    );
+export const LanguageModel: Model<ILanguageDocument> = mongoose.model<ILanguageDocument>(
+    "Language",
+    LanguageSchema,
+);

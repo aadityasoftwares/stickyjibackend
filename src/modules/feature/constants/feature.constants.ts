@@ -1,4 +1,4 @@
-import { FeatureCode, FeatureCategory, FeatureType, } from "./feature.enums.js";
+import { FeatureCode, FeatureCategory, FeatureType } from "./feature.enums.js";
 export const DEFAULT_FEATURE_STATUS = true;
 export const DEFAULT_FEATURE_SYSTEM = true;
 export const DEFAULT_FEATURE_TYPE = FeatureType.BOOLEAN;

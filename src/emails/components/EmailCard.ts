@@ -2,17 +2,8 @@
 
 import { emailTheme } from "../config/emailTheme.js";
 
-
 export type EmailCardVariant =
-    | "default"
-    | "subtle"
-    | "yellow"
-    | "blue"
-    | "green"
-    | "pink"
-    | "orange"
-    | "purple"
-    | "custom";
+    "default" | "subtle" | "yellow" | "blue" | "green" | "pink" | "orange" | "purple" | "custom";
 
 export interface EmailCardProps {
     content: string;
@@ -68,8 +59,7 @@ export const EmailCard = ({
             break;
 
         case "custom":
-            background =
-                backgroundColor ?? emailTheme.colors.surfaceContainerLowest;
+            background = backgroundColor ?? emailTheme.colors.surfaceContainerLowest;
             break;
 
         case "default":

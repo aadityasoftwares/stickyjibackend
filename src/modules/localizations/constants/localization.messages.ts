@@ -1,5 +1,4 @@
 export const LocalizationMessages = {
-
     CREATED: "Localization created successfully.",
     UPDATED: "Localization updated successfully.",
     DELETED: "Localization deleted successfully.",
@@ -17,5 +16,4 @@ export const LocalizationMessages = {
     INVALID_DIRECTION: "Invalid localization direction.",
     INVALID_STATUS: "isActive must be a boolean value.",
     UPDATE_REQUIRED: "Please provide at least one field to update.",
-
 };

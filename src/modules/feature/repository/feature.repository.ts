@@ -1,9 +1,8 @@
 import { FeatureModel } from "../models/feature.model.js";
-import type { IFeature, IFeatureFilter, } from "../interfaces/feature.interface.js";
-import { FeatureCode, } from "../constants/feature.enums.js";
+import type { IFeature, IFeatureFilter } from "../interfaces/feature.interface.js";
+import { FeatureCode } from "../constants/feature.enums.js";
 
 export class FeatureRepository {
-
     async create(data: Partial<IFeature>) {
         return FeatureModel.create(data);
     }
@@ -13,14 +12,12 @@ export class FeatureRepository {
     }
 
     async findByCode(code: FeatureCode | string) {
-
         return FeatureModel.findOne({
             code: code.toUpperCase().trim() as FeatureCode,
         });
     }
 
     async findAll(filters: IFeatureFilter = {}) {
-
         const {
             page = 1,
             limit = 10,
@@ -38,9 +35,7 @@ export class FeatureRepository {
         const query: any = {};
 
         if (search) {
-
             query.$or = [
-
                 {
                     name: {
                         $regex: search,
@@ -68,10 +63,8 @@ export class FeatureRepository {
                         $options: "i",
                     },
                 },
-
             ];
         }
-
 
         if (code) {
             query.code = code.toUpperCase().trim();
@@ -99,17 +92,14 @@ export class FeatureRepository {
 
         const skip = (page - 1) * limit;
 
-        const [data, total] =
-            await Promise.all([
+        const [data, total] = await Promise.all([
+            FeatureModel.find(query)
+                .sort({ [sortBy]: sortOrder === "asc" ? 1 : -1 })
+                .skip(skip)
+                .limit(limit),
 
-                FeatureModel.find(query).sort({ [sortBy]: sortOrder === "asc" ? 1 : -1, })
-                    .skip(skip)
-                    .limit(limit),
-
-                FeatureModel.countDocuments(
-                    query
-                ),
-            ]);
+            FeatureModel.countDocuments(query),
+        ]);
 
         return {
             data,
@@ -117,16 +107,12 @@ export class FeatureRepository {
                 page,
                 limit,
                 total,
-                totalPages:
-                    Math.ceil(
-                        total / limit
-                    ),
+                totalPages: Math.ceil(total / limit),
             },
         };
     }
 
     async existsByCode(code: string): Promise<boolean> {
-
         const exists = await FeatureModel.exists({
             code: code.toUpperCase().trim() as FeatureCode,
         });
@@ -135,20 +121,13 @@ export class FeatureRepository {
     }
 
     async updateById(id: string, data: Partial<IFeature>) {
-
-        return FeatureModel.findByIdAndUpdate(
-            id,
-            data,
-            {
-                new: true,
-                runValidators: true,
-            }
-        );
+        return FeatureModel.findByIdAndUpdate(id, data, {
+            new: true,
+            runValidators: true,
+        });
     }
 
     async deleteById(id: string) {
-        return FeatureModel.findByIdAndDelete(
-            id
-        );
+        return FeatureModel.findByIdAndDelete(id);
     }
 }

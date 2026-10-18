@@ -62,8 +62,7 @@ export interface IAuditLogContext {
     requestId?: string | null;
 }
 
-export interface IAuditLogCreateData
-    extends Omit<Partial<IAuditLog>, "actorId"> {
+export interface IAuditLogCreateData extends Omit<Partial<IAuditLog>, "actorId"> {
     actorId?: Types.ObjectId | string | null;
     action: AuditLogAction;
     module: AppModule;
@@ -76,4 +75,4 @@ export interface IAuditLogResource {
     resourceName?: string | null;
 }
 
-export interface IAuditLogDocument extends IAuditLog, Document { }
+export interface IAuditLogDocument extends IAuditLog, Document {}

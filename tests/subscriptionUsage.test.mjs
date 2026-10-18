@@ -21,18 +21,35 @@ import { RoleModel } from "../src/modules/roles/models/role.model.ts";
 import { SubscriptionUsageModel } from "../src/modules/subscriptionusage/models/subscriptionusage.model.ts";
 import { SubscriptionUsageService } from "../src/modules/subscriptionusage/services/subscriptionusage.service.ts";
 import { SubscriptionUsageRepository } from "../src/modules/subscriptionusage/repositories/subscriptionusage.repository.ts";
-import { BillingScopeType, SubscriptionResource } from "../src/modules/subscriptionusage/constants/subscriptionusage.enums.js";
+import {
+    BillingScopeType,
+    SubscriptionResource,
+} from "../src/modules/subscriptionusage/constants/subscriptionusage.enums.js";
 import { WorkspaceStatus } from "../src/modules/workspace/constants/workspace.enums.js";
 import { WorkspaceFolderStatus } from "../src/modules/workspaceFolders/constants/workspaceFolder.enums.js";
-import { StickyNoteStatus, StickyNotePriority, StickyNoteColor, StickyNoteShape, StickyNoteVariant, StickyNoteBackgroundPattern } from "../src/modules/stickynotes/constants/stickyNote.enums.js";
-import { MediaStatus, MediaPurpose, MediaResourceType, MediaType, MediaStorageProvider } from "../src/modules/media/constants/media.enums.js";
+import {
+    StickyNoteStatus,
+    StickyNotePriority,
+    StickyNoteColor,
+    StickyNoteShape,
+    StickyNoteVariant,
+    StickyNoteBackgroundPattern,
+} from "../src/modules/stickynotes/constants/stickyNote.enums.js";
+import {
+    MediaStatus,
+    MediaPurpose,
+    MediaResourceType,
+    MediaType,
+    MediaStorageProvider,
+} from "../src/modules/media/constants/media.enums.js";
 import { WorkspaceMemberStatus } from "../src/modules/workspaceMember/constants/workspaceMember.enums.js";
 import { errorMiddleware } from "../src/middlewares/error/error.middleware.ts";
 
 process.env.JWT_ACCESS_SECRET = "usage-test-secret";
 process.env.JWT_REFRESH_SECRET = "usage-test-refresh-secret";
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
-const { default: routes } = await import("../src/modules/subscriptionusage/routes/subscriptionusage.routes.ts");
+const { default: routes } =
+    await import("../src/modules/subscriptionusage/routes/subscriptionusage.routes.ts");
 
 const service = new SubscriptionUsageService();
 const repository = new SubscriptionUsageRepository();
@@ -94,7 +111,14 @@ async function createNote(workspaceId, status = StickyNoteStatus.ACTIVE, overrid
     });
 }
 
-async function createMedia(uploadedBy, size, status = MediaStatus.ACTIVE, resourceType = null, resourceId = null, overrides = {}) {
+async function createMedia(
+    uploadedBy,
+    size,
+    status = MediaStatus.ACTIVE,
+    resourceType = null,
+    resourceId = null,
+    overrides = {},
+) {
     const mediaId = new Types.ObjectId();
     return MediaModel.create({
         _id: mediaId,
@@ -132,21 +156,34 @@ before(async () => {
     const socket = createServer().listen(0, "127.0.0.1");
     await once(socket, "listening");
     const port = socket.address().port;
-    await new Promise(resolve => socket.close(resolve));
+    await new Promise((resolve) => socket.close(resolve));
 
     directory = await mkdtemp(join(tmpdir(), "usage-test-"));
-    mongo = spawn(process.env.MONGOD_BINARY ?? "mongod", [
-        "--dbpath", directory, "--port", String(port), "--bind_ip", "127.0.0.1",
-        "--logpath", join(directory, "mongo.log"),
-    ], { windowsHide: true, stdio: "ignore" });
+    mongo = spawn(
+        process.env.MONGOD_BINARY ?? "mongod",
+        [
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--logpath",
+            join(directory, "mongo.log"),
+        ],
+        { windowsHide: true, stdio: "ignore" },
+    );
 
     let startupError;
-    mongo.on("error", error => { startupError = error; });
+    mongo.on("error", (error) => {
+        startupError = error;
+    });
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
         try {
             await mongoose.connect("mongodb://127.0.0.1:" + port + "/usage_test", {
-                serverSelectionTimeoutMS: 500, autoIndex: false,
+                serverSelectionTimeoutMS: 500,
+                autoIndex: false,
             });
             break;
         } catch (error) {
@@ -166,38 +203,63 @@ before(async () => {
 
     const permissions = await PermissionModel.create([
         {
-            name: "usage_read", displayName: "Read Usage",
-            code: "SUBSCRIPTION_USAGE_READ", module: "SUBSCRIPTION_USAGE",
-            action: "READ", access: "ANY", isActive: true,
+            name: "usage_read",
+            displayName: "Read Usage",
+            code: "SUBSCRIPTION_USAGE_READ",
+            module: "SUBSCRIPTION_USAGE",
+            action: "READ",
+            access: "ANY",
+            isActive: true,
         },
         {
-            name: "usage_manage", displayName: "Manage Usage",
-            code: "SUBSCRIPTION_USAGE_MANAGE", module: "SUBSCRIPTION_USAGE",
-            action: "MANAGE", access: "ANY", isActive: true,
+            name: "usage_manage",
+            displayName: "Manage Usage",
+            code: "SUBSCRIPTION_USAGE_MANAGE",
+            module: "SUBSCRIPTION_USAGE",
+            action: "MANAGE",
+            access: "ANY",
+            isActive: true,
         },
         {
-            name: "workspace_read", displayName: "Read Workspace",
-            code: "WORKSPACE_READ", module: "WORKSPACE",
-            action: "READ", access: "GENERAL", isActive: true,
+            name: "workspace_read",
+            displayName: "Read Workspace",
+            code: "WORKSPACE_READ",
+            module: "WORKSPACE",
+            action: "READ",
+            access: "GENERAL",
+            isActive: true,
         },
     ]);
 
     const adminRole = await RoleModel.create({
-        name: "usage_admin", displayName: "Usage Admin",
-        code: "USAGE_ADMIN", scope: "GLOBAL", workspaceId: null,
-        isActive: true, permissions: permissions.map(p => p._id),
+        name: "usage_admin",
+        displayName: "Usage Admin",
+        code: "USAGE_ADMIN",
+        scope: "GLOBAL",
+        workspaceId: null,
+        isActive: true,
+        permissions: permissions.map((p) => p._id),
     });
 
     const standardRole = await RoleModel.create({
-        name: "standard_user", displayName: "Standard User",
-        code: "STANDARD_USER", scope: "GLOBAL", workspaceId: null,
-        isActive: true, permissions: [],
+        name: "standard_user",
+        displayName: "Standard User",
+        code: "STANDARD_USER",
+        scope: "GLOBAL",
+        workspaceId: null,
+        isActive: true,
+        permissions: [],
     });
 
     const wsMemberRole = await RoleModel.create({
-        name: "workspace_member", displayName: "Workspace Member",
-        code: "WORKSPACE_MEMBER", scope: "WORKSPACE", workspaceId: null,
-        isSystem: true, isActive: true, permissions: [permissions[2]._id],
+        name: "workspace_member",
+        displayName: "Workspace Member",
+        code: "WORKSPACE_MEMBER",
+        scope: "WORKSPACE",
+        workspaceId: null,
+        isSystem: true,
+        isActive: true,
+        permissions: [permissions[2]._id],
     });
 
     globalRoleId = standardRole._id;
@@ -208,7 +270,7 @@ before(async () => {
     userA = await createUser("userA");
     userB = await createUser("userB");
 
-    mock.method(JwtUtil, "verifyAccessToken", token => ({ sub: token, sessionId: "test" }));
+    mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test" }));
 
     const app = express();
     app.use(express.json());
@@ -221,7 +283,7 @@ before(async () => {
 });
 
 after(async () => {
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) await new Promise((resolve) => server.close(resolve));
     mock.restoreAll();
     await mongoose.disconnect();
     if (mongo?.pid && mongo.exitCode === null) {
@@ -435,10 +497,7 @@ test("16. Counter drift detection detects discrepancies when cached counters div
     await service.recalculateUsage({ type: BillingScopeType.USER, id: u });
 
     // Artificially corrupt cached document to simulate drift
-    await SubscriptionUsageModel.updateOne(
-        { scopeId: new Types.ObjectId(u) },
-        { workspacesUsed: 99 },
-    );
+    await SubscriptionUsageModel.updateOne({ scopeId: new Types.ObjectId(u) }, { workspacesUsed: 99 });
 
     const report = await service.reconcileUsage({ type: BillingScopeType.USER, id: u });
     assert.equal(report.status, "REPAIRED");
@@ -459,23 +518,33 @@ test("17. Concurrent updates with optimistic revision detect conflicts safely", 
 
     const currentRev = usage.revision;
     // Successful update with correct expected revision
-    const success = await repository.upsertUsage(BillingScopeType.USER, u, {
-        workspacesUsed: 2,
-        activeStickyNotesUsed: 2,
-        storageBytesUsed: 200,
-        usersUsed: 1,
-        lastCalculatedAt: new Date(),
-    }, currentRev);
+    const success = await repository.upsertUsage(
+        BillingScopeType.USER,
+        u,
+        {
+            workspacesUsed: 2,
+            activeStickyNotesUsed: 2,
+            storageBytesUsed: 200,
+            usersUsed: 1,
+            lastCalculatedAt: new Date(),
+        },
+        currentRev,
+    );
     assert.equal(success.conflict, false);
 
     // Stale update with old revision detects conflict
-    const stale = await repository.upsertUsage(BillingScopeType.USER, u, {
-        workspacesUsed: 3,
-        activeStickyNotesUsed: 3,
-        storageBytesUsed: 300,
-        usersUsed: 1,
-        lastCalculatedAt: new Date(),
-    }, currentRev);
+    const stale = await repository.upsertUsage(
+        BillingScopeType.USER,
+        u,
+        {
+            workspacesUsed: 3,
+            activeStickyNotesUsed: 3,
+            storageBytesUsed: 300,
+            usersUsed: 1,
+            lastCalculatedAt: new Date(),
+        },
+        currentRev,
+    );
     assert.equal(stale.conflict, true);
 });
 
@@ -532,16 +601,17 @@ test("22. Unique compound index on scopeType and scopeId prevents duplicates", a
     });
 
     await assert.rejects(
-        () => SubscriptionUsageModel.create({
-            scopeType: BillingScopeType.USER,
-            scopeId: u,
-            workspacesUsed: 2,
-            activeStickyNotesUsed: 2,
-            storageBytesUsed: 200,
-            usersUsed: 1,
-            lastCalculatedAt: new Date(),
-            revision: 0,
-        }),
+        () =>
+            SubscriptionUsageModel.create({
+                scopeType: BillingScopeType.USER,
+                scopeId: u,
+                workspacesUsed: 2,
+                activeStickyNotesUsed: 2,
+                storageBytesUsed: 200,
+                usersUsed: 1,
+                lastCalculatedAt: new Date(),
+                revision: 0,
+            }),
         /E11000|duplicate key/,
     );
 });

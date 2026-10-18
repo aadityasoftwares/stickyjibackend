@@ -72,8 +72,9 @@ export const EmailFooter = ({
           ${emailTheme.brand.name}
         </p>
 
-        ${showWebsite
-            ? `
+        ${
+            showWebsite
+                ? `
               <a
                 href="${websiteUrl}"
                 target="_blank"
@@ -88,11 +89,12 @@ export const EmailFooter = ({
                 Visit Sticky Ji
               </a>
             `
-            : ""
+                : ""
         }
 
-        ${showWebsite && showUnsubscribe
-            ? `
+        ${
+            showWebsite && showUnsubscribe
+                ? `
               <span
                 style="
                   color: ${emailTheme.colors.outline};
@@ -102,11 +104,12 @@ export const EmailFooter = ({
                 ·
               </span>
             `
-            : ""
+                : ""
         }
 
-        ${showUnsubscribe
-            ? `
+        ${
+            showUnsubscribe
+                ? `
               <a
                 href="${unsubscribeUrl}"
                 target="_blank"
@@ -121,7 +124,7 @@ export const EmailFooter = ({
                 Unsubscribe
               </a>
             `
-            : ""
+                : ""
         }
 
         <p

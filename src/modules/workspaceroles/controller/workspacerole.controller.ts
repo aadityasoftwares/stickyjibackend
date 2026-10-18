@@ -12,15 +12,15 @@ export class WorkspaceRoleController {
     createRole = async (req: Request, res: Response) => {
         try {
             const role = await this.workspaceRoleService.createRole(req.body);
-            return res
-                .status(201)
-                .json(ResponseUtil.created("Workspace role created successfully", role));
+            return res.status(201).json(ResponseUtil.created("Workspace role created successfully", role));
         } catch (error: any) {
             console.error(error);
             return res
                 .status(400)
                 .json(
-                    ResponseUtil.badRequest(typeof error.message === "string" ? error.message : "Bad request")
+                    ResponseUtil.badRequest(
+                        typeof error.message === "string" ? error.message : "Bad request",
+                    ),
                 );
         }
     };
@@ -35,13 +35,18 @@ export class WorkspaceRoleController {
 
             return res
                 .status(200)
-                .json(ResponseUtil.paginated("Workspace roles fetched successfully", roles, page, limit, total));
+                .json(
+                    ResponseUtil.paginated("Workspace roles fetched successfully", roles, page, limit, total),
+                );
         } catch (error: any) {
             console.error(error);
             return res
                 .status(500)
                 .json(
-                    ResponseUtil.serverError(typeof error.message === "string" ? error.message : "Internal server error", error)
+                    ResponseUtil.serverError(
+                        typeof error.message === "string" ? error.message : "Internal server error",
+                        error,
+                    ),
                 );
         }
     };
@@ -65,7 +70,9 @@ export class WorkspaceRoleController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Role ID is required"));
 
             const updatedRole = await this.workspaceRoleService.updateRole(id, req.body);
-            return res.status(200).json(ResponseUtil.success("Workspace role updated successfully", updatedRole));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace role updated successfully", updatedRole));
         } catch (error: any) {
             console.error(error);
             return res.status(400).json(ResponseUtil.badRequest(error.message || "Bad request"));
@@ -91,7 +98,9 @@ export class WorkspaceRoleController {
             if (!id) return res.status(400).json(ResponseUtil.badRequest("Role ID is required"));
 
             const role = await this.workspaceRoleService.deactivateRole(id);
-            return res.status(200).json(ResponseUtil.success("Workspace role deactivated successfully", role));
+            return res
+                .status(200)
+                .json(ResponseUtil.success("Workspace role deactivated successfully", role));
         } catch (error: any) {
             console.error(error);
             return res.status(404).json(ResponseUtil.notFound(error.message || "Workspace role not found"));

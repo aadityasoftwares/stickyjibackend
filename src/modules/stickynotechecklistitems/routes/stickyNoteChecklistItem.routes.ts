@@ -1,139 +1,96 @@
-import {
-    Router,
-} from "express";
+import { Router } from "express";
 
-import {
-    authMiddleware,
-} from "../../../middlewares/authmiddleware/auth.middleware.js";
+import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
-import {
-    validateContentType,
-} from "../../../utils/validations/validateContentType.js";
+import { validateContentType } from "../../../utils/validations/validateContentType.js";
 
-import {
-    StickyNoteChecklistItemController,
-} from "../controllers/stickyNoteChecklistItem.controller.js";
+import { StickyNoteChecklistItemController } from "../controllers/stickyNoteChecklistItem.controller.js";
 
-import {
-    createStickyNoteChecklistItemValidation,
-} from "../validations/createStickyNoteChecklistItem.validation.js";
+import { createStickyNoteChecklistItemValidation } from "../validations/createStickyNoteChecklistItem.validation.js";
 
-import {
-    getStickyNoteChecklistItemValidation,
-} from "../validations/getStickyNoteChecklistItem.validation.js";
+import { getStickyNoteChecklistItemValidation } from "../validations/getStickyNoteChecklistItem.validation.js";
 
+import { updateStickyNoteChecklistItemValidation } from "../validations/updateStickyNoteChecklistItem.validation.js";
 
-import {
-    updateStickyNoteChecklistItemValidation,
-} from "../validations/updateStickyNoteChecklistItem.validation.js";
-
-import {
-    updateStickyNoteChecklistItemStatusValidation,
-} from "../validations/updateStickyNoteChecklistItemStatus.validation.js";
+import { updateStickyNoteChecklistItemStatusValidation } from "../validations/updateStickyNoteChecklistItemStatus.validation.js";
 import { getStickyNoteChecklistItemsValidation } from "../validations/getStickyNoteChecklistItems.validation.js";
 import { updateStickyNoteChecklistItemCompletionValidation } from "../validations/updateStickyNoteChecklistItemCompletion.validation.js";
 
+const stickyNoteChecklistItemRoutes = Router();
 
-const stickyNoteChecklistItemRoutes =
-    Router();
+const stickyNoteChecklistItemController = new StickyNoteChecklistItemController();
 
-const stickyNoteChecklistItemController =
-    new StickyNoteChecklistItemController();
-
-stickyNoteChecklistItemRoutes.use(
-    authMiddleware,
-);
+stickyNoteChecklistItemRoutes.use(authMiddleware);
 
 stickyNoteChecklistItemRoutes.post(
     "/create",
-    validateContentType(
-        "application/json",
-    ),
+    validateContentType("application/json"),
     createStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .createStickyNoteChecklistItem,
+    stickyNoteChecklistItemController.createStickyNoteChecklistItem,
 );
 
 stickyNoteChecklistItemRoutes.get(
     "/get",
     getStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .getStickyNoteChecklistItemById,
+    stickyNoteChecklistItemController.getStickyNoteChecklistItemById,
 );
 
 stickyNoteChecklistItemRoutes.get(
     "/get/:id",
     getStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .getStickyNoteChecklistItemById,
+    stickyNoteChecklistItemController.getStickyNoteChecklistItemById,
 );
 
 stickyNoteChecklistItemRoutes.post(
     ["/", "/getall"],
-    validateContentType(
-        "application/json",
-    ),
+    validateContentType("application/json"),
     getStickyNoteChecklistItemsValidation,
-    stickyNoteChecklistItemController
-        .getStickyNoteChecklistItems,
+    stickyNoteChecklistItemController.getStickyNoteChecklistItems,
 );
 
 stickyNoteChecklistItemRoutes.get(
     ["/", "/getall"],
     getStickyNoteChecklistItemsValidation,
-    stickyNoteChecklistItemController
-        .getStickyNoteChecklistItems,
+    stickyNoteChecklistItemController.getStickyNoteChecklistItems,
 );
 
 stickyNoteChecklistItemRoutes.put(
     "/update/:id",
-    validateContentType(
-        "application/json",
-    ),
+    validateContentType("application/json"),
     updateStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .updateStickyNoteChecklistItem,
+    stickyNoteChecklistItemController.updateStickyNoteChecklistItem,
 );
 
 stickyNoteChecklistItemRoutes.put(
     "/status/:id",
-    validateContentType(
-        "application/json",
-    ),
+    validateContentType("application/json"),
     updateStickyNoteChecklistItemStatusValidation,
-    stickyNoteChecklistItemController
-        .updateStickyNoteChecklistItemStatus,
+    stickyNoteChecklistItemController.updateStickyNoteChecklistItemStatus,
 );
 
 stickyNoteChecklistItemRoutes.put(
     "/completion/:id",
-    validateContentType(
-        "application/json",
-    ),
+    validateContentType("application/json"),
     updateStickyNoteChecklistItemCompletionValidation,
-    stickyNoteChecklistItemController
-        .updateStickyNoteChecklistItemCompletion,
+    stickyNoteChecklistItemController.updateStickyNoteChecklistItemCompletion,
 );
 
 stickyNoteChecklistItemRoutes.put(
     "/trash/:id",
     getStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .deleteStickyNoteChecklistItem,
+    stickyNoteChecklistItemController.deleteStickyNoteChecklistItem,
 );
 
 stickyNoteChecklistItemRoutes.delete(
     "/delete/:id",
     getStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .deleteStickyNoteChecklistItem,
+    stickyNoteChecklistItemController.deleteStickyNoteChecklistItem,
 );
 
 stickyNoteChecklistItemRoutes.put(
     "/restore/:id",
     getStickyNoteChecklistItemValidation,
-    stickyNoteChecklistItemController
-        .restoreStickyNoteChecklistItem,
+    stickyNoteChecklistItemController.restoreStickyNoteChecklistItem,
 );
 
 export default stickyNoteChecklistItemRoutes;

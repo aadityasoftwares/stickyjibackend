@@ -19,7 +19,10 @@ import { PermissionModel } from "../src/modules/permissions/models/permission.mo
 import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
 import { StickyNoteColumnModel } from "../src/modules/stickynotescolumns/models/stickyNoteColumn.model.ts";
 import { StickyNoteColumnService } from "../src/modules/stickynotescolumns/services/stickyNoteColumn.service.ts";
-import { StickyNoteColumnType, StickyNoteColumnColor } from "../src/modules/stickynotescolumns/constants/stickyNoteColumn.enums.js";
+import {
+    StickyNoteColumnType,
+    StickyNoteColumnColor,
+} from "../src/modules/stickynotescolumns/constants/stickyNoteColumn.enums.js";
 import { StickyNoteColumnMessages } from "../src/modules/stickynotescolumns/constants/stickyNoteColumn.messages.js";
 import { seedPermissions } from "../src/modules/permissions/seeders/permission.seeder.ts";
 import { seedRoles } from "../src/modules/roles/seeders/role.seeder.ts";
@@ -30,13 +33,17 @@ process.env.JWT_ACCESS_SECRET = "column-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "column-test-refresh-secret";
 
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
-const { default: stickyNoteColumnRoutes } = await import("../src/modules/stickynotescolumns/routes/stickyNoteColumn.routes.ts");
+const { default: stickyNoteColumnRoutes } =
+    await import("../src/modules/stickynotescolumns/routes/stickyNoteColumn.routes.ts");
 
 let mongoProcess, directory, server, baseUrl;
 const auditEvents = [];
 
 const users = Object.fromEntries(
-    ["owner", "admin", "editor", "viewer", "stranger", "removed", "inactive"].map((name) => [name, new Types.ObjectId()])
+    ["owner", "admin", "editor", "viewer", "stranger", "removed", "inactive"].map((name) => [
+        name,
+        new Types.ObjectId(),
+    ]),
 );
 const roles = {};
 const permissionIds = {};
@@ -52,17 +59,24 @@ before(async () => {
     mongoProcess = spawn(
         process.env.MONGOD_BINARY ?? "mongod",
         [
-            "--dbpath", directory,
-            "--port", String(port),
-            "--bind_ip", "127.0.0.1",
-            "--replSet", "stickyColumns",
-            "--logpath", join(directory, "mongo.log"),
+            "--dbpath",
+            directory,
+            "--port",
+            String(port),
+            "--bind_ip",
+            "127.0.0.1",
+            "--replSet",
+            "stickyColumns",
+            "--logpath",
+            join(directory, "mongo.log"),
         ],
-        { windowsHide: true, stdio: "ignore" }
+        { windowsHide: true, stdio: "ignore" },
     );
 
     let startupError;
-    mongoProcess.on("error", (error) => { startupError = error; });
+    mongoProcess.on("error", (error) => {
+        startupError = error;
+    });
 
     for (let attempt = 0; ; attempt++) {
         if (startupError) throw startupError;
@@ -98,21 +112,23 @@ before(async () => {
     for (const p of await PermissionModel.find().lean()) permissionIds[p.code] = p._id;
     for (const r of await RoleModel.find().lean()) roles[r.code] = r._id;
 
-    roles.editor = (await RoleModel.create({
-        name: "editor",
-        displayName: "Editor",
-        code: "TEST_EDITOR",
-        scope: "WORKSPACE",
-        isSystem: true,
-        isActive: true,
-        permissions: [
-            permissionIds.WORKSPACE_READ,
-            permissionIds.NOTES_READ,
-            permissionIds.NOTES_CREATE,
-            permissionIds.NOTES_UPDATE_ANY,
-            permissionIds.NOTES_DELETE_ANY,
-        ],
-    }))._id;
+    roles.editor = (
+        await RoleModel.create({
+            name: "editor",
+            displayName: "Editor",
+            code: "TEST_EDITOR",
+            scope: "WORKSPACE",
+            isSystem: true,
+            isActive: true,
+            permissions: [
+                permissionIds.WORKSPACE_READ,
+                permissionIds.NOTES_READ,
+                permissionIds.NOTES_CREATE,
+                permissionIds.NOTES_UPDATE_ANY,
+                permissionIds.NOTES_DELETE_ANY,
+            ],
+        })
+    )._id;
 
     for (const [name, _id] of Object.entries(users)) {
         await UserModel.create({
@@ -227,19 +243,60 @@ test("2. Reject invalid input on column creation", async () => {
     const { ws, folder } = await fixture();
 
     // Missing workspaceId
-    assert.equal((await request("POST", "/create", "owner", { workspaceFolderId: String(folder._id), name: "Test" })).status, 400);
+    assert.equal(
+        (await request("POST", "/create", "owner", { workspaceFolderId: String(folder._id), name: "Test" }))
+            .status,
+        400,
+    );
 
     // Invalid workspaceId
-    assert.equal((await request("POST", "/create", "owner", { workspaceId: "invalid-id", workspaceFolderId: String(folder._id), name: "Test" })).status, 400);
+    assert.equal(
+        (
+            await request("POST", "/create", "owner", {
+                workspaceId: "invalid-id",
+                workspaceFolderId: String(folder._id),
+                name: "Test",
+            })
+        ).status,
+        400,
+    );
 
     // Missing name
-    assert.equal((await request("POST", "/create", "owner", { workspaceId: String(ws._id), workspaceFolderId: String(folder._id) })).status, 400);
+    assert.equal(
+        (
+            await request("POST", "/create", "owner", {
+                workspaceId: String(ws._id),
+                workspaceFolderId: String(folder._id),
+            })
+        ).status,
+        400,
+    );
 
     // Unsupported fields
-    assert.equal((await request("POST", "/create", "owner", { workspaceId: String(ws._id), workspaceFolderId: String(folder._id), name: "Test", isSystem: true })).status, 400);
+    assert.equal(
+        (
+            await request("POST", "/create", "owner", {
+                workspaceId: String(ws._id),
+                workspaceFolderId: String(folder._id),
+                name: "Test",
+                isSystem: true,
+            })
+        ).status,
+        400,
+    );
 
     // Invalid color
-    assert.equal((await request("POST", "/create", "owner", { workspaceId: String(ws._id), workspaceFolderId: String(folder._id), name: "Test", color: "BLACK" })).status, 400);
+    assert.equal(
+        (
+            await request("POST", "/create", "owner", {
+                workspaceId: String(ws._id),
+                workspaceFolderId: String(folder._id),
+                name: "Test",
+                color: "BLACK",
+            })
+        ).status,
+        400,
+    );
 });
 
 test("3 & 5. Reject unauthorized creation and stranger access", async () => {
@@ -284,14 +341,22 @@ test("4. Fetch columns within authorized workspace and single column by id", asy
     assert.equal(postListRes.body.data.length, 3);
 
     // GET /getall with query params
-    const listRes = await request("GET", `/getall?workspaceId=${ws._id}&workspaceFolderId=${folder._id}`, "editor");
+    const listRes = await request(
+        "GET",
+        `/getall?workspaceId=${ws._id}&workspaceFolderId=${folder._id}`,
+        "editor",
+    );
     assert.equal(listRes.status, 200);
     assert.equal(listRes.body.success, true);
     assert.ok(Array.isArray(listRes.body.data));
     assert.equal(listRes.body.data.length, 3);
 
     // GET / with query params (route alias matching workspace)
-    const rootListRes = await request("GET", `/?workspaceId=${ws._id}&workspaceFolderId=${folder._id}`, "editor");
+    const rootListRes = await request(
+        "GET",
+        `/?workspaceId=${ws._id}&workspaceFolderId=${folder._id}`,
+        "editor",
+    );
     assert.equal(rootListRes.status, 200);
     assert.equal(rootListRes.body.data.length, 3);
 
@@ -304,12 +369,15 @@ test("4. Fetch columns within authorized workspace and single column by id", asy
 
 test("6 & 7. Update column successfully and reject unauthorized updates", async () => {
     const { ws, folder } = await fixture();
-    const col = await service.createStickyNoteColumn({
-        workspaceId: String(ws._id),
-        workspaceFolderId: String(folder._id),
-        name: "Initial Name",
-        color: StickyNoteColumnColor.YELLOW,
-    }, String(users.owner));
+    const col = await service.createStickyNoteColumn(
+        {
+            workspaceId: String(ws._id),
+            workspaceFolderId: String(folder._id),
+            name: "Initial Name",
+            color: StickyNoteColumnColor.YELLOW,
+        },
+        String(users.owner),
+    );
 
     // Viewer cannot update
     const viewerRes = await request("PUT", `/update/${col.id}`, "viewer", { name: "Hacked" });
@@ -331,7 +399,11 @@ test("6 & 7. Update column successfully and reject unauthorized updates", async 
 
 test("8 & 9 & 10. Reorder columns, reject duplicates and maintain workspace isolation", async () => {
     const { ws, folder } = await fixture();
-    const defaults = await service.createDefaultColumns(String(ws._id), String(folder._id), String(users.owner));
+    const defaults = await service.createDefaultColumns(
+        String(ws._id),
+        String(folder._id),
+        String(users.owner),
+    );
     const ids = defaults.map((c) => c.id);
 
     // Reverse order
@@ -371,7 +443,11 @@ test("8 & 9 & 10. Reorder columns, reject duplicates and maintain workspace isol
 
 test("11 & 12. Delete column moves sticky notes to default To do column and system columns cannot be deleted", async () => {
     const { ws, folder } = await fixture();
-    const defaults = await service.createDefaultColumns(String(ws._id), String(folder._id), String(users.owner));
+    const defaults = await service.createDefaultColumns(
+        String(ws._id),
+        String(folder._id),
+        String(users.owner),
+    );
     const todoCol = defaults.find((c) => c.type === StickyNoteColumnType.TODO);
 
     // Reject deletion of system column
@@ -380,11 +456,14 @@ test("11 & 12. Delete column moves sticky notes to default To do column and syst
     assert.equal(sysDelRes.body.message, StickyNoteColumnMessages.CANNOT_DELETE_SYSTEM_COLUMN);
 
     // Create custom column and attach sticky note
-    const customCol = await service.createStickyNoteColumn({
-        workspaceId: String(ws._id),
-        workspaceFolderId: String(folder._id),
-        name: "Sprint Backlog",
-    }, String(users.owner));
+    const customCol = await service.createStickyNoteColumn(
+        {
+            workspaceId: String(ws._id),
+            workspaceFolderId: String(folder._id),
+            name: "Sprint Backlog",
+        },
+        String(users.owner),
+    );
 
     const note = await StickyNoteModel.create({
         workspaceId: ws._id,
@@ -437,17 +516,26 @@ test("14 & 15. Verify audit behavior on mutations", async () => {
     // Ensure default columns exist before deleting
     await service.createDefaultColumns(String(ws._id), String(folder._id), String(users.owner));
 
-    const created = await service.createStickyNoteColumn({
-        workspaceId: String(ws._id),
-        workspaceFolderId: String(folder._id),
-        name: "Audit Test Column",
-    }, String(users.owner), { actorId: String(users.owner) });
+    const created = await service.createStickyNoteColumn(
+        {
+            workspaceId: String(ws._id),
+            workspaceFolderId: String(folder._id),
+            name: "Audit Test Column",
+        },
+        String(users.owner),
+        { actorId: String(users.owner) },
+    );
 
     assert.ok(auditEvents.some((e) => e.action === "CREATE" && e.res.resourceId === created.id));
 
-    await service.updateStickyNoteColumn(created.id, {
-        name: "Renamed Audit Column",
-    }, String(users.owner), { actorId: String(users.owner) });
+    await service.updateStickyNoteColumn(
+        created.id,
+        {
+            name: "Renamed Audit Column",
+        },
+        String(users.owner),
+        { actorId: String(users.owner) },
+    );
 
     assert.ok(auditEvents.some((e) => e.action === "UPDATE" && e.res.resourceId === created.id));
 

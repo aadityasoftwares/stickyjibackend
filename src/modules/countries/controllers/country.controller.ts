@@ -1,11 +1,10 @@
-import type { Request, Response, NextFunction, } from "express";
-import { CountryService, } from "../services/country.service.js";
-import { CountryMessages, } from "../constants/country.messages.js";
+import type { Request, Response, NextFunction } from "express";
+import { CountryService } from "../services/country.service.js";
+import { CountryMessages } from "../constants/country.messages.js";
 import { ResponseUtil } from "../../../utils/response.util.js";
-import { RequestUtil, } from "../../../utils/request.util.js";
+import { RequestUtil } from "../../../utils/request.util.js";
 
 export class CountryController {
-
     private countryService: CountryService;
 
     constructor() {
@@ -23,13 +22,8 @@ export class CountryController {
 
     getCountryById = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const country = await this.countryService.getCountryById(RequestUtil.getParam(req.params.id))
-            return res.status(200).json(
-                ResponseUtil.success(
-                    CountryMessages.FETCHED,
-                    country
-                )
-            );
+            const country = await this.countryService.getCountryById(RequestUtil.getParam(req.params.id));
+            return res.status(200).json(ResponseUtil.success(CountryMessages.FETCHED, country));
         } catch (error) {
             next(error);
         }
@@ -37,23 +31,15 @@ export class CountryController {
 
     getCountryByCode = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const country = await this.countryService.getCountryByCode(
-                RequestUtil.getParam(
-                    req.params.code
-                ));
+            const country = await this.countryService.getCountryByCode(RequestUtil.getParam(req.params.code));
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    CountryMessages.FETCHED,
-                    country
-                ));
+            return res.status(200).json(ResponseUtil.success(CountryMessages.FETCHED, country));
         } catch (error) {
             next(error);
         }
     };
 
     getCountries = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
             const countries = await this.countryService.getCountries({
                 page: Number(req.query.page) || 1,
@@ -70,86 +56,58 @@ export class CountryController {
                 isSystem: req.query.isSystem !== undefined ? req.query.isSystem === "true" : undefined,
                 isActive: req.query.isActive !== undefined ? req.query.isActive === "true" : undefined,
                 sortBy: req.query.sortBy as string,
-                sortOrder: req.query.sortOrder as | "asc" | "desc",
+                sortOrder: req.query.sortOrder as "asc" | "desc",
             });
 
-
-            return res.status(200).json(
-                ResponseUtil.paginated(
-                    CountryMessages.FETCHED_ALL,
-                    countries.data,
-                    countries.pagination.page,
-                    countries.pagination.limit,
-                    countries.pagination.total
-                )
-            );
-
+            return res
+                .status(200)
+                .json(
+                    ResponseUtil.paginated(
+                        CountryMessages.FETCHED_ALL,
+                        countries.data,
+                        countries.pagination.page,
+                        countries.pagination.limit,
+                        countries.pagination.total,
+                    ),
+                );
         } catch (error) {
             next(error);
         }
     };
 
-
     updateCountry = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
-            const country = await this.countryService.updateCountry(RequestUtil.getParam(req.params.id), req.body);
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    CountryMessages.UPDATED,
-                    country
-                )
+            const country = await this.countryService.updateCountry(
+                RequestUtil.getParam(req.params.id),
+                req.body,
             );
 
+            return res.status(200).json(ResponseUtil.success(CountryMessages.UPDATED, country));
         } catch (error) {
             next(error);
         }
     };
 
     deleteCountry = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-            await this.countryService.deleteCountry(
-                RequestUtil.getParam(
-                    req.params.id
-                )
-            );
+            await this.countryService.deleteCountry(RequestUtil.getParam(req.params.id));
 
-            return res.status(200).json(
-                ResponseUtil.success(
-                    CountryMessages.DELETED
-                )
-            );
-
+            return res.status(200).json(ResponseUtil.success(CountryMessages.DELETED));
         } catch (error) {
             next(error);
         }
     };
 
     changeCountryStatus = async (req: Request, res: Response, next: NextFunction) => {
-
         try {
-
             const country = await this.countryService.changeCountryStatus(
-                RequestUtil.getParam(
-                    req.params.id
-                ),
-                req.body.isActive
-            )
-
-
-            return res.status(200).json(
-                ResponseUtil.success(
-                    CountryMessages.UPDATED,
-                    country
-                )
+                RequestUtil.getParam(req.params.id),
+                req.body.isActive,
             );
 
+            return res.status(200).json(ResponseUtil.success(CountryMessages.UPDATED, country));
         } catch (error) {
             next(error);
         }
     };
-
 }

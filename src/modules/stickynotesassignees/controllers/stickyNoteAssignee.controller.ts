@@ -23,11 +23,7 @@ export class StickyNoteAssigneeController {
         };
     }
 
-    createStickyNoteAssignee = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    createStickyNoteAssignee = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
             const assignee = await this.stickyNoteAssigneeService.createStickyNoteAssignee(
@@ -36,24 +32,13 @@ export class StickyNoteAssigneeController {
                 this.getAuditContext(req),
             );
 
-            return res
-                .status(201)
-                .json(
-                    ResponseUtil.created(
-                        StickyNoteAssigneeMessages.CREATED,
-                        assignee,
-                    ),
-                );
+            return res.status(201).json(ResponseUtil.created(StickyNoteAssigneeMessages.CREATED, assignee));
         } catch (error) {
             return next(error);
         }
     };
 
-    getStickyNoteAssigneeById = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    getStickyNoteAssigneeById = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
             const assignee = await this.stickyNoteAssigneeService.getStickyNoteAssigneeById(
@@ -61,28 +46,16 @@ export class StickyNoteAssigneeController {
                 userId,
             );
 
-            return res
-                .status(200)
-                .json(
-                    ResponseUtil.success(
-                        StickyNoteAssigneeMessages.FETCHED,
-                        assignee,
-                    ),
-                );
+            return res.status(200).json(ResponseUtil.success(StickyNoteAssigneeMessages.FETCHED, assignee));
         } catch (error) {
             return next(error);
         }
     };
 
-    getAssigneesByStickyNoteId = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    getAssigneesByStickyNoteId = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
-            const stickyNoteId =
-                req.params.stickyNoteId ?? req.params.id;
+            const stickyNoteId = req.params.stickyNoteId ?? req.params.id;
 
             const assignees = await this.stickyNoteAssigneeService.getAssigneesByStickyNoteId(
                 RequestUtil.getParam(stickyNoteId),
@@ -91,22 +64,13 @@ export class StickyNoteAssigneeController {
 
             return res
                 .status(200)
-                .json(
-                    ResponseUtil.success(
-                        StickyNoteAssigneeMessages.FETCHED_ALL,
-                        assignees,
-                    ),
-                );
+                .json(ResponseUtil.success(StickyNoteAssigneeMessages.FETCHED_ALL, assignees));
         } catch (error) {
             return next(error);
         }
     };
 
-    getStickyNoteAssignees = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    getStickyNoteAssignees = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
             const source = (req.method === "POST" ? req.body : req.query) ?? {};
@@ -141,15 +105,10 @@ export class StickyNoteAssigneeController {
         }
     };
 
-    syncStickyNoteAssignees = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    syncStickyNoteAssignees = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
-            const stickyNoteId =
-                req.params.stickyNoteId ?? req.params.id;
+            const stickyNoteId = req.params.stickyNoteId ?? req.params.id;
 
             const assignees = await this.stickyNoteAssigneeService.syncStickyNoteAssignees(
                 RequestUtil.getParam(stickyNoteId),
@@ -158,24 +117,13 @@ export class StickyNoteAssigneeController {
                 this.getAuditContext(req),
             );
 
-            return res
-                .status(200)
-                .json(
-                    ResponseUtil.success(
-                        StickyNoteAssigneeMessages.SYNCED,
-                        assignees,
-                    ),
-                );
+            return res.status(200).json(ResponseUtil.success(StickyNoteAssigneeMessages.SYNCED, assignees));
         } catch (error) {
             return next(error);
         }
     };
 
-    removeStickyNoteAssignee = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    removeStickyNoteAssignee = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
             const assignee = await this.stickyNoteAssigneeService.removeStickyNoteAssignee(
@@ -184,24 +132,13 @@ export class StickyNoteAssigneeController {
                 this.getAuditContext(req),
             );
 
-            return res
-                .status(200)
-                .json(
-                    ResponseUtil.success(
-                        StickyNoteAssigneeMessages.REMOVED,
-                        assignee,
-                    ),
-                );
+            return res.status(200).json(ResponseUtil.success(StickyNoteAssigneeMessages.REMOVED, assignee));
         } catch (error) {
             return next(error);
         }
     };
 
-    restoreStickyNoteAssignee = async (
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ) => {
+    restoreStickyNoteAssignee = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
             const assignee = await this.stickyNoteAssigneeService.restoreStickyNoteAssignee(
@@ -210,14 +147,7 @@ export class StickyNoteAssigneeController {
                 this.getAuditContext(req),
             );
 
-            return res
-                .status(200)
-                .json(
-                    ResponseUtil.success(
-                        StickyNoteAssigneeMessages.RESTORED,
-                        assignee,
-                    ),
-                );
+            return res.status(200).json(ResponseUtil.success(StickyNoteAssigneeMessages.RESTORED, assignee));
         } catch (error) {
             return next(error);
         }

@@ -1,7 +1,11 @@
-import mongoose, { Schema, Model, } from "mongoose";
-import type { ICurrencyDocument, } from "../interfaces/currency.interface.js";
-import { CurrencyCode, CurrencyType, } from "../constants/currency.enums.js";
-import { DEFAULT_CURRENCY_STATUS, DEFAULT_CURRENCY_SYSTEM, DEFAULT_CURRENCY_TYPE, } from "../constants/currency.constants.js";
+import mongoose, { Schema, Model } from "mongoose";
+import type { ICurrencyDocument } from "../interfaces/currency.interface.js";
+import { CurrencyCode, CurrencyType } from "../constants/currency.enums.js";
+import {
+    DEFAULT_CURRENCY_STATUS,
+    DEFAULT_CURRENCY_SYSTEM,
+    DEFAULT_CURRENCY_TYPE,
+} from "../constants/currency.constants.js";
 
 const CurrencySchema = new Schema<ICurrencyDocument>(
     {
@@ -76,18 +80,12 @@ const CurrencySchema = new Schema<ICurrencyDocument>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
-CurrencySchema.index(
-    { code: 1 },
-    { unique: true }
-);
+CurrencySchema.index({ code: 1 }, { unique: true });
 
-CurrencySchema.index(
-    { numericCode: 1 },
-    { unique: true }
-);
+CurrencySchema.index({ numericCode: 1 }, { unique: true });
 
 CurrencySchema.index({
     name: 1,
@@ -122,9 +120,7 @@ CurrencySchema.index({
     isDefault: 1,
 });
 
-export const CurrencyModel:
-    Model<ICurrencyDocument> =
-    mongoose.model<ICurrencyDocument>(
-        "Currency",
-        CurrencySchema
-    );
+export const CurrencyModel: Model<ICurrencyDocument> = mongoose.model<ICurrencyDocument>(
+    "Currency",
+    CurrencySchema,
+);
