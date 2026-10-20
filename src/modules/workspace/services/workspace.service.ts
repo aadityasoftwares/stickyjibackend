@@ -1,5 +1,10 @@
 import { workspaceListSchema, type WorkspaceListFilters } from "../validations/workspaceList.schema.js";
-import type { WorkspaceListRecord, IWorkspacePagination } from "../interfaces/workspace.interface.js";
+import type { WorkspaceDropdownFilters } from "../validations/workspaceDropdown.schema.js";
+import type {
+    WorkspaceListRecord,
+    IWorkspacePagination,
+    IWorkspaceDropdownItem,
+} from "../interfaces/workspace.interface.js";
 import { Types } from "mongoose";
 import type {
     IWorkspaceCreate,
@@ -216,6 +221,72 @@ export class WorkspaceService {
 
     async getMyWorkspaces(userId: string, filters: IWorkspaceFilter = {}) {
         return this.getAccessibleWorkspaces(userId, filters);
+    }
+
+    async getWorkspaceDropdown(
+        userId: string,
+        filters: WorkspaceDropdownFilters = {},
+    ): Promise<IWorkspaceDropdownItem[]> {
+        const authenticatedUserId = this.getUserObjectId(userId).toString();
+        const workspaces = await this.workspaceRepository.findDropdownWorkspaces(authenticatedUserId);
+
+        if (!workspaces.length) {
+            return [];
+        }
+
+        const workspaceIds = workspaces.map((w) => w._id.toString());
+        const folderSummaryMap =
+            await this.workspaceFolderRepository.getActiveFolderSummariesByWorkspaceIds(workspaceIds);
+
+        const searchRegex = filters.search
+            ? new RegExp(filters.search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i")
+            : null;
+
+        const result: IWorkspaceDropdownItem[] = [];
+
+        for (const workspace of workspaces) {
+            const workspaceId = workspace._id.toString();
+            const folders = folderSummaryMap.get(workspaceId) ?? [];
+
+            // "workspace and its folders give only that have atleast one folder"
+            if (!folders.length) {
+                continue;
+            }
+
+            if (searchRegex) {
+                const workspaceMatches = searchRegex.test(workspace.name);
+                const matchingFolders = folders.filter((f) => searchRegex.test(f.name));
+
+                if (!workspaceMatches && matchingFolders.length === 0) {
+                    continue;
+                }
+
+                const foldersToInclude = workspaceMatches ? folders : matchingFolders;
+                if (!foldersToInclude.length) {
+                    continue;
+                }
+
+                result.push({
+                    id: workspaceId,
+                    name: workspace.name,
+                    folders: foldersToInclude.map((f) => ({
+                        id: f.id,
+                        name: f.name,
+                    })),
+                });
+            } else {
+                result.push({
+                    id: workspaceId,
+                    name: workspace.name,
+                    folders: folders.map((f) => ({
+                        id: f.id,
+                        name: f.name,
+                    })),
+                });
+            }
+        }
+
+        return result;
     }
 
     private async getAccessibleWorkspaces(userId: string, filters: IWorkspaceFilter = {}) {

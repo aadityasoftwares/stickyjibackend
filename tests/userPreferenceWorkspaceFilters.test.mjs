@@ -355,11 +355,9 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
         await import("../src/modules/userpreference/validations/userPreference.validation.ts");
 
     // Allowed values
-    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.TODAY_VIEW], ["KANBAN", "TABLE"]);
-    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW], [
-        "KANBAN",
-        "TABLE",
-    ]);
+    const expectedViews = ["NOTES", "KANBAN", "TABLE", "GRID"];
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.TODAY_VIEW], expectedViews);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW], expectedViews);
 
     // Default values
     assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.TODAY_VIEW].defaultValue, "KANBAN");
@@ -370,7 +368,10 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
     assert.equal(UserPreferenceValidation.isValidKey("todayview"), true);
     assert.equal(UserPreferenceValidation.isValidKey("today_view"), true);
     assert.equal(UserPreferenceValidation.isValidKey("todaystickynoteview"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("todaynoteview"), true);
     assert.equal(UserPreferenceValidation.isValidKey("stickyNoteView"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("stickynoteview"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("sticky_note_view"), true);
 
     // Canonical keys
     assert.equal(UserPreferenceValidation.getCanonicalKey("todayView"), USER_PREFERENCE_KEYS.TODAY_VIEW);
@@ -380,17 +381,28 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
         UserPreferenceValidation.getCanonicalKey("todaystickynoteview"),
         USER_PREFERENCE_KEYS.TODAY_VIEW,
     );
+    assert.equal(UserPreferenceValidation.getCanonicalKey("todaynoteview"), USER_PREFERENCE_KEYS.TODAY_VIEW);
     assert.equal(
         UserPreferenceValidation.getCanonicalKey("stickynoteview"),
         USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW,
     );
+    assert.equal(
+        UserPreferenceValidation.getCanonicalKey("sticky_note_view"),
+        USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW,
+    );
 
     // Value normalization to uppercase
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "notes"), "NOTES");
     assert.equal(
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "kanban"),
         "KANBAN",
     );
     assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "table"), "TABLE");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "grid"), "GRID");
+    assert.equal(
+        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW, "notes"),
+        "NOTES",
+    );
     assert.equal(
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW, "kanban"),
         "KANBAN",
@@ -399,8 +411,16 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
         UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW, "table"),
         "TABLE",
     );
+    assert.equal(
+        UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW, "grid"),
+        "GRID",
+    );
 
     // Domain validation
+    assert.equal(
+        UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "NOTES"),
+        null,
+    );
     assert.equal(
         UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "KANBAN"),
         null,
@@ -409,6 +429,7 @@ test("today view and sticky note view preference keys, defaults, aliases, allowe
         UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "TABLE"),
         null,
     );
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "GRID"), null);
     assert.notEqual(
         UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.TODAY_VIEW, "INVALID_VIEW"),
         null,

@@ -1,4 +1,5 @@
 import type { WorkspaceListFilters } from "../validations/workspaceList.schema.js";
+import type { WorkspaceDropdownFilters } from "../validations/workspaceDropdown.schema.js";
 import type { Request, Response, NextFunction } from "express";
 import { WorkspaceService } from "../services/workspace.service.js";
 import { WorkspaceMessages } from "../constants/workspace.messages.js";
@@ -91,6 +92,19 @@ export class WorkspaceController {
                         workspaces.pagination.total,
                     ),
                 );
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getWorkspaceDropdown = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const dropdown = await this.workspaceService.getWorkspaceDropdown(
+                req.user?.id as string,
+                req.body as WorkspaceDropdownFilters,
+            );
+
+            return res.status(200).json(ResponseUtil.success(WorkspaceMessages.FETCHED_ALL, dropdown));
         } catch (error) {
             next(error);
         }

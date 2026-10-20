@@ -24,6 +24,7 @@ preferenceKeyMap.set("today_view", USER_PREFERENCE_KEYS.TODAY_VIEW);
 preferenceKeyMap.set("todaystickynoteview", USER_PREFERENCE_KEYS.TODAY_VIEW);
 preferenceKeyMap.set("todaynoteview", USER_PREFERENCE_KEYS.TODAY_VIEW);
 preferenceKeyMap.set("stickynoteview", USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW);
+preferenceKeyMap.set("sticky_note_view", USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW);
 preferenceKeyMap.set("overdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("overdue_view", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("todayoverdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);

@@ -10,6 +10,7 @@ import { getWorkspacesValidation } from "../validations/getWorkspaces.validation
 import { updateWorkspaceValidation } from "../validations/updateWorkspace.validation.js";
 import { updateWorkspaceStatusValidation } from "../validations/updateWorkspaceStatus.validation.js";
 import { getAllWorkspacesValidation } from "../validations/getAllWorkspaces.validation.js";
+import { getWorkspaceDropdownValidation } from "../validations/getWorkspaceDropdown.validation.js";
 
 const workspaceRoutes = Router();
 const workspaceController = new WorkspaceController();
@@ -57,6 +58,18 @@ workspaceRoutes.post(
 workspaceRoutes.get(["/", "/getall"], getAllWorkspacesValidation, workspaceController.getWorkspaces);
 
 workspaceRoutes.get("/my", getWorkspacesValidation, workspaceController.getMyWorkspaces);
+
+workspaceRoutes.get(
+    ["/dropdown", "/folders-dropdown", "/dropdown/folders"],
+    getWorkspaceDropdownValidation,
+    workspaceController.getWorkspaceDropdown,
+);
+workspaceRoutes.post(
+    ["/dropdown", "/folders-dropdown", "/dropdown/folders"],
+    validateContentType("application/json"),
+    getWorkspaceDropdownValidation,
+    workspaceController.getWorkspaceDropdown,
+);
 
 workspaceRoutes.put(
     "/update/:id",

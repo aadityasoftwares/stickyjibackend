@@ -75,6 +75,8 @@ export enum StickyNoteOverdueSort {
 }
 
 export enum StickyNoteView {
+    NOTES = "NOTES",
     KANBAN = "KANBAN",
     TABLE = "TABLE",
+    GRID = "GRID",
 }

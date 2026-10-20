@@ -375,7 +375,17 @@ export const USER_PREFERENCE_ALLOWED_VALUES: Partial<
         "OLDEST_FIRST",
     ],
     [USER_PREFERENCE_KEYS.WORKSPACE_ROLE_VIEW]: ["GRID", "LIST"],
-    [USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW]: [StickyNoteView.KANBAN, StickyNoteView.TABLE],
-    [USER_PREFERENCE_KEYS.TODAY_VIEW]: [StickyNoteView.KANBAN, StickyNoteView.TABLE],
+    [USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW]: [
+        StickyNoteView.NOTES,
+        StickyNoteView.KANBAN,
+        StickyNoteView.TABLE,
+        StickyNoteView.GRID,
+    ],
+    [USER_PREFERENCE_KEYS.TODAY_VIEW]: [
+        StickyNoteView.NOTES,
+        StickyNoteView.KANBAN,
+        StickyNoteView.TABLE,
+        StickyNoteView.GRID,
+    ],
     [USER_PREFERENCE_KEYS.OVERDUE_VIEW]: ["BAR", "BUTTON"],
 } as const;

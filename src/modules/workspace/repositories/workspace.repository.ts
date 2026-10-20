@@ -359,6 +359,33 @@ export class WorkspaceRepository {
         };
     }
 
+    async findDropdownWorkspaces(userId: string): Promise<Array<{ _id: Types.ObjectId; name: string }>> {
+        const userObjectId = new Types.ObjectId(userId);
+        const memberships = await this.findReadableMemberships(userId);
+        const memberWorkspaceIds = memberships.map((m) => m.workspaceId);
+
+        const query: QueryFilter<IWorkspace> = {
+            status: WorkspaceStatus.ACTIVE,
+            $or: [
+                { ownerId: userObjectId },
+                ...(memberWorkspaceIds.length
+                    ? [
+                          {
+                              _id: { $in: memberWorkspaceIds },
+                              isPersonal: { $ne: true },
+                          },
+                      ]
+                    : []),
+            ],
+        };
+
+        return WorkspaceModel.find(query)
+            .select({ _id: 1, name: 1 })
+            .sort({ isPersonal: -1, name: 1, _id: 1 })
+            .lean()
+            .exec();
+    }
+
     // Same owner/creator/active-member access rule used by Sticky Note assignees and favorites.
     async findAccessibleIds(
         userId: string,

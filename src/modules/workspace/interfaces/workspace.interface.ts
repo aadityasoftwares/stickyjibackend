@@ -120,3 +120,14 @@ export interface IWorkspacePaginatedResult {
     data: IWorkspaceResponse[];
     pagination: IWorkspacePagination;
 }
+
+export interface IWorkspaceDropdownFolder {
+    id: string;
+    name: string;
+}
+
+export interface IWorkspaceDropdownItem {
+    id: string;
+    name: string;
+    folders: IWorkspaceDropdownFolder[];
+}
