@@ -21,6 +21,8 @@ subscriptionEntitlementRoutes.post(
     controller.checkResourceAvailability,
 );
 
+subscriptionEntitlementRoutes.get("/workspace/:workspaceId", controller.getWorkspaceEntitlements);
+
 subscriptionEntitlementRoutes.get(
     "/workspace/:workspaceId/folders",
     controller.getWorkspaceFolderEntitlements,

@@ -38,6 +38,8 @@ temp/
 # Local uploads and generated files
 uploads/
 storage/
+!src/modules/media/storage/
+!src/modules/media/storage/*.ts
 *.local
 
 # OS generated files

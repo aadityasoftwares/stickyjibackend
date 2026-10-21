@@ -10,7 +10,7 @@ import { WorkspaceFolderRepository } from "../../workspaceFolders/repositories/w
 import { WorkspaceFolderService } from "../../workspaceFolders/services/workspaceFolder.service.js";
 import { StickyNoteColumnService } from "../../stickynotescolumns/services/stickyNoteColumn.service.js";
 import { StickyNoteColumnType } from "../../stickynotescolumns/constants/stickyNoteColumn.enums.js";
-import { StickyNoteRepository } from "../../stickynotes/repositories/stickyNote.repository.js";
+import { StickyNoteRepository } from "../../stickynotes/repositories/stickynote.repository.js";
 import { StickyNoteColor, StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 
 export class UserWorkspaceProvisioningService {

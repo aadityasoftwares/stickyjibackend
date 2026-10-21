@@ -59,7 +59,7 @@ export class AuditLogRepository {
         if (actorId) query.actorId = actorId;
         if (resourceType) query.resourceType = resourceType;
         if (resourceId) query.resourceId = resourceId;
-        if (workspaceId) query.workspaceId = workspaceId;
+        if (workspaceId) query["metadata.workspaceId"] = workspaceId;
 
         if (startDate || endDate) {
             query.createdAt = {};

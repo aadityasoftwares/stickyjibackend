@@ -19,8 +19,8 @@ import type {
     IStickyNoteOverdueFilter,
     IStickyNoteOverdueRecord,
     IStickyNoteOverdueColumnCount,
-} from "../interfaces/stickyNote.interface.js";
-import { StickyNoteModel } from "../models/stickyNote.model.js";
+} from "../interfaces/stickynote.interface.js";
+import { StickyNoteModel } from "../models/stickynote.model.js";
 import { RankUtil } from "../../../utils/rank.util.js";
 import { StickyNoteChecklistModel } from "../../stickyNoteschecklist/models/stickyNoteChecklist.model.js";
 import { StickyNoteChecklistItemModel } from "../../stickynotechecklistitems/models/stickyNoteChecklistItem.model.js";

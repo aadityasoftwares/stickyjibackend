@@ -25,6 +25,20 @@ export class SubscriptionEntitlementController {
         return this.getMyEntitlements(req, res, next);
     };
 
+    getWorkspaceEntitlements = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            const data = await this.service.getWorkspaceEntitlements(
+                RequestUtil.getUserId(req),
+                RequestUtil.getParam(req.params.workspaceId),
+            );
+            res.status(200).json(
+                ResponseUtil.success(SubscriptionEntitlementMessages.FETCHED_SUCCESSFULLY, data),
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
+
     checkResourceAvailability = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         try {
             const userId = RequestUtil.getUserId(req);

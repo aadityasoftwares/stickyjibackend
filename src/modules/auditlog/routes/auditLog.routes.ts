@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 import { AuditLogController } from "../controllers/auditLog.controller.js";
 import { getAuditLogValidation } from "../validations/getAuditLog.validation.js";
 import { getAuditLogsValidation } from "../validations/getAuditLogs.validation.js";
@@ -6,6 +7,7 @@ import { requireRouteParam } from "../../../utils/validations/validateParam.vali
 
 const auditLogRoutes = Router();
 const auditLogController = new AuditLogController();
+auditLogRoutes.use(authMiddleware);
 
 auditLogRoutes.get("/getall", getAuditLogsValidation, auditLogController.getAll);
 

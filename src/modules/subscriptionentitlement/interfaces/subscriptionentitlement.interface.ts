@@ -18,10 +18,12 @@ export interface IEntitlementDecision {
 }
 
 export interface IResourceEntitlementSummary {
-    limit: number;
+    limit: number | null;
     used?: number;
-    remaining?: number;
+    remaining?: number | null;
     isUnlimited?: boolean;
+    isEnabled?: boolean;
+    overLimit?: boolean;
 }
 
 export interface IPlanEntitlementSummary {
@@ -29,6 +31,7 @@ export interface IPlanEntitlementSummary {
     planName: string;
     accessState: string;
     resources: Record<string, IResourceEntitlementSummary>;
+    features: Record<string, boolean>;
     subscriptionId?: string | null;
     currentPeriodEnd?: Date | null;
     cancelAtPeriodEnd?: boolean;

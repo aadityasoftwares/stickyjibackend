@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { isWorkspaceTrashed } from "../../workspace/constants/workspace.enums.js";
 import mongoose, { Types } from "mongoose";
 import { StickyNoteColumnColor, StickyNoteColumnType } from "../constants/stickyNoteColumn.enums.js";
@@ -16,7 +18,7 @@ import type {
 } from "../interfaces/stickyNoteColumn.interface.js";
 import { StickyNoteColumnValidation } from "../validations/stickyNoteColumn.validation.js";
 import { StickyNoteColumnRepository } from "../repositories/stickyNoteColumn.repository.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceFolderModel } from "../../workspaceFolders/models/workspaceFolder.model.js";
 import { WorkspaceFolderStatus } from "../../workspaceFolders/constants/workspaceFolder.enums.js";
@@ -58,6 +60,7 @@ export class StickyNoteColumnService {
 
         await this.authorizeWorkspace(workspaceId, createdBy, PermissionAction.CREATE, authorization);
         await this.assertHierarchyAvailable(workspaceId, workspaceFolderId);
+        await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.KANBAN);
 
         const [columnCount, highestPosition, highestRank] = await Promise.all([
             this.stickyNoteColumnRepository.countByWorkspaceFolder(workspaceId, workspaceFolderId),
@@ -520,6 +523,12 @@ export class StickyNoteColumnService {
             allowInactive,
         );
         permissionAuthorizationService.assertPermission(auth, PermissionModule.NOTES, action);
+        if (
+            (Array.isArray(action) ? action : [action]).some(
+                (value) => value !== PermissionAction.READ && value !== PermissionAction.DELETE,
+            )
+        )
+            await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.KANBAN);
         return auth;
     }
 

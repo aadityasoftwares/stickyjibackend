@@ -1,3 +1,4 @@
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { workspaceListSchema, type WorkspaceListFilters } from "../validations/workspaceList.schema.js";
 import type { WorkspaceDropdownFilters } from "../validations/workspaceDropdown.schema.js";
 import type {
@@ -649,7 +650,11 @@ export class WorkspaceService {
             updatedBy,
             id,
         );
+        let notesReservation: Awaited<
+            ReturnType<SubscriptionEntitlementService["reserveWorkspaceRestoredNotes"]>
+        > = null;
         try {
+            notesReservation = await this.subscriptionEntitlementService.reserveWorkspaceRestoredNotes(id);
             const previousState = this.workspaceSnapshot(workspace);
             const restoredWorkspace = await this.workspaceRepository.restore(id, updatedByObjectId);
 
@@ -673,9 +678,15 @@ export class WorkspaceService {
             }
 
             await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
+            if (notesReservation) {
+                await this.subscriptionEntitlementService.commitReservation(notesReservation.reservationId);
+            }
             return this.toWorkspaceResponse(restoredWorkspace, updatedBy);
         } catch (error) {
             await this.subscriptionEntitlementService.releaseReservation(reservation.reservationId);
+            if (notesReservation) {
+                await this.subscriptionEntitlementService.releaseReservation(notesReservation.reservationId);
+            }
             throw error;
         }
     }
@@ -755,6 +766,12 @@ export class WorkspaceService {
             allowInactive,
         );
         permissionAuthorizationService.assertWorkspaceAccess(auth, action);
+        if (
+            (Array.isArray(action) ? action : [action]).some(
+                (value) => value === PermissionAction.UPDATE || value === PermissionAction.CREATE,
+            )
+        )
+            await this.subscriptionEntitlementService.assertWorkspaceFeature(id, FeatureCode.WORKSPACES);
         return auth;
     }
 

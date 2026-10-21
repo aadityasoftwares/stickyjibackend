@@ -1,3 +1,4 @@
+import { seedProductSubscriptionFixtures } from "./helpers/subscriptionFixtures.mjs";
 import assert from "node:assert/strict";
 import { after, before, test, mock } from "node:test";
 import { spawn } from "node:child_process";
@@ -225,6 +226,7 @@ before(async () => {
     httpServer = app.listen(0, "127.0.0.1");
     await once(httpServer, "listening");
     baseUrl = `http://127.0.0.1:${httpServer.address().port}/api/v1/workspacemembers`;
+    await seedProductSubscriptionFixtures();
 });
 
 after(async () => {

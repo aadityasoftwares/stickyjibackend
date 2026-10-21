@@ -1,3 +1,4 @@
+import { seedProductSubscriptionFixtures } from "./helpers/subscriptionFixtures.mjs";
 import assert from "node:assert/strict";
 import { after, before, test, mock } from "node:test";
 import { spawn } from "node:child_process";
@@ -9,8 +10,8 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 import express from "express";
-import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
-import { StickyNoteService } from "../src/modules/stickynotes/services/stickyNote.service.ts";
+import { StickyNoteModel } from "../src/modules/stickynotes/models/stickynote.model.ts";
+import { StickyNoteService } from "../src/modules/stickynotes/services/stickynote.service.ts";
 import { StickyNoteDateService } from "../src/modules/stickynotes/services/stickyNoteDate.service.ts";
 import { WorkspaceModel } from "../src/modules/workspace/models/workspace.model.ts";
 import { WorkspaceMemberModel } from "../src/modules/workspaceMember/models/workspaceMember.model.ts";
@@ -174,6 +175,7 @@ before(async () => {
     httpServer = app.listen(0, "127.0.0.1");
     await once(httpServer, "listening");
     baseUrl = `http://127.0.0.1:${httpServer.address().port}/api/v1/stickynotes`;
+    await seedProductSubscriptionFixtures();
 });
 
 after(async () => {

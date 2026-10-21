@@ -1,6 +1,6 @@
 import { MediaModel } from "../models/media.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { WORKSPACE_TRASH_STATUSES } from "../../workspace/constants/workspace.enums.js";
 import { MediaResourceType } from "../constants/media.enums.js";
 

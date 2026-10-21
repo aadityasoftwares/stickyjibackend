@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { Types } from "mongoose";
 
 import type {
@@ -505,6 +507,23 @@ export class WorkspaceMemberService {
                 : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId);
         permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!);
         permissionAuthorizationService.assertMemberAccess(auth, action);
+        if (
+            (Array.isArray(action) ? action : [action]).some(
+                (value) =>
+                    ![
+                        PermissionAction.READ,
+                        PermissionAction.DELETE,
+                        PermissionAction.REMOVE,
+                        PermissionAction.ARCHIVE,
+                    ].includes(value),
+            )
+        ) {
+            await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.MEMBERS);
+            await subscriptionEntitlementService.assertWorkspaceFeature(
+                workspaceId,
+                FeatureCode.MEMBER_ROLES,
+            );
+        }
         return auth;
     }
 

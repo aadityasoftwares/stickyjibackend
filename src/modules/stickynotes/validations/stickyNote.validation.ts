@@ -9,7 +9,7 @@ import {
     StickyNoteStatus,
     StickyNoteVariant,
 } from "../constants/stickyNote.enums.js";
-import type { StickyNoteSortField } from "../interfaces/stickyNote.interface.js";
+import type { StickyNoteSortField } from "../interfaces/stickynote.interface.js";
 const statuses: readonly string[] = Object.values(StickyNoteStatus);
 const priorities: readonly string[] = Object.values(StickyNotePriority);
 const colors: readonly string[] = Object.values(StickyNoteColor);

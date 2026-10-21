@@ -1,3 +1,4 @@
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { Types } from "mongoose";
 import type {
     IWorkspaceFolderCreate,
@@ -840,6 +841,17 @@ export class WorkspaceFolderService {
                 : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId);
         permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!);
         permissionAuthorizationService.assertFolderAccess(auth, action);
+        if (action === PermissionAction.CREATE || action === PermissionAction.UPDATE) {
+            await this.subscriptionEntitlementService.assertWorkspaceFeature(
+                workspaceId,
+                FeatureCode.FOLDERS,
+            );
+            if (!auth.isOwner)
+                await this.subscriptionEntitlementService.assertWorkspaceFeature(
+                    workspaceId,
+                    FeatureCode.SHARED_FOLDERS,
+                );
+        }
         return auth;
     }
 

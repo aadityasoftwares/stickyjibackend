@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { isWorkspaceTrashed } from "../../workspace/constants/workspace.enums.js";
 import { Types } from "mongoose";
 
@@ -7,7 +9,7 @@ import { AuditLogAction } from "../../auditlog/constants/auditLog.enums.js";
 import { AuditLogService } from "../../auditlog/services/auditLog.service.js";
 import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
 import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceMemberModel } from "../../workspaceMember/models/workspaceMember.model.js";
 import { WorkspaceMemberStatus } from "../../workspaceMember/constants/workspaceMember.enums.js";
@@ -55,6 +57,7 @@ export class StickyNoteAssigneeService {
 
         const stickyNote = await this.getAssignmentTarget(stickyNoteId, true);
         const workspaceId = stickyNote.workspaceId.toString();
+        await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.SHARED_NOTES);
 
         const [existing, activeCount] = await Promise.all([
             this.stickyNoteAssigneeRepository.findByNoteAndUser(stickyNoteId, userId),
@@ -195,6 +198,11 @@ export class StickyNoteAssigneeService {
         const requestedSet = new Set(requestedUserIds);
 
         const addUserIds = requestedUserIds.filter((userId) => !currentSet.has(userId));
+        if (addUserIds.length)
+            await subscriptionEntitlementService.assertWorkspaceFeature(
+                workspaceId,
+                FeatureCode.SHARED_NOTES,
+            );
         const removeUserIds = currentUserIds.filter((userId) => !requestedSet.has(userId));
 
         if (addUserIds.length === 0 && removeUserIds.length === 0) {
@@ -279,6 +287,7 @@ export class StickyNoteAssigneeService {
         const stickyNoteId = this.getReferenceId(assignee.stickyNoteId);
         const stickyNote = await this.getAssignmentTarget(stickyNoteId, true);
         const workspaceId = stickyNote.workspaceId.toString();
+        await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.SHARED_NOTES);
         const userId = this.getReferenceId(assignee.userId);
 
         const [activeCount] = await Promise.all([

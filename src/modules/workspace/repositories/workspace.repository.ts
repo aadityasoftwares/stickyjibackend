@@ -1,5 +1,5 @@
 import mongoose, { Types } from "mongoose";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { StickyNoteCounterModel } from "../../stickynotes/models/stickyNoteCounter.model.js";
 import { StickyNoteChecklistModel } from "../../stickyNoteschecklist/models/stickyNoteChecklist.model.js";
 import { StickyNoteChecklistItemModel } from "../../stickynotechecklistitems/models/stickyNoteChecklistItem.model.js";

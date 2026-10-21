@@ -1,4 +1,5 @@
 import { Types, type ClientSession } from "mongoose";
+import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { MediaResourceType } from "../../media/constants/media.enums.js";
@@ -11,7 +12,10 @@ import {
     EntitlementErrorCode,
     ReservationStatus,
 } from "../constants/subscriptionentitlement.enums.js";
-import { SUBSCRIPTION_ENTITLEMENT_CONSTANTS } from "../constants/subscriptionentitlement.constants.js";
+import {
+    RESOURCE_CAPABILITIES,
+    SUBSCRIPTION_ENTITLEMENT_CONSTANTS,
+} from "../constants/subscriptionentitlement.constants.js";
 import { SubscriptionEntitlementMessages } from "../constants/subscriptionentitlement.messages.js";
 import type { IBillingScope } from "../../subscriptionusage/interfaces/subscriptionusage.interface.js";
 import type {
@@ -30,6 +34,56 @@ export class SubscriptionEntitlementService {
         private readonly userSubscriptionService = new UserSubscriptionService(),
         private readonly subscriptionUsageService = new SubscriptionUsageService(),
     ) {}
+
+    /** Capability checks complement authorization; they never grant resource access. */
+    async assertFeatureEnabled(scope: IBillingScope, feature: FeatureCode, session?: ClientSession) {
+        const config = await this.getResourceLimit(scope, feature, session);
+        if (!config.isEnabled) {
+            throw new AppError(
+                `The ${feature.toLowerCase().replaceAll("_", " ")} feature is not enabled for this plan.`,
+                403,
+                EntitlementErrorCode.SUBSCRIPTION_FEATURE_DISABLED,
+            );
+        }
+    }
+
+    async assertWorkspaceFeature(workspaceId: string, feature: FeatureCode, session?: ClientSession) {
+        const id = this.assertValidObjectId(
+            workspaceId,
+            SubscriptionEntitlementMessages.INVALID_WORKSPACE_ID,
+        );
+        const ownerId = await this.repository.findWorkspaceOwner(id, session);
+        if (!ownerId) throw new AppError(SubscriptionEntitlementMessages.WORKSPACE_NOT_FOUND, 404);
+        await this.assertFeatureEnabled(
+            { type: BillingScopeType.USER, id: String(ownerId) },
+            feature,
+            session,
+        );
+    }
+
+    async assertNoteFeature(noteId: string, feature: FeatureCode, session?: ClientSession) {
+        const id = this.assertValidObjectId(noteId, SubscriptionEntitlementMessages.INVALID_NOTE_ID);
+        const info = await this.repository.findNoteWorkspaceAndOwner(id, session);
+        if (!info) throw new AppError(SubscriptionEntitlementMessages.NOTE_NOT_FOUND, 404);
+        await this.assertFeatureEnabled(
+            { type: BillingScopeType.USER, id: String(info.ownerId) },
+            feature,
+            session,
+        );
+    }
+
+    private effectiveLimit(config: IPlanLimitValue): number {
+        if (!config.isEnabled) return 0;
+        if (config.isUnlimited) return Infinity;
+        if (!Number.isSafeInteger(config.limit) || config.limit < 0) {
+            throw new AppError(
+                SubscriptionEntitlementMessages.CONFIGURATION_ERROR,
+                500,
+                EntitlementErrorCode.CONFIGURATION_ERROR,
+            );
+        }
+        return config.limit;
+    }
 
     private validateScope(scope: IBillingScope): Types.ObjectId {
         if (!scope || !scope.type || !Object.values(BillingScopeType).includes(scope.type)) {
@@ -79,6 +133,7 @@ export class SubscriptionEntitlementService {
 
         const effectivePlan = effectiveSub.effectivePlan;
         const limits = await this.repository.findPlanLimits(effectivePlan._id, session);
+        console.log(limits);
 
         return {
             planId: effectivePlan._id,
@@ -133,6 +188,21 @@ export class SubscriptionEntitlementService {
         return this.getEntitlementsByScope(scope, options);
     }
 
+    async getWorkspaceEntitlements(actorId: string, workspaceId: string) {
+        await permissionAuthorizationService.resolveWorkspaceAuthorization(actorId, workspaceId);
+        const ownerId = await this.repository.findWorkspaceOwner(workspaceId);
+        if (!ownerId) throw new AppError(SubscriptionEntitlementMessages.WORKSPACE_NOT_FOUND, 404);
+        const scope = { type: BillingScopeType.USER, id: String(ownerId) };
+        const summary = await this.getEntitlementsByScope(scope, { fresh: true });
+        const folders = await this.getWorkspaceFolderEntitlements(actorId, workspaceId);
+        return {
+            ...summary,
+            workspaceId,
+            billingScope: scope,
+            resources: { ...summary.resources, [FeatureCode.MAX_FOLDERS_PER_WORKSPACE]: folders },
+        };
+    }
+
     /**
      * Returns entitlements by billing scope.
      */
@@ -152,78 +222,30 @@ export class SubscriptionEntitlementService {
 
         const usage = await this.subscriptionUsageService.getUsageSummary(scope, { fresh: true, ...options });
 
-        const resources: Record<
-            string,
-            { limit: number; used?: number; remaining?: number; isUnlimited?: boolean }
-        > = {};
-
-        // 1. Workspaces
-        const wsConfig = limits[FeatureCode.MAX_WORKSPACES];
-        if (wsConfig) {
-            const limit = wsConfig.isUnlimited ? Infinity : wsConfig.limit;
-            const used = usage.workspacesUsed;
-            resources[FeatureCode.MAX_WORKSPACES] = {
-                limit,
-                used,
-                remaining: wsConfig.isUnlimited ? Infinity : Math.max(0, limit - used),
-                isUnlimited: wsConfig.isUnlimited,
-            };
-        }
-
-        // 2. Active Sticky Notes
-        const notesConfig = limits[FeatureCode.MAX_ACTIVE_STICKY_NOTES];
-        if (notesConfig) {
-            const limit = notesConfig.isUnlimited ? Infinity : notesConfig.limit;
-            const used = usage.activeStickyNotesUsed;
-            resources[FeatureCode.MAX_ACTIVE_STICKY_NOTES] = {
-                limit,
-                used,
-                remaining: notesConfig.isUnlimited ? Infinity : Math.max(0, limit - used),
-                isUnlimited: notesConfig.isUnlimited,
-            };
-        }
-
-        // 3. Storage Bytes
-        const storageConfig = limits[FeatureCode.MAX_STORAGE_BYTES];
-        if (storageConfig) {
-            const limit = storageConfig.isUnlimited ? Infinity : storageConfig.limit;
-            const used = usage.storageBytesUsed;
-            resources[FeatureCode.MAX_STORAGE_BYTES] = {
-                limit,
-                used,
-                remaining: storageConfig.isUnlimited ? Infinity : Math.max(0, limit - used),
-                isUnlimited: storageConfig.isUnlimited,
-            };
-        }
-
-        // 4. Folders per workspace (limit only; workspace-scoped usage is queried separately)
-        const foldersConfig = limits[FeatureCode.MAX_FOLDERS_PER_WORKSPACE];
-        if (foldersConfig) {
-            resources[FeatureCode.MAX_FOLDERS_PER_WORKSPACE] = {
-                limit: foldersConfig.isUnlimited ? Infinity : foldersConfig.limit,
-                isUnlimited: foldersConfig.isUnlimited,
-            };
-        }
-
-        // 5. Max upload bytes (per-file single upload limit)
-        const uploadConfig = limits[FeatureCode.MAX_UPLOAD_BYTES];
-        if (uploadConfig) {
-            resources[FeatureCode.MAX_UPLOAD_BYTES] = {
-                limit: uploadConfig.isUnlimited ? Infinity : uploadConfig.limit,
-                isUnlimited: uploadConfig.isUnlimited,
-            };
-        }
-
-        // 6. Max users
-        const usersConfig = limits[FeatureCode.MAX_USERS];
-        if (usersConfig) {
-            const limit = usersConfig.isUnlimited ? Infinity : usersConfig.limit;
-            const used = usage.usersUsed;
-            resources[FeatureCode.MAX_USERS] = {
-                limit,
-                used,
-                remaining: usersConfig.isUnlimited ? Infinity : Math.max(0, limit - used),
-                isUnlimited: usersConfig.isUnlimited,
+        const resources: IPlanEntitlementSummary["resources"] = {};
+        const usedByResource: Record<string, number> = {
+            [FeatureCode.MAX_WORKSPACES]: usage.workspacesUsed,
+            [FeatureCode.MAX_ACTIVE_STICKY_NOTES]: usage.activeStickyNotesUsed,
+            [FeatureCode.MAX_STORAGE_BYTES]: usage.storageBytesUsed,
+            [FeatureCode.MAX_USERS]: usage.usersUsed,
+        };
+        for (const code of SUBSCRIPTION_ENTITLEMENT_CONSTANTS.QUOTA_RESOURCES) {
+            const config = limits[code];
+            if (!config) continue;
+            const limit = this.effectiveLimit(config);
+            const isUnlimited = config.isEnabled && config.isUnlimited;
+            const used = usedByResource[code];
+            resources[code] = {
+                limit: isUnlimited ? null : limit,
+                isUnlimited,
+                isEnabled: config.isEnabled,
+                ...(used === undefined
+                    ? {}
+                    : {
+                          used,
+                          remaining: isUnlimited ? null : Math.max(0, limit - used),
+                          overLimit: !isUnlimited && used > limit,
+                      }),
             };
         }
 
@@ -235,6 +257,14 @@ export class SubscriptionEntitlementService {
             currentPeriodEnd,
             cancelAtPeriodEnd,
             resources,
+            features: Object.fromEntries(
+                Object.entries(limits)
+                    .filter(
+                        ([code]) =>
+                            !SUBSCRIPTION_ENTITLEMENT_CONSTANTS.QUOTA_RESOURCES.includes(code as FeatureCode),
+                    )
+                    .map(([code, config]) => [code, config.isEnabled]),
+            ),
         };
     }
 
@@ -248,8 +278,14 @@ export class SubscriptionEntitlementService {
         this.assertValidObjectId(actorId, SubscriptionEntitlementMessages.INVALID_USER_ID);
 
         const resourceCode = input.resourceCode;
-        const requestedAmount =
-            input.requestedAmount && input.requestedAmount > 0 ? input.requestedAmount : 1;
+        const requestedAmount = input.requestedAmount ?? 1;
+        if (
+            !Number.isSafeInteger(requestedAmount) ||
+            requestedAmount <= 0 ||
+            (input.fileSize !== undefined && (!Number.isSafeInteger(input.fileSize) || input.fileSize <= 0))
+        ) {
+            throw new AppError(SubscriptionEntitlementMessages.INVALID_QUANTITY, 400);
+        }
 
         if (!SUBSCRIPTION_ENTITLEMENT_CONSTANTS.QUOTA_RESOURCES.includes(resourceCode as FeatureCode)) {
             return {
@@ -276,6 +312,7 @@ export class SubscriptionEntitlementService {
                 input.workspaceId,
                 SubscriptionEntitlementMessages.INVALID_WORKSPACE_ID,
             );
+            await permissionAuthorizationService.resolveWorkspaceAuthorization(actorId, input.workspaceId);
             const ownerId = await this.repository.findWorkspaceOwner(workspaceObjectId);
             if (!ownerId) {
                 return {
@@ -297,8 +334,13 @@ export class SubscriptionEntitlementService {
 
         let limitConfig: IPlanLimitValue;
         try {
+            const capability = RESOURCE_CAPABILITIES[resourceCode as FeatureCode];
+            if (capability) await this.assertFeatureEnabled(scope, capability);
             limitConfig = await this.getResourceLimit(scope, resourceCode);
-        } catch {
+        } catch (error) {
+            const disabled =
+                error instanceof AppError &&
+                error.code === EntitlementErrorCode.SUBSCRIPTION_FEATURE_DISABLED;
             return {
                 allowed: false,
                 resourceCode,
@@ -306,16 +348,16 @@ export class SubscriptionEntitlementService {
                 limit: 0,
                 requestedAmount,
                 remaining: 0,
-                reason: EntitlementDecisionReason.CONFIGURATION_ERROR,
-                message: SubscriptionEntitlementMessages.CONFIGURATION_ERROR,
+                reason: disabled
+                    ? EntitlementDecisionReason.FEATURE_DISABLED
+                    : EntitlementDecisionReason.CONFIGURATION_ERROR,
+                message: disabled ? error.message : SubscriptionEntitlementMessages.CONFIGURATION_ERROR,
             };
         }
 
-        const effectiveLimit = limitConfig.isUnlimited
-            ? Infinity
-            : limitConfig.isEnabled
-              ? limitConfig.limit
-              : 0;
+        const effectiveLimit = this.effectiveLimit(limitConfig);
+
+        console.log(`Effective limit for ${resourceCode} is ${effectiveLimit}`);
 
         // Check single-file upload size
         if (resourceCode === FeatureCode.MAX_UPLOAD_BYTES) {
@@ -378,7 +420,7 @@ export class SubscriptionEntitlementService {
         }
 
         // Global user resources (workspaces, active sticky notes, storage bytes)
-        const usage = await this.subscriptionUsageService.getUsageSummary(scope);
+        const usage = await this.subscriptionUsageService.getUsageSummary(scope, { fresh: true });
         const pending = await this.repository.getPendingReservationAmount(
             scope.type,
             new Types.ObjectId(scope.id),
@@ -426,10 +468,47 @@ export class SubscriptionEntitlementService {
             metadata?: Record<string, unknown>;
         },
     ): Promise<IReservationResult> {
+        scope = { ...scope, id: this.validateScope(scope).toHexString() };
+        if (
+            !SUBSCRIPTION_ENTITLEMENT_CONSTANTS.QUOTA_RESOURCES.includes(resource) ||
+            resource === FeatureCode.MAX_UPLOAD_BYTES
+        ) {
+            throw new AppError(
+                SubscriptionEntitlementMessages.INVALID_RESOURCE,
+                400,
+                EntitlementErrorCode.INVALID_RESOURCE,
+            );
+        }
+        const workspaceKey =
+            resource === FeatureCode.MAX_FOLDERS_PER_WORKSPACE ? String(options?.workspaceId ?? "") : "";
+        return this.repository.withQuotaLock(
+            `${scope.type}:${scope.id}:${resource}:${workspaceKey}`,
+            (assertLease) => this.reserveCapacityUnderLock(scope, resource, amount, options, assertLease),
+        );
+    }
+
+    private async reserveCapacityUnderLock(
+        scope: IBillingScope,
+        resource: FeatureCode,
+        amount: number,
+        options?: {
+            workspaceId?: Types.ObjectId | null;
+            operationId?: string;
+            session?: ClientSession;
+            metadata?: Record<string, unknown>;
+        },
+        assertLease?: () => Promise<void>,
+    ): Promise<IReservationResult> {
         const scopeObjectId = this.validateScope(scope);
 
-        if (amount <= 0) {
+        if (!Number.isSafeInteger(amount) || amount <= 0) {
             throw new AppError(SubscriptionEntitlementMessages.INVALID_QUANTITY, 400);
+        }
+
+        const capability = RESOURCE_CAPABILITIES[resource];
+        if (capability) await this.assertFeatureEnabled(scope, capability, options?.session);
+        if (resource === FeatureCode.MAX_FOLDERS_PER_WORKSPACE && !options?.workspaceId) {
+            throw new AppError(SubscriptionEntitlementMessages.INVALID_WORKSPACE_ID, 400);
         }
 
         // Idempotency: if operationId provided and already exists, reuse it
@@ -438,7 +517,23 @@ export class SubscriptionEntitlementService {
                 options.operationId,
                 options.session,
             );
-            if (existing && existing.status === ReservationStatus.PENDING) {
+            if (
+                existing &&
+                (existing.scopeType !== scope.type ||
+                    String(existing.scopeId) !== scope.id ||
+                    existing.resource !== resource ||
+                    existing.amount !== amount ||
+                    String(existing.workspaceId ?? "") !== String(options.workspaceId ?? "") ||
+                    existing.status !== ReservationStatus.PENDING ||
+                    existing.expiresAt <= new Date())
+            ) {
+                throw new AppError(
+                    "This quota operation has already completed or belongs to another request.",
+                    409,
+                    "SUBSCRIPTION_OPERATION_CONFLICT",
+                );
+            }
+            if (existing) {
                 return {
                     reservationId: existing._id.toString(),
                     operationId: existing.operationId,
@@ -451,11 +546,7 @@ export class SubscriptionEntitlementService {
 
         // 1. Resolve effective limit from PlanFeature
         const limitConfig = await this.getResourceLimit(scope, resource, options?.session);
-        const effectiveLimit = limitConfig.isUnlimited
-            ? Infinity
-            : limitConfig.isEnabled
-              ? limitConfig.limit
-              : 0;
+        const effectiveLimit = this.effectiveLimit(limitConfig);
 
         // 2. Query committed usage + pending reservations
         let currentCommitted = 0;
@@ -515,35 +606,60 @@ export class SubscriptionEntitlementService {
             reservationPayload.operationId = options.operationId.trim();
         }
 
+        await assertLease?.();
         const reservation = await this.repository.createReservation(reservationPayload, options?.session);
 
-        // 5. Concurrency admission barrier:
-        // Evaluate total pending reservations committed or queued with precedence (_id <= this reservation)
-        const pendingWithPrecedence = await this.repository.getPendingReservationAmountUpTo(
-            scope.type,
-            scopeObjectId,
-            resource,
-            reservation._id,
-            options?.workspaceId ?? null,
-            options?.session,
-        );
-
-        if (currentCommitted + pendingWithPrecedence > effectiveLimit) {
-            await this.repository.releaseReservation(reservation._id, options?.session);
-            throw new AppError(
-                this.getLimitExceededMessage(resource, effectiveLimit),
-                403,
-                EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
+        try {
+            // Read ALL pending reservations before fresh persisted usage. ObjectId order is
+            // not insertion order across servers. Reading usage first can lose an operation
+            // that commits between the two reads.
+            const pendingAtAdmission = await this.repository.getPendingReservationAmount(
+                scope.type,
+                scopeObjectId,
+                resource,
+                options?.workspaceId ?? null,
+                options?.session,
             );
-        }
+            let committedAtAdmission: number;
+            if (resource === FeatureCode.MAX_FOLDERS_PER_WORKSPACE) {
+                committedAtAdmission = (
+                    await this.subscriptionUsageService.getWorkspaceFolderUsage(
+                        String(options!.workspaceId),
+                        scope.id,
+                    )
+                ).foldersUsed;
+            } else {
+                const usage = await this.subscriptionUsageService.getUsageSummary(scope, { fresh: true });
+                committedAtAdmission =
+                    resource === FeatureCode.MAX_WORKSPACES
+                        ? usage.workspacesUsed
+                        : resource === FeatureCode.MAX_ACTIVE_STICKY_NOTES
+                          ? usage.activeStickyNotesUsed
+                          : resource === FeatureCode.MAX_STORAGE_BYTES
+                            ? usage.storageBytesUsed
+                            : usage.usersUsed;
+            }
 
-        return {
-            reservationId: reservation._id.toString(),
-            operationId: reservation.operationId,
-            resource: reservation.resource,
-            amount: reservation.amount,
-            expiresAt: reservation.expiresAt,
-        };
+            if (committedAtAdmission + pendingAtAdmission > effectiveLimit) {
+                throw new AppError(
+                    this.getLimitExceededMessage(resource, effectiveLimit),
+                    403,
+                    EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
+                );
+            }
+
+            await assertLease?.();
+            return {
+                reservationId: reservation._id.toString(),
+                operationId: reservation.operationId,
+                resource: reservation.resource,
+                amount: reservation.amount,
+                expiresAt: reservation.expiresAt,
+            };
+        } catch (error) {
+            await this.repository.releaseReservation(reservation._id, options?.session);
+            throw error;
+        }
     }
 
     private getLimitExceededMessage(resource: string, limit: number): string {
@@ -629,6 +745,18 @@ export class SubscriptionEntitlementService {
         return this.reserveCapacity(scope, FeatureCode.MAX_WORKSPACES, 1, options);
     }
 
+    async reserveWorkspaceRestoredNotes(workspaceId: string): Promise<IReservationResult | null> {
+        const ownerId = await this.repository.findWorkspaceOwner(workspaceId);
+        if (!ownerId) throw new AppError(SubscriptionEntitlementMessages.WORKSPACE_NOT_FOUND, 404);
+        const amount = await this.repository.countActiveNotesInWorkspace(workspaceId);
+        if (!amount) return null;
+        return this.reserveCapacity(
+            { type: BillingScopeType.USER, id: String(ownerId) },
+            FeatureCode.MAX_ACTIVE_STICKY_NOTES,
+            amount,
+        );
+    }
+
     /**
      * Folder creation assertion: checks MAX_FOLDERS_PER_WORKSPACE quota for the workspace.
      */
@@ -710,6 +838,8 @@ export class SubscriptionEntitlementService {
             id: ownerId.toString(),
         };
 
+        if (scope.id !== actorId)
+            await this.assertFeatureEnabled(scope, FeatureCode.SHARED_NOTES, options?.session);
         return this.reserveCapacity(scope, FeatureCode.MAX_ACTIVE_STICKY_NOTES, 1, options);
     }
 
@@ -734,25 +864,27 @@ export class SubscriptionEntitlementService {
             id: info.ownerId.toString(),
         };
 
+        if (scope.id !== actorId)
+            await this.assertFeatureEnabled(scope, FeatureCode.SHARED_NOTES, options?.session);
         return this.reserveCapacity(scope, FeatureCode.MAX_ACTIVE_STICKY_NOTES, 1, options);
     }
 
     /**
      * Attachment upload assertion: enforces both MAX_UPLOAD_BYTES and MAX_STORAGE_BYTES.
      */
-    async assertCanUploadAttachment(
+    async resolveAttachmentBillingScope(
         actorId: string,
         resourceType: string | null,
         resourceId: string | Types.ObjectId | null,
-        fileSize: number,
-        options?: { operationId?: string; session?: ClientSession },
-    ): Promise<IReservationResult> {
+        session?: ClientSession,
+    ): Promise<IBillingScope> {
         this.assertValidObjectId(actorId, SubscriptionEntitlementMessages.INVALID_USER_ID);
-
-        if (!fileSize || fileSize <= 0) {
-            throw new AppError(SubscriptionEntitlementMessages.INVALID_QUANTITY, 400);
+        if (
+            (resourceType === MediaResourceType.NOTE || resourceType === MediaResourceType.WORKSPACE) &&
+            !resourceId
+        ) {
+            throw new AppError("An attachment resource ID is required.", 400);
         }
-
         // 1. Resolve billing scope:
         let scope: IBillingScope = {
             type: BillingScopeType.USER,
@@ -764,7 +896,8 @@ export class SubscriptionEntitlementService {
                 String(resourceId),
                 SubscriptionEntitlementMessages.INVALID_NOTE_ID,
             );
-            const info = await this.repository.findNoteWorkspaceAndOwner(nId, options?.session);
+            const info = await this.repository.findNoteWorkspaceAndOwner(nId, session);
+            if (!info) throw new AppError(SubscriptionEntitlementMessages.NOTE_NOT_FOUND, 404);
             if (info) {
                 scope = { type: BillingScopeType.USER, id: info.ownerId.toString() };
             }
@@ -773,11 +906,35 @@ export class SubscriptionEntitlementService {
                 String(resourceId),
                 SubscriptionEntitlementMessages.INVALID_WORKSPACE_ID,
             );
-            const ownerId = await this.repository.findWorkspaceOwner(wsId, options?.session);
+            const ownerId = await this.repository.findWorkspaceOwner(wsId, session);
+            if (!ownerId) throw new AppError(SubscriptionEntitlementMessages.WORKSPACE_NOT_FOUND, 404);
             if (ownerId) {
                 scope = { type: BillingScopeType.USER, id: ownerId.toString() };
             }
         }
+
+        return scope;
+    }
+
+    async assertCanUploadAttachment(
+        actorId: string,
+        resourceType: string | null,
+        resourceId: string | Types.ObjectId | null,
+        fileSize: number,
+        options?: { operationId?: string; session?: ClientSession },
+    ): Promise<IReservationResult> {
+        this.assertValidObjectId(actorId, SubscriptionEntitlementMessages.INVALID_USER_ID);
+
+        if (!Number.isSafeInteger(fileSize) || fileSize <= 0) {
+            throw new AppError(SubscriptionEntitlementMessages.INVALID_QUANTITY, 400);
+        }
+
+        const scope = await this.resolveAttachmentBillingScope(
+            actorId,
+            resourceType,
+            resourceId,
+            options?.session,
+        );
 
         // 2. Validate single file upload size (MAX_UPLOAD_BYTES)
         const uploadLimit = await this.getResourceLimit(
@@ -785,11 +942,7 @@ export class SubscriptionEntitlementService {
             FeatureCode.MAX_UPLOAD_BYTES,
             options?.session,
         );
-        const maxSingleBytes = uploadLimit.isUnlimited
-            ? Infinity
-            : uploadLimit.isEnabled
-              ? uploadLimit.limit
-              : 0;
+        const maxSingleBytes = this.effectiveLimit(uploadLimit);
 
         if (fileSize > maxSingleBytes) {
             throw new AppError(
@@ -819,8 +972,11 @@ export class SubscriptionEntitlementService {
             throw new AppError(SubscriptionEntitlementMessages.WORKSPACE_NOT_FOUND, 404);
         }
 
-        // All plans currently receive the same functional sharing capability.
-        // No artificial personal seat restriction is imposed.
+        await this.assertFeatureEnabled(
+            { type: BillingScopeType.USER, id: String(ownerId) },
+            FeatureCode.MEMBERS,
+            _session,
+        );
     }
 
     /**
@@ -847,11 +1003,7 @@ export class SubscriptionEntitlementService {
         };
 
         const limitConfig = await this.getResourceLimit(scope, FeatureCode.MAX_FOLDERS_PER_WORKSPACE);
-        const effectiveLimit = limitConfig.isUnlimited
-            ? Infinity
-            : limitConfig.isEnabled
-              ? limitConfig.limit
-              : 0;
+        const effectiveLimit = this.effectiveLimit(limitConfig);
 
         const folderUsage = await this.subscriptionUsageService.getWorkspaceFolderUsage(workspaceId, actorId);
         const pending = await this.repository.getPendingReservationAmount(
@@ -870,3 +1022,5 @@ export class SubscriptionEntitlementService {
         };
     }
 }
+
+export const subscriptionEntitlementService = new SubscriptionEntitlementService();

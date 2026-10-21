@@ -1,3 +1,6 @@
+import { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { isWorkspaceTrashed } from "../../workspace/constants/workspace.enums.js";
 import { Types } from "mongoose";
 import {
@@ -26,8 +29,8 @@ import type {
     IStickyNoteUpdate,
     IStickyNoteOverdueFilter,
     IBringStickyNotesToTodayResult,
-} from "../interfaces/stickyNote.interface.js";
-import { StickyNoteRepository } from "../repositories/stickyNote.repository.js";
+} from "../interfaces/stickynote.interface.js";
+import { StickyNoteRepository } from "../repositories/stickynote.repository.js";
 import { StickyNoteDateService } from "./stickyNoteDate.service.js";
 import { StickyNotePurgeService } from "./stickyNotePurge.service.js";
 import { STICKY_NOTE_CONSTANTS } from "../constants/stickyNote.constants.js";
@@ -114,6 +117,13 @@ export class StickyNoteService {
             // standalone MongoDB deployments run the same flow without a session.
             const workspaceIds = await this.workspaceRepository.findAccessibleIds(userId, undefined, session);
             const notes = await this.stickyNoteRepository.findOverdueByIds(workspaceIds, today, ids, session);
+            for (const workspaceId of new Set(notes.map((note) => String(note.workspaceId)))) {
+                await subscriptionEntitlementService.assertWorkspaceFeature(
+                    workspaceId,
+                    FeatureCode.NOTES,
+                    session,
+                );
+            }
             if (notes.length > 0) {
                 const result = await this.stickyNoteRepository.bulkUpdateOverdueNoteDate(
                     notes,
@@ -278,6 +288,19 @@ export class StickyNoteService {
                 filters.createdBy = userId;
             }
         }
+        if (filters.search) {
+            if (filters.workspaceId) {
+                await subscriptionEntitlementService.assertWorkspaceFeature(
+                    String(filters.workspaceId),
+                    FeatureCode.ADVANCED_SEARCH,
+                );
+            } else {
+                await subscriptionEntitlementService.assertFeatureEnabled(
+                    { type: BillingScopeType.USER, id: userId },
+                    FeatureCode.ADVANCED_SEARCH,
+                );
+            }
+        }
         const dateFilter = await this.stickyNoteDateService.resolveFilter(
             { noteDate: filters.noteDate, datePreset: filters.datePreset },
             userId,
@@ -365,6 +388,10 @@ export class StickyNoteService {
             stickyNote.workspaceId.toString(),
         );
         permissionAuthorizationService.assertNoteAccess(auth, stickyNote, PermissionAction.UPDATE);
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            String(stickyNote.workspaceId),
+            FeatureCode.NOTES,
+        );
 
         if (data.workspaceId && String(data.workspaceId) !== stickyNote.workspaceId.toString()) {
             throw new AppError(StickyNoteMessages.CANNOT_UPDATE_WORKSPACE, 400);
@@ -630,6 +657,10 @@ export class StickyNoteService {
         ]);
 
         const targetColumnId = data.columnId ? String(data.columnId).trim() : movedNote.columnId.toString();
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            String(movedNote.workspaceId),
+            FeatureCode.KANBAN,
+        );
         if (!Types.ObjectId.isValid(targetColumnId)) {
             throw new AppError(StickyNoteMessages.INVALID_COLUMN_ID, 400);
         }

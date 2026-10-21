@@ -19,7 +19,7 @@ import { SubscriptionUsageModel } from "../src/modules/subscriptionusage/models/
 import { SubscriptionReservationModel } from "../src/modules/subscriptionentitlement/models/subscriptionreservation.model.ts";
 import { WorkspaceModel } from "../src/modules/workspace/models/workspace.model.ts";
 import { WorkspaceFolderModel } from "../src/modules/workspaceFolders/models/workspaceFolder.model.ts";
-import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
+import { StickyNoteModel } from "../src/modules/stickynotes/models/stickynote.model.ts";
 import { StickyNoteColumnModel } from "../src/modules/stickynotescolumns/models/stickyNoteColumn.model.ts";
 import { MediaModel } from "../src/modules/media/models/media.model.ts";
 import { RoleModel } from "../src/modules/roles/models/role.model.ts";
@@ -88,6 +88,306 @@ const workspaceService = new WorkspaceService();
 const folderService = new WorkspaceFolderService();
 const noteService = new StickyNoteService();
 const mediaService = new MediaService();
+
+async function withPlanFeature(code, changes, operation) {
+    const feature = await FeatureModel.findOne({ code });
+    const original = await PlanFeatureModel.findOne({ planId: freePlan._id, featureId: feature._id }).lean();
+    await PlanFeatureModel.updateOne({ _id: original._id }, { $set: changes });
+    try {
+        return await operation();
+    } finally {
+        await PlanFeatureModel.replaceOne({ _id: original._id }, original);
+    }
+}
+
+async function createNoteFixture() {
+    const userId = await createUser("policy");
+    const workspace = await workspaceService.createWorkspace(
+        { name: "Policy", slug: `policy-${new Types.ObjectId()}` },
+        userId,
+    );
+    const createdFolder = await folderService.createWorkspaceFolder(
+        { workspaceId: workspace.id, name: "Policy folder", slug: "policy-folder" },
+        userId,
+    );
+    const folder = await WorkspaceFolderModel.findById(createdFolder.id);
+    const column = await StickyNoteColumnModel.create({
+        workspaceId: workspace.id,
+        workspaceFolderId: folder._id,
+        createdBy: userId,
+        name: "Policy column",
+        position: 1,
+    });
+    const data = {
+        workspaceId: workspace.id,
+        workspaceFolderId: String(folder._id),
+        columnId: String(column._id),
+        title: "Policy note",
+        content: "Test",
+    };
+    const note = await noteService.createStickyNote(data, userId);
+    return { userId, workspace, folder, column, data, note };
+}
+
+test("disabled capabilities block creation even when numeric quota is available", async () => {
+    const { userId, workspace, data } = await createNoteFixture();
+    for (const [code, create] of [
+        [
+            FeatureCode.WORKSPACES,
+            () =>
+                workspaceService.createWorkspace(
+                    { name: "Blocked", slug: `blocked-${new Types.ObjectId()}` },
+                    userId,
+                ),
+        ],
+        [
+            FeatureCode.FOLDERS,
+            () =>
+                folderService.createWorkspaceFolder(
+                    { workspaceId: workspace.id, name: "Blocked", slug: "blocked" },
+                    userId,
+                ),
+        ],
+        [FeatureCode.NOTES, () => noteService.createStickyNote(data, userId)],
+        [FeatureCode.MEMBERS, () => entitlementService.assertCanAddMember(userId, workspace.id)],
+        [
+            FeatureCode.ATTACHMENTS,
+            () => entitlementService.assertCanUploadAttachment(userId, null, null, 100),
+        ],
+    ]) {
+        await withPlanFeature(code, { isEnabled: false }, async () => {
+            await assert.rejects(create, { code: EntitlementErrorCode.SUBSCRIPTION_FEATURE_DISABLED });
+        });
+    }
+});
+
+test("disabled unlimited quotas cannot grant capacity and summaries report zero", async () => {
+    const userId = await createUser("disabled-unlimited");
+    await withPlanFeature(FeatureCode.MAX_WORKSPACES, { isEnabled: false, isUnlimited: true }, async () => {
+        await assert.rejects(() => entitlementService.assertCanCreateWorkspace(userId), {
+            code: EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
+        });
+        const summary = await entitlementService.getMyEntitlements(userId);
+        assert.equal(summary.resources.MAX_WORKSPACES.limit, 0);
+        assert.equal(summary.resources.MAX_WORKSPACES.isUnlimited, false);
+        assert.equal(summary.resources.MAX_WORKSPACES.remaining, 0);
+    });
+});
+
+test("pending upload requests consume storage before completion and failures release it", async () => {
+    const userId = await createUser("pending-storage");
+    const upload = {
+        fileName: "test.png",
+        mimeType: "image/png",
+        size: 600,
+        mediaType: MediaType.IMAGE,
+        purpose: MediaPurpose.ATTACHMENT,
+    };
+    const urlMock = mock.method(
+        mediaService.storageService,
+        "createUploadUrl",
+        async () => "https://example.test/upload",
+    );
+    try {
+        await withPlanFeature(FeatureCode.MAX_STORAGE_BYTES, { limit: 1000 }, async () => {
+            const first = await mediaService.requestUpload(upload, userId);
+            assert.equal((await usageService.getMyUsage(userId, { fresh: true })).storageBytesUsed, 600);
+            await assert.rejects(() => mediaService.requestUpload(upload, userId), {
+                code: EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
+            });
+            await MediaModel.updateOne({ _id: first.mediaId }, { $set: { status: MediaStatus.FAILED } });
+            assert.ok((await mediaService.requestUpload(upload, userId)).mediaId);
+        });
+    } finally {
+        urlMock.mock.restore();
+    }
+});
+
+test("a media database failure releases the reservation immediately", async () => {
+    const userId = await createUser("media-create-failure");
+    const failure = mock.method(mediaService.mediaRepository, "create", async () => {
+        throw new Error("database failure");
+    });
+    try {
+        await assert.rejects(
+            () =>
+                mediaService.requestUpload(
+                    {
+                        fileName: "test.png",
+                        mimeType: "image/png",
+                        size: 10,
+                        mediaType: MediaType.IMAGE,
+                        purpose: MediaPurpose.ATTACHMENT,
+                    },
+                    userId,
+                ),
+            /database failure/,
+        );
+        assert.equal(
+            await entitlementRepo.getPendingReservationAmount(
+                BillingScopeType.USER,
+                new Types.ObjectId(userId),
+                FeatureCode.MAX_STORAGE_BYTES,
+            ),
+            0,
+        );
+    } finally {
+        failure.mock.restore();
+    }
+});
+
+test("workspace restore reserves active descendants and rolls back admission on denial", async () => {
+    const { userId, workspace } = await createNoteFixture();
+    await workspaceService.deleteWorkspace(workspace.id, userId);
+    await withPlanFeature(FeatureCode.MAX_ACTIVE_STICKY_NOTES, { limit: 0 }, async () => {
+        await assert.rejects(() => workspaceService.restoreWorkspace(workspace.id, userId), {
+            code: EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
+        });
+        assert.equal((await WorkspaceModel.findById(workspace.id)).status, WorkspaceStatus.TRASHED);
+        assert.equal(
+            await entitlementRepo.getPendingReservationAmount(
+                BillingScopeType.USER,
+                new Types.ObjectId(userId),
+                FeatureCode.MAX_WORKSPACES,
+            ),
+            0,
+        );
+    });
+    await workspaceService.restoreWorkspace(workspace.id, userId);
+    assert.equal((await usageService.getMyUsage(userId, { fresh: true })).activeStickyNotesUsed, 1);
+});
+
+test("workspace entitlement and preflight endpoints reject outsiders", async () => {
+    const { userId, workspace } = await createNoteFixture();
+    const outsider = await createUser("outside-policy");
+    await assert.rejects(
+        () =>
+            entitlementService.checkResourceAvailability(outsider, {
+                workspaceId: workspace.id,
+                resourceCode: FeatureCode.MAX_ACTIVE_STICKY_NOTES,
+            }),
+        (error) => error.statusCode === 403 || error.statusCode === 404,
+    );
+    await assert.rejects(() => entitlementService.getWorkspaceEntitlements(outsider, workspace.id));
+    const summary = await entitlementService.getWorkspaceEntitlements(userId, workspace.id);
+    assert.equal(summary.billingScope.id, userId);
+    assert.equal(summary.features.NOTES, true);
+    assert.equal(summary.resources.MAX_FOLDERS_PER_WORKSPACE.used, 1);
+});
+
+test("operation IDs cannot be reused across owners or after commit", async () => {
+    const owner = await createUser("idempotent-owner");
+    const outsider = await createUser("idempotent-outsider");
+    const operationId = `bound-${new Types.ObjectId()}`;
+    const reservation = await entitlementService.assertCanCreateWorkspace(owner, { operationId });
+    await assert.rejects(() => entitlementService.assertCanCreateWorkspace(outsider, { operationId }), {
+        code: "SUBSCRIPTION_OPERATION_CONFLICT",
+    });
+    await entitlementService.commitReservation(reservation.reservationId);
+    await entitlementService.releaseReservation(reservation.reservationId);
+    assert.equal(
+        (await entitlementRepo.findReservationById(reservation.reservationId)).status,
+        ReservationStatus.COMMITTED,
+    );
+    await assert.rejects(() => entitlementService.assertCanCreateWorkspace(owner, { operationId }), {
+        code: "SUBSCRIPTION_OPERATION_CONFLICT",
+    });
+});
+
+test("invalid reservation quantities fail before admission", async () => {
+    const userId = await createUser("invalid-quantity");
+    for (const amount of [NaN, Infinity, -1, 0, 0.5]) {
+        await assert.rejects(
+            () =>
+                entitlementService.reserveCapacity(
+                    { type: BillingScopeType.USER, id: userId },
+                    FeatureCode.MAX_ACTIVE_STICKY_NOTES,
+                    amount,
+                ),
+            (error) => error.statusCode === 400,
+        );
+    }
+});
+
+test("note submodules and kanban enforce the owner's configured capabilities", async () => {
+    const { userId, workspace, folder, note } = await createNoteFixture();
+    const noteId = String(note.id ?? note._id);
+    const { StickyNoteChecklistService } =
+        await import("../src/modules/stickyNoteschecklist/services/stickyNoteChecklist.service.ts");
+    const { StickyNoteChecklistItemService } =
+        await import("../src/modules/stickynotechecklistitems/services/stickyNoteChecklistItem.service.ts");
+    const { StickyNoteLabelService } =
+        await import("../src/modules/stickynotelabels/services/stickyNoteLabel.service.ts");
+    const { StickyNoteFavoriteService } =
+        await import("../src/modules/stickynotesfavorites/services/stickyNoteFavorite.service.ts");
+    const { StickyNoteColumnService } =
+        await import("../src/modules/stickynotescolumns/services/stickyNoteColumn.service.ts");
+    const checklistService = new StickyNoteChecklistService();
+    const checklist = await checklistService.createStickyNoteChecklist(
+        { stickyNoteId: noteId, title: "Existing" },
+        userId,
+    );
+    await withPlanFeature(FeatureCode.NOTES, { isEnabled: false }, async () => {
+        for (const mutation of [
+            () =>
+                checklistService.createStickyNoteChecklist(
+                    { stickyNoteId: noteId, title: "Blocked" },
+                    userId,
+                ),
+            () =>
+                new StickyNoteChecklistItemService().createStickyNoteChecklistItem(
+                    { checklistId: checklist.id, title: "Blocked" },
+                    userId,
+                ),
+            () =>
+                new StickyNoteLabelService().createStickyNoteLabel(
+                    { workspaceId: workspace.id, name: "Blocked" },
+                    userId,
+                ),
+            () => new StickyNoteFavoriteService().createStickyNoteFavorite(noteId, userId),
+        ]) {
+            await assert.rejects(mutation, { code: EntitlementErrorCode.SUBSCRIPTION_FEATURE_DISABLED });
+        }
+        assert.ok(await noteService.getStickyNoteById(noteId, userId));
+    });
+    await withPlanFeature(FeatureCode.KANBAN, { isEnabled: false }, async () => {
+        await assert.rejects(
+            () =>
+                new StickyNoteColumnService().createStickyNoteColumn(
+                    {
+                        workspaceId: workspace.id,
+                        workspaceFolderId: String(folder._id),
+                        name: "Blocked",
+                    },
+                    userId,
+                ),
+            { code: EntitlementErrorCode.SUBSCRIPTION_FEATURE_DISABLED },
+        );
+    });
+});
+
+test("retained attachments in trashed workspaces remain charged to their owner", async () => {
+    const { userId, workspace, note } = await createNoteFixture();
+    const noteId = String(note.id ?? note._id);
+    await MediaModel.create({
+        uploadedBy: userId,
+        storageProvider: MediaStorageProvider.CLOUDFLARE_R2,
+        bucket: "test",
+        storageKey: `retained-${new Types.ObjectId()}`,
+        originalFileName: "test.png",
+        mimeType: "image/png",
+        size: 123,
+        mediaType: MediaType.IMAGE,
+        purpose: MediaPurpose.ATTACHMENT,
+        status: MediaStatus.ACTIVE,
+        resourceType: MediaResourceType.NOTE,
+        resourceId: noteId,
+    });
+    await workspaceService.deleteWorkspace(workspace.id, userId);
+    const usage = await usageService.getMyUsage(userId, { fresh: true });
+    assert.equal(usage.workspacesUsed, 0);
+    assert.equal(usage.storageBytesUsed, 123);
+});
 
 async function createUser(emailPrefix = "user") {
     const user = await UserModel.create({

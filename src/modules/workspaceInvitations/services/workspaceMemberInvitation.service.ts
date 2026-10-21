@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import {
     permissionAuthorizationService,
     type IWorkspaceAuthorizationContext,
@@ -551,6 +553,7 @@ export class WorkspaceMemberInvitationService {
         const existingMember = await this.invitationRepository.findMembership(workspaceId, user._id, session);
 
         this.assertWorkspaceEligible(workspace);
+        await subscriptionEntitlementService.assertCanAddMember(authenticatedUserId, workspaceId, session);
 
         if (this.extractObjectId(workspace.ownerId) === user._id.toString()) {
             throw new AppError(WorkspaceMemberInvitationMessages.CANNOT_INVITE_OWNER, 409);
@@ -884,6 +887,15 @@ export class WorkspaceMemberInvitationService {
                 : await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId);
         permissionAuthorizationService.assertWorkspaceState(auth.workspaceStatus!);
         permissionAuthorizationService.assertMemberAccess(auth, action);
+        if (
+            ![
+                PermissionAction.READ,
+                PermissionAction.DELETE,
+                PermissionAction.REMOVE,
+                PermissionAction.ARCHIVE,
+            ].includes(action)
+        )
+            await subscriptionEntitlementService.assertWorkspaceFeature(workspaceId, FeatureCode.MEMBERS);
         return auth;
     }
 

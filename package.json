@@ -7,6 +7,8 @@
     "scripts": {
         "dev": "nodemon --watch src --exec tsx src/server.ts",
         "build": "tsc",
+        "test": "node --import tsx --test --test-concurrency=4 tests/*.test.mjs",
+        "test:subscriptions": "node --import tsx --test tests/usersubscription.test.mjs tests/subscriptionUsage.test.mjs tests/subscriptionSeed.test.mjs tests/subscriptionEntitlement.test.mjs",
         "test:usersubscription": "node --import tsx --test tests/usersubscription.test.mjs",
         "test:subscription-usage": "node --import tsx --test tests/subscriptionUsage.test.mjs",
         "test:subscription-seed": "node --import tsx --test tests/subscriptionSeed.test.mjs",

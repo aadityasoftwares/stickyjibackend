@@ -1,6 +1,6 @@
 import { Types, type PopulateOptions, type QueryFilter } from "mongoose";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 
 import { StickyNoteFavoriteModel } from "../models/stickyNoteFavorite.model.js";
 

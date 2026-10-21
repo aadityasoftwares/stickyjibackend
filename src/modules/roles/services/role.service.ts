@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { Types } from "mongoose";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import {
@@ -98,6 +100,10 @@ export class RoleService {
         }
 
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            workspaceIdString,
+            FeatureCode.MEMBER_ROLES,
+        );
 
         const auth =
             authorization && authorization.workspaceId === workspaceIdString
@@ -337,6 +343,10 @@ export class RoleService {
 
         const workspaceIdString = role.workspaceId.toString();
         await workspaceAvailabilityService.assertAvailable(workspaceIdString);
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            workspaceIdString,
+            FeatureCode.MEMBER_ROLES,
+        );
 
         const auth =
             authorization && authorization.workspaceId === workspaceIdString

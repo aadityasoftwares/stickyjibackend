@@ -3,7 +3,7 @@ import mongoose, { Types, type ClientSession } from "mongoose";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceStatus } from "../../workspace/constants/workspace.enums.js";
 import { PermissionModule } from "../../permissions/constants/permission.enums.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 import { StickyNoteColumnModel } from "../../stickynotescolumns/models/stickyNoteColumn.model.js";
 import { MediaModel } from "../../media/models/media.model.js";

@@ -1,10 +1,10 @@
 import { Types } from "mongoose";
 import { StickyNoteStatus } from "../constants/stickyNote.enums.js";
 import { StickyNoteMessages } from "../constants/stickyNote.messages.js";
-import { StickyNoteRepository } from "../repositories/stickyNote.repository.js";
+import { StickyNoteRepository } from "../repositories/stickynote.repository.js";
 import { AppError } from "../../../utils/errors/app.error.js";
-import type { IStickyNotePurgeResult } from "../interfaces/stickyNote.interface.js";
-export type { IStickyNotePurgeResult } from "../interfaces/stickyNote.interface.js";
+import type { IStickyNotePurgeResult } from "../interfaces/stickynote.interface.js";
+export type { IStickyNotePurgeResult } from "../interfaces/stickynote.interface.js";
 export class StickyNotePurgeService {
     private readonly repository = new StickyNoteRepository();
     async purgeById(stickyNoteId: string): Promise<IStickyNotePurgeResult> {

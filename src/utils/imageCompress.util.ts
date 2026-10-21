@@ -1,3 +1,4 @@
+import type {} from "multer";
 import sharp from "sharp";
 
 export const compressImage = async (file: Express.Multer.File): Promise<Buffer> => {

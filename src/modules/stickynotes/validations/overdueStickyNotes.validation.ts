@@ -3,7 +3,7 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { STICKY_NOTE_CONSTANTS } from "../constants/stickyNote.constants.js";
 import { StickyNoteOverdueSort } from "../constants/stickyNote.enums.js";
 import { StickyNoteMessages as M } from "../constants/stickyNote.messages.js";
-import type { IStickyNoteOverdueFilter } from "../interfaces/stickyNote.interface.js";
+import type { IStickyNoteOverdueFilter } from "../interfaces/stickynote.interface.js";
 import { StickyNoteValidation as V } from "./stickyNote.validation.js";
 
 export const getOverdueStickyNotesValidation = (

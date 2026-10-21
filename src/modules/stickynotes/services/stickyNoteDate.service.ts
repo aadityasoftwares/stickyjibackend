@@ -4,7 +4,7 @@ import { STICKY_NOTE_CONSTANTS } from "../constants/stickyNote.constants.js";
 import { StickyNoteDatePreset, StickyNoteDateState } from "../constants/stickyNote.enums.js";
 import { StickyNoteMessages } from "../constants/stickyNote.messages.js";
 import { StickyNoteValidation } from "../validations/stickyNote.validation.js";
-import { StickyNoteRepository } from "../repositories/stickyNote.repository.js";
+import { StickyNoteRepository } from "../repositories/stickynote.repository.js";
 export interface IResolvedStickyNoteDateFilter {
     noteDate?: string;
     noteDateFrom?: string;

@@ -3,6 +3,10 @@ import type { Request, Response, NextFunction } from "express";
 import { AuditLogService } from "../services/auditLog.service.js";
 import { ResponseUtil } from "../../../utils/response.util.js";
 import { RequestUtil } from "../../../utils/request.util.js";
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
+import { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
+import { AppError } from "../../../utils/errors/app.error.js";
 
 export class AuditLogController {
     private auditLogService: AuditLogService;
@@ -16,6 +20,12 @@ export class AuditLogController {
             const id = RequestUtil.getParam(req.params.id);
 
             const auditLog = await this.auditLogService.getById(id);
+            const actorId = RequestUtil.getUserId(req);
+            if (String(auditLog.actorId ?? "") !== actorId) throw new AppError("Audit log not found.", 404);
+            await subscriptionEntitlementService.assertFeatureEnabled(
+                { type: BillingScopeType.USER, id: actorId },
+                FeatureCode.ACTIVITY_LOG,
+            );
 
             return res.status(200).json(ResponseUtil.success("Audit log fetched successfully.", auditLog));
         } catch (error) {
@@ -25,6 +35,11 @@ export class AuditLogController {
 
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
+            const actorId = RequestUtil.getUserId(req);
+            await subscriptionEntitlementService.assertFeatureEnabled(
+                { type: BillingScopeType.USER, id: actorId },
+                FeatureCode.ACTIVITY_LOG,
+            );
             const result = await this.auditLogService.getAll({
                 page: req.query.page ? Number(req.query.page) : 1,
 
@@ -42,7 +57,7 @@ export class AuditLogController {
 
                 actorType: req.query.actorType as any,
 
-                actorId: req.query.actorId as string | undefined,
+                actorId,
 
                 resourceType: req.query.resourceType as string | undefined,
 

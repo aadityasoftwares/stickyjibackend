@@ -1,5 +1,13 @@
 import { FeatureCode } from "../../feature/constants/feature.enums.js";
 
+export const RESOURCE_CAPABILITIES: Partial<Record<FeatureCode, FeatureCode>> = {
+    [FeatureCode.MAX_WORKSPACES]: FeatureCode.WORKSPACES,
+    [FeatureCode.MAX_FOLDERS_PER_WORKSPACE]: FeatureCode.FOLDERS,
+    [FeatureCode.MAX_ACTIVE_STICKY_NOTES]: FeatureCode.NOTES,
+    [FeatureCode.MAX_STORAGE_BYTES]: FeatureCode.ATTACHMENTS,
+    [FeatureCode.MAX_UPLOAD_BYTES]: FeatureCode.ATTACHMENTS,
+};
+
 export const SUBSCRIPTION_ENTITLEMENT_CONSTANTS = {
     COLLECTION_NAME: "subscriptionreservations",
     DEFAULT_RESERVATION_TTL_SECONDS: 300, // 5 minutes

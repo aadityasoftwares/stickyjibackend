@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import { Types } from "mongoose";
 
@@ -69,7 +71,7 @@ export class StickyNoteChecklistItemService {
                 : this.stickyNoteChecklistItemRepository.getNextPositionByChecklist(checklistId);
 
         const [, itemCount, position] = await Promise.all([
-            this.assertChecklistUsable(checklistId),
+            this.assertChecklistUsable(checklistId, true),
 
             this.stickyNoteChecklistItemRepository.countUsableByChecklist(checklistId),
 
@@ -170,7 +172,7 @@ export class StickyNoteChecklistItemService {
             throw new AppError(StickyNoteChecklistItemMessages.NOT_FOUND, 404);
         }
 
-        await this.assertChecklistUsable(existing.checklistId.toString());
+        await this.assertChecklistUsable(existing.checklistId.toString(), true);
 
         const updateData: IStickyNoteChecklistItemUpdate = {};
 
@@ -255,7 +257,10 @@ export class StickyNoteChecklistItemService {
             throw new AppError(StickyNoteChecklistItemMessages.NOT_FOUND, 404);
         }
 
-        await this.assertChecklistUsable(existing.checklistId.toString());
+        await this.assertChecklistUsable(
+            existing.checklistId.toString(),
+            status === StickyNoteChecklistItemStatus.ACTIVE,
+        );
 
         if (existing.status === StickyNoteChecklistItemStatus.DELETED) {
             throw new AppError(StickyNoteChecklistItemMessages.ALREADY_DELETED, 400);
@@ -315,7 +320,7 @@ export class StickyNoteChecklistItemService {
             throw new AppError(StickyNoteChecklistItemMessages.NOT_FOUND, 404);
         }
 
-        await this.assertChecklistUsable(existing.checklistId.toString());
+        await this.assertChecklistUsable(existing.checklistId.toString(), true);
 
         if (existing.isCompleted === isCompleted) {
             throw new AppError(
@@ -420,7 +425,7 @@ export class StickyNoteChecklistItemService {
             throw new AppError(StickyNoteChecklistItemMessages.CANNOT_RESTORE_ACTIVE, 400);
         }
 
-        await this.assertChecklistUsable(existing.checklistId.toString());
+        await this.assertChecklistUsable(existing.checklistId.toString(), true);
 
         try {
             const item = await this.stickyNoteChecklistItemRepository.restore(id, userObjectId);
@@ -448,7 +453,7 @@ export class StickyNoteChecklistItemService {
         }
     }
 
-    private async assertChecklistUsable(checklistId: string): Promise<void> {
+    private async assertChecklistUsable(checklistId: string, requireFeature = false): Promise<void> {
         const checklist = await this.stickyNoteChecklistRepository.findByIdIncludingDeleted(checklistId);
 
         if (!checklist) {
@@ -459,6 +464,11 @@ export class StickyNoteChecklistItemService {
             throw new AppError(StickyNoteChecklistItemMessages.CHECKLIST_DELETED, 409);
         }
         await workspaceAvailabilityService.assertNoteWorkspaceAvailable(checklist.stickyNoteId.toString());
+        if (requireFeature)
+            await subscriptionEntitlementService.assertNoteFeature(
+                String(checklist.stickyNoteId),
+                FeatureCode.NOTES,
+            );
     }
 
     private getUserObjectId(userId: string): Types.ObjectId {

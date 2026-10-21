@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 import type { Model } from "mongoose";
-import type { IStickyNoteDocument } from "../interfaces/stickyNote.interface.js";
+import type { IStickyNoteDocument } from "../interfaces/stickynote.interface.js";
 import {
     StickyNoteBackgroundPattern,
     StickyNoteColor,

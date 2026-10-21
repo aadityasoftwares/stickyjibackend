@@ -13,7 +13,7 @@ import express from "express";
 import { UserModel } from "../src/modules/user/models/user.model.ts";
 import { WorkspaceModel } from "../src/modules/workspace/models/workspace.model.ts";
 import { WorkspaceFolderModel } from "../src/modules/workspaceFolders/models/workspaceFolder.model.ts";
-import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
+import { StickyNoteModel } from "../src/modules/stickynotes/models/stickynote.model.ts";
 import { MediaModel } from "../src/modules/media/models/media.model.ts";
 import { WorkspaceMemberModel } from "../src/modules/workspaceMember/models/workspaceMember.model.ts";
 import { PermissionModel } from "../src/modules/permissions/models/permission.model.ts";

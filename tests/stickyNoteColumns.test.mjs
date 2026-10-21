@@ -1,3 +1,4 @@
+import { seedProductSubscriptionFixtures } from "./helpers/subscriptionFixtures.mjs";
 import assert from "node:assert/strict";
 import { before, after, test, mock } from "node:test";
 import { spawn } from "node:child_process";
@@ -16,7 +17,7 @@ import { WorkspaceMemberModel } from "../src/modules/workspaceMember/models/work
 import { UserModel } from "../src/modules/user/models/user.model.ts";
 import { RoleModel } from "../src/modules/roles/models/role.model.ts";
 import { PermissionModel } from "../src/modules/permissions/models/permission.model.ts";
-import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
+import { StickyNoteModel } from "../src/modules/stickynotes/models/stickynote.model.ts";
 import { StickyNoteColumnModel } from "../src/modules/stickynotescolumns/models/stickyNoteColumn.model.ts";
 import { StickyNoteColumnService } from "../src/modules/stickynotescolumns/services/stickyNoteColumn.service.ts";
 import {
@@ -159,6 +160,7 @@ before(async () => {
     server = app.listen(0, "127.0.0.1");
     await once(server, "listening");
     baseUrl = `http://127.0.0.1:${server.address().port}`;
+    await seedProductSubscriptionFixtures();
 });
 
 after(async () => {

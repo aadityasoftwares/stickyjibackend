@@ -2,7 +2,7 @@ import { Types, type ClientSession } from "mongoose";
 import { SubscriptionUsageModel } from "../models/subscriptionusage.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceFolderModel } from "../../workspaceFolders/models/workspaceFolder.model.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { MediaModel } from "../../media/models/media.model.js";
 import { UserSubscriptionModel } from "../../usersubscription/models/usersubscription.model.js";
 import { WorkspaceStatus } from "../../workspace/constants/workspace.enums.js";
@@ -204,6 +204,10 @@ export class SubscriptionUsageRepository {
         ownedWorkspaceIds: Types.ObjectId[],
         session?: ClientSession,
     ): Promise<number> {
+        // Trashing a workspace does not remove its stored objects.
+        const retainedQuery = WorkspaceModel.find({ ownerId: userId }).select("_id");
+        if (session) retainedQuery.session(session);
+        ownedWorkspaceIds = (await retainedQuery.lean().exec()).map((workspace) => workspace._id);
         let noteIds: Types.ObjectId[] = [];
         if (ownedWorkspaceIds.length > 0) {
             const notesQuery = StickyNoteModel.find({ workspaceId: { $in: ownedWorkspaceIds } }).select(
@@ -233,7 +237,14 @@ export class SubscriptionUsageRepository {
         const pipeline = [
             {
                 $match: {
-                    status: MediaStatus.ACTIVE,
+                    $and: [
+                        {
+                            $or: [
+                                { status: MediaStatus.ACTIVE },
+                                { status: MediaStatus.PENDING, uploadExpiresAt: { $gt: new Date() } },
+                            ],
+                        },
+                    ],
                     storageDeletionPending: { $ne: true },
                     deletedAt: null,
                     $or: resourceOrConditions,
@@ -277,7 +288,14 @@ export class SubscriptionUsageRepository {
         const pipeline = [
             {
                 $match: {
-                    status: MediaStatus.ACTIVE,
+                    $and: [
+                        {
+                            $or: [
+                                { status: MediaStatus.ACTIVE },
+                                { status: MediaStatus.PENDING, uploadExpiresAt: { $gt: new Date() } },
+                            ],
+                        },
+                    ],
                     storageDeletionPending: { $ne: true },
                     deletedAt: null,
                     $or: resourceOrConditions,

@@ -26,6 +26,10 @@ import type {
 
 import { CloudflareR2Service } from "../storage/cloudflareR2.service.js";
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
+import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
+import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 
 export class MediaService {
     private readonly mediaRepository: MediaRepository;
@@ -43,13 +47,7 @@ export class MediaService {
         if (!Types.ObjectId.isValid(userId)) {
             throw new AppError("Invalid user ID.", 400);
         }
-
-        const reservation = await this.subscriptionEntitlementService.assertCanUploadAttachment(
-            userId,
-            data.resourceType ?? null,
-            data.resourceId ? String(data.resourceId) : null,
-            data.size,
-        );
+        await this.assertUploadAccess(userId, data.resourceType, data.resourceId);
 
         const fileName = data.fileName.trim();
 
@@ -83,28 +81,34 @@ export class MediaService {
 
         const resourceId = data.resourceId ? this.validateResourceId(data.resourceId) : null;
 
-        const media = await this.mediaRepository.create({
-            _id: mediaId,
-            uploadedBy: new Types.ObjectId(userId),
-            storageProvider: MediaStorageProvider.CLOUDFLARE_R2,
-            bucket: this.storageService.getBucketName(),
-            storageKey,
-            publicUrl,
-            originalFileName: fileName,
-            mimeType,
-            extension,
-            size: data.size,
-            mediaType: data.mediaType,
-            purpose: data.purpose,
-            visibility,
-            status: MediaStatus.PENDING,
-            resourceType: data.resourceType ?? null,
+        const reservation = await this.subscriptionEntitlementService.assertCanUploadAttachment(
+            userId,
+            data.resourceType ?? null,
             resourceId,
-            uploadExpiresAt,
-        });
-
+            data.size,
+        );
         try {
-            const uploadUrl = await this.storageService.createUploadUrl(storageKey, mimeType);
+            const media = await this.mediaRepository.create({
+                _id: mediaId,
+                uploadedBy: new Types.ObjectId(userId),
+                storageProvider: MediaStorageProvider.CLOUDFLARE_R2,
+                bucket: this.storageService.getBucketName(),
+                storageKey,
+                publicUrl,
+                originalFileName: fileName,
+                mimeType,
+                extension,
+                size: data.size,
+                mediaType: data.mediaType,
+                purpose: data.purpose,
+                visibility,
+                status: MediaStatus.PENDING,
+                resourceType: data.resourceType ?? null,
+                resourceId,
+                uploadExpiresAt,
+            });
+
+            const uploadUrl = await this.storageService.createUploadUrl(storageKey, mimeType, data.size);
 
             await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
 
@@ -147,7 +151,7 @@ export class MediaService {
             throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
         }
 
-        if (media.uploadExpiresAt && media.uploadExpiresAt < new Date()) {
+        if (!media.uploadExpiresAt || media.uploadExpiresAt <= new Date()) {
             await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
 
             await this.mediaRepository.updateById(mediaId, {
@@ -169,24 +173,16 @@ export class MediaService {
 
         const actualMimeType = metadata.ContentType?.toLowerCase();
 
-        console.log("actualSize");
-        console.log(actualSize);
-        console.log("media.size");
-        console.log(media.size);
-
         if (actualSize !== media.size) {
+            await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
             await this.mediaRepository.updateById(mediaId, {
                 status: MediaStatus.FAILED,
             });
-            console.log("COE");
             throw new AppError(MediaMessages.STORAGE_METADATA_MISMATCH, 400);
         }
 
-        console.log("actualMimeType");
-        console.log(actualMimeType);
-        console.log("media.mimeType");
-        console.log(media.mimeType);
         if (actualMimeType && actualMimeType !== media.mimeType) {
+            await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
             await this.mediaRepository.updateById(mediaId, {
                 status: MediaStatus.FAILED,
             });
@@ -267,11 +263,51 @@ export class MediaService {
             updateData.resourceId = data.resourceId ? this.validateResourceId(data.resourceId) : null;
         }
 
-        await this.assertResourceAvailable(
-            data.resourceType !== undefined ? data.resourceType : media.resourceType,
-            data.resourceId !== undefined ? data.resourceId : media.resourceId,
+        const nextType = data.resourceType !== undefined ? data.resourceType : media.resourceType;
+        const nextId = data.resourceId !== undefined ? data.resourceId : media.resourceId;
+        await this.assertResourceAvailable(nextType, nextId);
+        const associationChanged =
+            nextType !== media.resourceType || String(nextId ?? "") !== String(media.resourceId ?? "");
+        if (!associationChanged) return this.mediaRepository.updateById(mediaId, updateData as any);
+
+        await this.assertUploadAccess(userId, nextType, nextId);
+        if (media.status !== MediaStatus.ACTIVE) {
+            throw new AppError("Complete the upload before moving its attachment.", 409);
+        }
+        const previousScope = await this.subscriptionEntitlementService.resolveAttachmentBillingScope(
+            userId,
+            media.resourceType ?? null,
+            media.resourceId ?? null,
         );
-        return this.mediaRepository.updateById(mediaId, updateData as any);
+        const destinationScope = await this.subscriptionEntitlementService.resolveAttachmentBillingScope(
+            userId,
+            nextType ?? null,
+            nextId ?? null,
+        );
+        if (previousScope.id === destinationScope.id) {
+            await this.subscriptionEntitlementService.assertFeatureEnabled(
+                destinationScope,
+                FeatureCode.ATTACHMENTS,
+            );
+            return this.mediaRepository.updateById(mediaId, updateData as any);
+        }
+        // Moving a file can change the billing owner. Reserve against the destination
+        // before changing its association, just as for a new upload.
+        const reservation = await this.subscriptionEntitlementService.assertCanUploadAttachment(
+            userId,
+            nextType ?? null,
+            nextId ?? null,
+            media.size,
+        );
+        try {
+            const updated = await this.mediaRepository.updateById(mediaId, updateData as any);
+            if (!updated) throw new AppError(MediaMessages.NOT_FOUND, 404);
+            await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
+            return updated;
+        } catch (error) {
+            await this.subscriptionEntitlementService.releaseReservation(reservation.reservationId);
+            throw error;
+        }
     }
 
     async deleteMedia(mediaId: string, userId: string) {
@@ -313,6 +349,39 @@ export class MediaService {
         }
 
         return new Types.ObjectId(resourceId);
+    }
+
+    private async assertUploadAccess(
+        userId: string,
+        type: MediaResourceType | null | undefined,
+        id: unknown,
+    ) {
+        if (type === MediaResourceType.NOTE || type === MediaResourceType.WORKSPACE) {
+            if (!id || !Types.ObjectId.isValid(String(id))) {
+                throw new AppError(MediaMessages.INVALID_RESOURCE_ID, 400);
+            }
+            if (type === MediaResourceType.NOTE) {
+                const note = await StickyNoteModel.findById(String(id)).lean().exec();
+                if (!note) throw new AppError("Note not found.", 404);
+                const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                    userId,
+                    String(note.workspaceId),
+                );
+                permissionAuthorizationService.assertNoteAccess(auth, note, PermissionAction.UPDATE);
+            } else {
+                const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
+                    userId,
+                    String(id),
+                );
+                permissionAuthorizationService.assertPermission(
+                    auth,
+                    PermissionModule.WORKSPACE,
+                    PermissionAction.UPDATE,
+                );
+            }
+        } else if (id && (type !== MediaResourceType.USER || String(id) !== userId)) {
+            throw new AppError(MediaMessages.INVALID_RESOURCE_ID, 400);
+        }
     }
 
     private async assertResourceAvailable(type: MediaResourceType | null | undefined, id: unknown) {

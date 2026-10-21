@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from "express";
 import { Types } from "mongoose";
 import { PermissionAction, PermissionModule } from "../constants/permission.enums.js";
 import { permissionAuthorizationService } from "../services/permissionAuthorization.service.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { WorkspaceMemberRepository } from "../../workspaceMember/repositories/workspaceMember.repository.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { StickyNoteMessages } from "../../stickynotes/constants/stickyNote.messages.js";

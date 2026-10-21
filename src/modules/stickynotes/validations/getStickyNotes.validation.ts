@@ -2,7 +2,7 @@ import type { NextFunction, Request, Response } from "express";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { StickyNoteMessages as M } from "../constants/stickyNote.messages.js";
 import { StickyNoteValidation as V } from "./stickyNote.validation.js";
-import type { IStickyNoteFilter } from "../interfaces/stickyNote.interface.js";
+import type { IStickyNoteFilter } from "../interfaces/stickynote.interface.js";
 export const getStickyNotesValidation = (req: Request, res: Response, next: NextFunction): void => {
     try {
         const source: unknown = (req.method === "POST" ? req.body : req.query) ?? {};

@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import { Types } from "mongoose";
 
@@ -44,6 +46,7 @@ export class StickyNoteLabelService {
         const workspaceId = typeof data.workspaceId === "string" ? data.workspaceId : data.workspaceId;
 
         await workspaceAvailabilityService.assertAvailable(workspaceId);
+        await subscriptionEntitlementService.assertWorkspaceFeature(String(workspaceId), FeatureCode.NOTES);
         const exists = await this.stickyNoteLabelRepository.existsBySlug(workspaceId, normalizedSlug);
 
         if (exists) {
@@ -109,6 +112,10 @@ export class StickyNoteLabelService {
             throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            String(existing.workspaceId),
+            FeatureCode.NOTES,
+        );
 
         const updateData: IStickyNoteLabelUpdate = {
             ...data,
@@ -213,6 +220,11 @@ export class StickyNoteLabelService {
             throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
+        if (status === StickyNoteLabelStatus.ACTIVE)
+            await subscriptionEntitlementService.assertWorkspaceFeature(
+                String(existing.workspaceId),
+                FeatureCode.NOTES,
+            );
 
         if (existing.status === StickyNoteLabelStatus.DELETED) {
             throw new AppError(StickyNoteLabelMessages.ALREADY_DELETED, 400);
@@ -292,6 +304,10 @@ export class StickyNoteLabelService {
             throw new AppError(StickyNoteLabelMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertAvailable(existing.workspaceId);
+        await subscriptionEntitlementService.assertWorkspaceFeature(
+            String(existing.workspaceId),
+            FeatureCode.NOTES,
+        );
 
         if (existing.status !== StickyNoteLabelStatus.DELETED) {
             throw new AppError(StickyNoteLabelMessages.CANNOT_RESTORE_ACTIVE, 400);

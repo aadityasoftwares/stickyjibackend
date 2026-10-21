@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import { Types } from "mongoose";
 
@@ -19,7 +21,7 @@ import { StickyNoteChecklistRepository } from "../repositories/stickyNoteCheckli
 
 import { StickyNoteChecklistValidation } from "../validations/stickyNoteChecklist.validation.js";
 
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 
 import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 
@@ -57,6 +59,7 @@ export class StickyNoteChecklistService {
         );
 
         const normalizedTitle = StickyNoteChecklistValidation.normalizeTitle(data.title);
+        await subscriptionEntitlementService.assertNoteFeature(stickyNoteId, FeatureCode.NOTES);
 
         const positionPromise =
             data.position !== undefined
@@ -166,6 +169,10 @@ export class StickyNoteChecklistService {
         }
 
         await this.assertStickyNoteUsable(existing.stickyNoteId.toString());
+        await subscriptionEntitlementService.assertNoteFeature(
+            String(existing.stickyNoteId),
+            FeatureCode.NOTES,
+        );
 
         const updateData: IStickyNoteChecklistUpdate = {};
 
@@ -251,6 +258,11 @@ export class StickyNoteChecklistService {
         }
 
         await this.assertStickyNoteUsable(existing.stickyNoteId.toString());
+        if (status === StickyNoteChecklistStatus.ACTIVE)
+            await subscriptionEntitlementService.assertNoteFeature(
+                String(existing.stickyNoteId),
+                FeatureCode.NOTES,
+            );
 
         if (existing.status === StickyNoteChecklistStatus.DELETED) {
             throw new AppError(StickyNoteChecklistMessages.ALREADY_DELETED, 400);
@@ -339,6 +351,10 @@ export class StickyNoteChecklistService {
         }
 
         await this.assertStickyNoteUsable(existing.stickyNoteId.toString());
+        await subscriptionEntitlementService.assertNoteFeature(
+            String(existing.stickyNoteId),
+            FeatureCode.NOTES,
+        );
 
         try {
             const checklist = await this.stickyNoteChecklistRepository.restore(id, userObjectId);

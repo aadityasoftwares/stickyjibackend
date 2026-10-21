@@ -7,7 +7,7 @@ import type {
     IStickyNoteRecord,
     IStickyNoteOverdueRecord,
     IStickyNoteOverdueListItem,
-} from "../interfaces/stickyNote.interface.js";
+} from "../interfaces/stickynote.interface.js";
 import {
     StickyNoteBackgroundPattern,
     StickyNoteColor,

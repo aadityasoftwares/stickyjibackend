@@ -1,7 +1,8 @@
+import { seedProductSubscriptionFixtures } from "./helpers/subscriptionFixtures.mjs";
 import { WorkspaceFolderModel } from "../src/modules/workspaceFolders/models/workspaceFolder.model.ts";
 import { WorkspaceFolderService } from "../src/modules/workspaceFolders/services/workspaceFolder.service.ts";
 import { WorkspaceFolderRepository } from "../src/modules/workspaceFolders/repositories/workspaceFolder.repository.ts";
-import { StickyNoteModel } from "../src/modules/stickynotes/models/stickyNote.model.ts";
+import { StickyNoteModel } from "../src/modules/stickynotes/models/stickynote.model.ts";
 import { StickyNoteColumnModel } from "../src/modules/stickynotescolumns/models/stickyNoteColumn.model.ts";
 import { AuditLogModel } from "../src/modules/auditlog/models/auditLog.model.ts";
 import { AuditLogService } from "../src/modules/auditlog/services/auditLog.service.ts";
@@ -203,6 +204,7 @@ before(async () => {
     server = app.listen(0, "127.0.0.1");
     await once(server, "listening");
     baseUrl = `http://127.0.0.1:${server.address().port}`;
+    await seedProductSubscriptionFixtures();
 });
 
 after(async () => {

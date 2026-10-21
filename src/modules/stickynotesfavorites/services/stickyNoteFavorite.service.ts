@@ -1,3 +1,5 @@
+import { subscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { FeatureCode } from "../../feature/constants/feature.enums.js";
 import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import { isWorkspaceTrashed } from "../../workspace/constants/workspace.enums.js";
 import { Types } from "mongoose";
@@ -16,7 +18,7 @@ import { StickyNoteFavoriteRepository } from "../repositories/stickyNoteFavorite
 
 import { StickyNoteFavoriteValidation } from "../validations/stickyNoteFavorite.validation.js";
 
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 
 import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 
@@ -61,6 +63,7 @@ export class StickyNoteFavoriteService {
         }
 
         const stickyNote = await this.assertStickyNoteAccess(stickyNoteId, userId);
+        await subscriptionEntitlementService.assertNoteFeature(stickyNoteId, FeatureCode.NOTES);
 
         const existing = await this.stickyNoteFavoriteRepository.findByStickyNoteIncludingDeleted(
             stickyNoteId,
@@ -218,6 +221,11 @@ export class StickyNoteFavoriteService {
             throw new AppError(StickyNoteFavoriteMessages.NOT_FOUND, 404);
         }
         await workspaceAvailabilityService.assertNoteWorkspaceAvailable(existing.stickyNoteId);
+        if (status === StickyNoteFavoriteStatus.ACTIVE)
+            await subscriptionEntitlementService.assertNoteFeature(
+                String(existing.stickyNoteId),
+                FeatureCode.NOTES,
+            );
 
         if (existing.status === status) {
             if (status === StickyNoteFavoriteStatus.ACTIVE) {

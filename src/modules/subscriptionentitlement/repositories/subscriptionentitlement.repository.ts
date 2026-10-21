@@ -1,8 +1,13 @@
 import { Types, type ClientSession } from "mongoose";
+import { randomUUID } from "node:crypto";
+import { setTimeout as delay } from "node:timers/promises";
+import { SubscriptionQuotaLockModel } from "../models/subscriptionquotalock.model.js";
+import { AppError } from "../../../utils/errors/app.error.js";
+import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 import { PlanFeatureModel } from "../../planfeature/models/planfeature.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceFolderModel } from "../../workspaceFolders/models/workspaceFolder.model.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { SubscriptionReservationModel } from "../models/subscriptionreservation.model.js";
 import { ReservationStatus } from "../constants/subscriptionentitlement.enums.js";
 import type { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
@@ -13,6 +18,66 @@ import type {
 } from "../interfaces/subscriptionentitlement.interface.js";
 
 export class SubscriptionEntitlementRepository {
+    /** Serialize admissions across API instances, including standalone MongoDB deployments. */
+    async withQuotaLock<T>(
+        key: string,
+        operation: (assertLease: () => Promise<void>) => Promise<T>,
+    ): Promise<T> {
+        const token = randomUUID();
+        const deadline = Date.now() + 10_000;
+        while (true) {
+            const now = new Date();
+            try {
+                const lock = await SubscriptionQuotaLockModel.findOneAndUpdate(
+                    { _id: key, expiresAt: { $lte: now } },
+                    { $set: { token, expiresAt: new Date(now.getTime() + 60_000) } },
+                    { upsert: true, returnDocument: "after", maxTimeMS: 5000 },
+                )
+                    .lean()
+                    .exec();
+                if (lock) break;
+            } catch (error: any) {
+                if (error?.code !== 11000) throw error;
+            }
+            if (Date.now() >= deadline) {
+                throw new AppError(
+                    "Subscription usage is busy. Please retry.",
+                    503,
+                    "SUBSCRIPTION_QUOTA_BUSY",
+                );
+            }
+            await delay(25);
+        }
+        try {
+            return await operation(async () => {
+                const renewed = await SubscriptionQuotaLockModel.updateOne(
+                    { _id: key, token, expiresAt: { $gt: new Date() } },
+                    { $set: { expiresAt: new Date(Date.now() + 60_000) } },
+                    { maxTimeMS: 5000 },
+                );
+                if (!renewed.matchedCount) {
+                    throw new AppError(
+                        "Subscription quota check expired. Please retry.",
+                        503,
+                        "SUBSCRIPTION_QUOTA_BUSY",
+                    );
+                }
+            });
+        } finally {
+            await SubscriptionQuotaLockModel.updateOne(
+                { _id: key, token },
+                { $set: { expiresAt: new Date(0) } },
+            );
+        }
+    }
+
+    async countActiveNotesInWorkspace(workspaceId: string) {
+        return StickyNoteModel.countDocuments({
+            workspaceId: new Types.ObjectId(workspaceId),
+            status: StickyNoteStatus.ACTIVE,
+        }).exec();
+    }
+
     async findPlanLimits(planId: string | Types.ObjectId, session?: ClientSession): Promise<PlanLimitsMap> {
         const query = PlanFeatureModel.find({
             planId: new Types.ObjectId(String(planId)),
@@ -24,12 +89,12 @@ export class SubscriptionEntitlementRepository {
         const limitsMap: PlanLimitsMap = {};
 
         for (const pf of planFeatures) {
-            const feature = pf.featureId as unknown as { code?: string } | null;
+            const feature = pf.featureId as unknown as { code?: string; isActive?: boolean } | null;
             if (feature?.code) {
                 limitsMap[feature.code] = {
                     limit: typeof pf.limit === "number" ? pf.limit : 0,
                     isUnlimited: Boolean(pf.isUnlimited),
-                    isEnabled: pf.isEnabled !== false,
+                    isEnabled: pf.isEnabled !== false && feature.isActive !== false,
                 };
             }
         }
@@ -122,10 +187,12 @@ export class SubscriptionEntitlementRepository {
             }
             return await SubscriptionReservationModel.create(data);
         } catch (error: any) {
-            // Idempotent retry: if duplicate operationId, return the existing reservation
             if (error?.code === 11000 && data.operationId) {
-                const existing = await this.findReservationByOperationId(data.operationId, session);
-                if (existing) return existing;
+                throw new AppError(
+                    "This quota operation already belongs to another request.",
+                    409,
+                    "SUBSCRIPTION_OPERATION_CONFLICT",
+                );
             }
             throw error;
         }
@@ -153,8 +220,8 @@ export class SubscriptionEntitlementRepository {
         id: string | Types.ObjectId,
         session?: ClientSession,
     ): Promise<ISubscriptionReservationDocument | null> {
-        const query = SubscriptionReservationModel.findByIdAndUpdate(
-            new Types.ObjectId(String(id)),
+        const query = SubscriptionReservationModel.findOneAndUpdate(
+            { _id: new Types.ObjectId(String(id)), status: ReservationStatus.PENDING },
             { $set: { status: ReservationStatus.COMMITTED } },
             { returnDocument: "after" },
         );
@@ -166,8 +233,8 @@ export class SubscriptionEntitlementRepository {
         id: string | Types.ObjectId,
         session?: ClientSession,
     ): Promise<ISubscriptionReservationDocument | null> {
-        const query = SubscriptionReservationModel.findByIdAndUpdate(
-            new Types.ObjectId(String(id)),
+        const query = SubscriptionReservationModel.findOneAndUpdate(
+            { _id: new Types.ObjectId(String(id)), status: ReservationStatus.PENDING },
             { $set: { status: ReservationStatus.RELEASED } },
             { returnDocument: "after" },
         );

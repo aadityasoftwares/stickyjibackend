@@ -9,9 +9,9 @@ import type {
     IStickyNoteFilter,
     IStickyNoteReorder,
     IStickyNoteOverdueFilter,
-} from "../interfaces/stickyNote.interface.js";
+} from "../interfaces/stickynote.interface.js";
 import type { StickyNoteStatus } from "../constants/stickyNote.enums.js";
-import { StickyNoteService } from "../services/stickyNote.service.js";
+import { StickyNoteService } from "../services/stickynote.service.js";
 
 type StickyNoteRequest<T> = Request<Request["params"], unknown, T>;
 export class StickyNoteController {

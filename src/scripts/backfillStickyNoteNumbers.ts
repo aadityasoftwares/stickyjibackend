@@ -1,6 +1,6 @@
 import mongoose, { Types } from "mongoose";
 import dotenv from "dotenv";
-import { StickyNoteModel } from "../modules/stickynotes/models/stickyNote.model.js";
+import { StickyNoteModel } from "../modules/stickynotes/models/stickynote.model.js";
 import { CounterModel } from "../modules/stickynotes/models/counter.model.js";
 
 dotenv.config();
