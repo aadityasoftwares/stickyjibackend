@@ -6,8 +6,10 @@ import cookieParser from "cookie-parser";
 
 import appRoutes from "./routes/app.routes.js";
 import { errorMiddleware } from "./middlewares/error/error.middleware.js";
+import { savePerformanceMiddleware } from "./utils/savePerformance.util.js";
 
 const app = express();
+app.use(savePerformanceMiddleware);
 
 /**
  * Security

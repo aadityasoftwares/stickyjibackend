@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
+import { measureSaveStage } from "../../../utils/savePerformance.util.js";
 import { StickyNoteMessages } from "../constants/stickyNote.messages.js";
 import { ResponseUtil } from "../../../utils/response.util.js";
 import { RequestUtil } from "../../../utils/request.util.js";
@@ -36,6 +37,7 @@ export class StickyNoteController {
                 req.body,
                 userId,
                 this.getAuditContext(req),
+                res.locals.workspaceAuth,
             );
             res.status(201).json(ResponseUtil.created(StickyNoteMessages.CREATED, result));
         } catch (error) {
@@ -121,11 +123,14 @@ export class StickyNoteController {
         try {
             const id = RequestUtil.getParam(req.params.id);
             const userId = req.user?.id ?? RequestUtil.getUserId(req);
-            const result = await this.stickyNoteService.updateStickyNote(
-                id,
-                req.body,
-                userId,
-                this.getAuditContext(req),
+            const result = await measureSaveStage("business", () =>
+                this.stickyNoteService.updateStickyNote(
+                    id,
+                    req.body,
+                    userId,
+                    this.getAuditContext(req),
+                    res.locals.workspaceAuth,
+                ),
             );
             res.status(200).json(ResponseUtil.success(StickyNoteMessages.UPDATED, result));
         } catch (error) {
@@ -178,7 +183,12 @@ export class StickyNoteController {
         try {
             const id = RequestUtil.getParam(req.params.id);
             const userId = req.user?.id ?? RequestUtil.getUserId(req);
-            await this.stickyNoteService.deleteStickyNote(id, userId, this.getAuditContext(req));
+            await this.stickyNoteService.deleteStickyNote(
+                id,
+                userId,
+                this.getAuditContext(req),
+                res.locals.workspaceAuth,
+            );
             res.status(200).json(ResponseUtil.success(StickyNoteMessages.DELETED));
         } catch (error) {
             next(error);

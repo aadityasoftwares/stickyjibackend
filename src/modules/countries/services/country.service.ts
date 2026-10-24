@@ -22,27 +22,20 @@ export class CountryService {
         data.currencySymbol = StringHelper.normalize(data.currencySymbol) as ICountry["currencyCode"];
         data.locale = StringHelper.normalizeLocale(data.locale);
 
-        const codeExists = await this.countryRepository.existsByCode(data.code);
-
-        if (codeExists) {
+        const conflicts = await this.countryRepository.findCreateConflicts(data);
+        if (conflicts.some((country) => country.code === data.code)) {
             throw new AppError(CountryMessages.CODE_ALREADY_EXISTS, 409);
         }
 
-        const alpha3Exists = await this.countryRepository.existsByAlpha3Code(data.alpha3Code);
-
-        if (alpha3Exists) {
+        if (conflicts.some((country) => country.alpha3Code === data.alpha3Code)) {
             throw new AppError(CountryMessages.ALPHA3_CODE_ALREADY_EXISTS, 409);
         }
 
-        const numericCodeExists = await this.countryRepository.existsByNumericCode(data.numericCode);
-
-        if (numericCodeExists) {
+        if (conflicts.some((country) => country.numericCode === data.numericCode)) {
             throw new AppError(CountryMessages.NUMERIC_CODE_ALREADY_EXISTS, 409);
         }
 
-        const localeExists = await this.countryRepository.existsByLocale(data.locale);
-
-        if (localeExists) {
+        if (conflicts.some((country) => country.locale === data.locale)) {
             throw new AppError(CountryMessages.LOCALE_ALREADY_EXISTS, 409);
         }
 

@@ -29,19 +29,12 @@ export const DEFAULT_STICKY_NOTE_COLUMNS = [
         isSystem: true,
     },
     {
-        name: "Doing",
-        type: StickyNoteColumnType.IN_PROGRESS,
-        color: StickyNoteColumnColor.BLUE,
+        name: "Completed",
+        type: StickyNoteColumnType.COMPLETED,
+        color: StickyNoteColumnColor.GREEN,
         position: 1,
         rank: "00200000",
         isSystem: true,
     },
-    {
-        name: "Done",
-        type: StickyNoteColumnType.COMPLETED,
-        color: StickyNoteColumnColor.GREEN,
-        position: 2,
-        rank: "00300000",
-        isSystem: true,
-    },
 ] as const;
+

@@ -81,7 +81,9 @@ export class SubscriptionEntitlementRepository {
     async findPlanLimits(planId: string | Types.ObjectId, session?: ClientSession): Promise<PlanLimitsMap> {
         const query = PlanFeatureModel.find({
             planId: new Types.ObjectId(String(planId)),
-        }).populate("featureId");
+        })
+            .select("featureId limit isUnlimited isEnabled")
+            .populate("featureId", "code isActive");
 
         if (session) query.session(session);
 

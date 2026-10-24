@@ -10,14 +10,12 @@ import { RoleScope } from "../constants/role.enums.js";
 export class RoleRepository {
     async create(data: Partial<IRole>) {
         const role = await RoleModel.create(data);
-        return RoleModel.findById(role._id)
-            .populate({
-                path: "permissions",
-                match: { isActive: true },
-                select: "name displayName code module action access sortOrder isSystem isActive",
-            })
-            .lean()
-            .exec();
+        return RoleModel.populate(role.toObject(), {
+            path: "permissions",
+            match: { isActive: true },
+            select: "name displayName code module action access sortOrder isSystem isActive",
+            options: { lean: true },
+        });
     }
 
     async findById(id: string) {

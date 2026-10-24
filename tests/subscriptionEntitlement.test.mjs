@@ -69,6 +69,9 @@ process.env.JWT_REFRESH_SECRET = "entitlement-test-refresh-secret";
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
 const { default: entitlementRoutes } =
     await import("../src/modules/subscriptionentitlement/routes/subscriptionentitlement.routes.ts");
+const { default: noteRoutes } = await import("../src/modules/stickynotes/routes/stickynote.routes.ts");
+const { savePerformanceMiddleware, savePerformanceModule, monitorSaveCommands } =
+    await import("../src/utils/savePerformance.util.ts");
 
 let mongo,
     directory,
@@ -88,6 +91,323 @@ const workspaceService = new WorkspaceService();
 const folderService = new WorkspaceFolderService();
 const noteService = new StickyNoteService();
 const mediaService = new MediaService();
+
+test("save performance: real MongoDB create, rapid updates and delete", async (t) => {
+    const samples = {};
+    let queries = 0;
+    mongoose.set("debug", () => {
+        queries++;
+    });
+    const measure = async (name, operation) => {
+        const start = performance.now();
+        const before = queries;
+        const result = await operation();
+        (samples[name] ??= []).push({
+            ms: +(performance.now() - start).toFixed(2),
+            queries: queries - before,
+        });
+        return result;
+    };
+    try {
+        const { userId, data } = await createNoteFixture();
+        for (let iteration = 0; iteration < 10; iteration++) {
+            const note = await measure("create", () =>
+                noteService.createStickyNote({ ...data, title: "Measured" }, userId),
+            );
+            await measure("update", () =>
+                noteService.updateStickyNote(note.id, { title: "Changed" }, userId),
+            );
+            await measure("rapidUpdates", () =>
+                Promise.all([
+                    noteService.updateStickyNote(note.id, { title: "Concurrent title" }, userId),
+                    noteService.updateStickyNote(note.id, { content: "Concurrent content" }, userId),
+                ]),
+            );
+            const saved = await StickyNoteModel.findById(note.id).lean();
+            assert.equal(saved.title, "Concurrent title");
+            assert.equal(saved.content, "Concurrent content");
+            await measure("delete", () => noteService.deleteStickyNote(note.id, userId));
+            assert.equal((await StickyNoteModel.findById(note.id).lean()).status, StickyNoteStatus.TRASHED);
+        }
+        t.diagnostic(
+            JSON.stringify(
+                Object.fromEntries(
+                    Object.entries(samples).map(([name, values]) => {
+                        const times = values.map((value) => value.ms).sort((a, b) => a - b);
+                        return [
+                            name,
+                            {
+                                medianMs: +((times[4] + times[5]) / 2).toFixed(2),
+                                maxMs: times.at(-1),
+                                queries: [...new Set(values.map((value) => value.queries))],
+                                samples: values.length,
+                            },
+                        ];
+                    }),
+                ),
+            ),
+        );
+    } finally {
+        mongoose.set("debug", false);
+    }
+});
+
+test("quota admission loads plan limits once and persists reservation release", async () => {
+    const userId = await createUser("single-plan-read");
+    let reads = 0;
+    mongoose.set("debug", (collection, method) => {
+        if (collection === PlanFeatureModel.collection.name && method === "find") reads++;
+    });
+    try {
+        const reservation = await entitlementService.reserveCapacity(
+            { type: BillingScopeType.USER, id: userId },
+            FeatureCode.MAX_ACTIVE_STICKY_NOTES,
+            1,
+        );
+        assert.equal(reads, 1);
+        await entitlementService.releaseReservation(reservation.reservationId);
+        assert.equal(
+            (await SubscriptionReservationModel.findById(reservation.reservationId).lean()).status,
+            ReservationStatus.RELEASED,
+        );
+    } finally {
+        mongoose.set("debug", false);
+    }
+});
+
+test("create results match refetched role and legacy workspace without a parent reread", async () => {
+    const { RoleRepository } = await import("../src/modules/roles/repositories/role.repository.ts");
+    const { NotesWorkspaceRepository } =
+        await import("../src/modules/notesworkspace/repositories/notesworkspace.repository.ts");
+    const { NotesWorkspaceModel } =
+        await import("../src/modules/notesworkspace/models/notesworkspace.model.ts");
+    const userId = await createUser("create-response");
+    const permission = await PermissionModel.findOne({ isActive: true }).lean();
+    const roles = new RoleRepository();
+    const workspaces = new NotesWorkspaceRepository();
+    let reads = 0;
+    mongoose.set("debug", (collection, method) => {
+        if (
+            [RoleModel.collection.name, NotesWorkspaceModel.collection.name].includes(collection) &&
+            method === "findOne"
+        )
+            reads++;
+    });
+    try {
+        const role = await roles.create({
+            name: "Performance role",
+            displayName: "Performance role",
+            code: `PERF_${new Types.ObjectId()}`,
+            permissions: [permission._id],
+        });
+        const workspace = await workspaces.create({
+            title: "Measured workspace",
+            owner: new Types.ObjectId(userId),
+            members: [new Types.ObjectId(userId)],
+        });
+        assert.equal(reads, 0);
+        assert.deepEqual(
+            JSON.parse(JSON.stringify(role)),
+            JSON.parse(JSON.stringify(await roles.findById(String(role._id)))),
+        );
+        assert.deepEqual(
+            workspace.toJSON(),
+            (await workspaces.findById(String(workspace._id), userId)).toJSON(),
+        );
+        await assert.rejects(() => roles.create({ name: "Invalid" }), /validation/i);
+        await assert.rejects(() => workspaces.create({ owner: new Types.ObjectId(userId) }), /validation/i);
+        await Promise.all([
+            workspaces.update(String(workspace._id), userId, { title: "Changed title" }),
+            workspaces.update(String(workspace._id), userId, { description: "Changed description" }),
+        ]);
+        const saved = await workspaces.findById(String(workspace._id), userId);
+        assert.equal(saved.title, "Changed title");
+        assert.equal(saved.description, "Changed description");
+        assert.equal(await workspaces.delete(String(workspace._id), String(new Types.ObjectId())), null);
+        await workspaces.delete(String(workspace._id), userId);
+        assert.equal(await workspaces.findById(String(workspace._id), userId), null);
+    } finally {
+        mongoose.set("debug", false);
+    }
+});
+
+test("country save performance and duplicate validation preserve CRUD behavior", async (t) => {
+    const { CountryService } = await import("../src/modules/countries/services/country.service.ts");
+    const { CountryModel } = await import("../src/modules/countries/models/country.model.ts");
+    const { CountryMessages } = await import("../src/modules/countries/constants/country.messages.ts");
+    const service = new CountryService();
+    const india = {
+        name: "India",
+        nativeName: "India",
+        code: "IN",
+        alpha3Code: "IND",
+        numericCode: "356",
+        dialCode: "+91",
+        continent: "ASIA",
+        currencyCode: "INR",
+        currencySymbol: "INR",
+        locale: "en-IN",
+        isDefault: false,
+        isSystem: false,
+        isActive: true,
+    };
+    const usa = {
+        ...india,
+        name: "United States",
+        code: "US",
+        alpha3Code: "USA",
+        numericCode: "840",
+        dialCode: "+1",
+        continent: "NORTH_AMERICA",
+        currencyCode: "USD",
+        currencySymbol: "$",
+        locale: "en-US",
+    };
+    await CountryModel.createIndexes();
+    const samples = [];
+    let queries = 0;
+    mongoose.set("debug", () => {
+        queries++;
+    });
+    try {
+        for (let index = 0; index < 10; index++) {
+            const before = queries;
+            const start = performance.now();
+            const created = await service.createCountry({ ...india });
+            samples.push({ ms: performance.now() - start, queries: queries - before });
+            const updated = await service.updateCountry(String(created._id), { name: "Updated India" });
+            assert.equal(updated.name, "Updated India");
+            assert.ok(updated.updatedAt >= created.createdAt);
+            await service.deleteCountry(String(created._id));
+            assert.equal(await CountryModel.findById(created._id), null);
+        }
+        const created = await service.createCountry({ ...india });
+        for (const [field, message] of [
+            ["code", CountryMessages.CODE_ALREADY_EXISTS],
+            ["alpha3Code", CountryMessages.ALPHA3_CODE_ALREADY_EXISTS],
+            ["numericCode", CountryMessages.NUMERIC_CODE_ALREADY_EXISTS],
+            ["locale", CountryMessages.LOCALE_ALREADY_EXISTS],
+        ]) {
+            await assert.rejects(
+                () => service.createCountry({ ...usa, [field]: india[field] }),
+                (error) => error.statusCode === 409 && error.message === message,
+            );
+        }
+        await assert.rejects(
+            () => service.createCountry({ ...india }),
+            (error) => error.message === CountryMessages.CODE_ALREADY_EXISTS,
+        );
+        await service.deleteCountry(String(created._id));
+        const attempts = await Promise.allSettled([
+            service.createCountry({ ...usa }),
+            service.createCountry({ ...usa }),
+        ]);
+        assert.equal(attempts.filter((result) => result.status === "fulfilled").length, 1);
+        assert.equal(await CountryModel.countDocuments({ code: "US" }), 1);
+        await CountryModel.deleteMany({ code: "US" });
+        const times = samples.map((sample) => sample.ms).sort((a, b) => a - b);
+        t.diagnostic(
+            JSON.stringify({
+                countryCreate: {
+                    medianMs: +((times[4] + times[5]) / 2).toFixed(2),
+                    queries: [...new Set(samples.map((sample) => sample.queries))],
+                    samples: samples.length,
+                },
+            }),
+        );
+    } finally {
+        mongoose.set("debug", false);
+    }
+});
+
+test("HTTP save timing measures real validation, business, MongoDB and response handling", async (t) => {
+    const { userId, note } = await createNoteFixture();
+    const keys = ["SAVE_PERFORMANCE_ENABLED", "SAVE_PERFORMANCE_SAMPLE_RATE", "SAVE_PERFORMANCE_SLOW_MS"];
+    const previous = keys.map((key) => process.env[key]);
+    const originalInfo = console.info;
+    const records = [];
+    keys.forEach((key, index) => {
+        process.env[key] = ["true", "1", "0"][index];
+    });
+    console.info = (tag, value) => {
+        if (tag === "[SavePerformance]") records.push(JSON.parse(value));
+    };
+    try {
+        for (let index = 0; index < 10; index++) {
+            const response = await fetch(`${url}/stickynotes/update/${note.id}`, {
+                method: "PUT",
+                headers: { Authorization: `Bearer ${userId}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ content: `Measured update ${index}` }),
+            });
+            assert.equal(response.status, 200);
+            assert.equal((await response.json()).data.content, `Measured update ${index}`);
+        }
+        assert.equal(records.length, 10);
+        assert.ok(
+            records.every(
+                (record) =>
+                    record.commands > 0 &&
+                    record.databaseMs > 0 &&
+                    record.stages.validation >= 0 &&
+                    record.stages.response >= 0 &&
+                    record.stages.business > 0,
+            ),
+        );
+        const median = (values) => {
+            values.sort((a, b) => a - b);
+            return +((values[4] + values[5]) / 2).toFixed(2);
+        };
+        t.diagnostic(
+            JSON.stringify({
+                httpUpdate: {
+                    totalMs: median(records.map((r) => r.totalMs)),
+                    databaseMs: median(records.map((r) => r.databaseMs)),
+                    validationMs: median(records.map((r) => r.stages.validation)),
+                    businessMs: median(records.map((r) => r.stages.business)),
+                    responseMs: median(records.map((r) => r.stages.response)),
+                    commands: [...new Set(records.map((r) => r.commands))],
+                    samples: 10,
+                },
+            }),
+        );
+    } finally {
+        console.info = originalInfo;
+        keys.forEach((key, index) => {
+            if (previous[index] === undefined) delete process.env[key];
+            else process.env[key] = previous[index];
+        });
+    }
+});
+
+test("reused note authorization rejects mismatched identities, workspaces, inactive state and permissions", async () => {
+    const { permissionAuthorizationService } =
+        await import("../src/modules/permissions/services/permissionAuthorization.service.ts");
+    const { userId, note, workspace } = await createNoteFixture();
+    const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspace.id);
+    for (const altered of [
+        { ...auth, userId: String(new Types.ObjectId()) },
+        { ...auth, workspaceId: String(new Types.ObjectId()) },
+        { ...auth, workspaceStatus: WorkspaceStatus.INACTIVE },
+        { ...auth, permissions: [] },
+    ]) {
+        await assert.rejects(
+            () =>
+                noteService.updateStickyNote(
+                    note.id,
+                    { title: "Must not persist" },
+                    userId,
+                    undefined,
+                    altered,
+                ),
+            (error) => error.statusCode === 403,
+        );
+        await assert.rejects(
+            () => noteService.deleteStickyNote(note.id, userId, undefined, altered),
+            (error) => error.statusCode === 403,
+        );
+    }
+    assert.notEqual((await StickyNoteModel.findById(note.id).lean()).title, "Must not persist");
+});
 
 async function withPlanFeature(code, changes, operation) {
     const feature = await FeatureModel.findOne({ code });
@@ -472,6 +792,7 @@ before(async () => {
             await mongoose.connect("mongodb://127.0.0.1:" + port + "/entitlement_test", {
                 serverSelectionTimeoutMS: 500,
                 autoIndex: false,
+                monitorCommands: true,
             });
             break;
         } catch (error) {
@@ -646,7 +967,10 @@ before(async () => {
     mock.method(JwtUtil, "verifyAccessToken", (token) => ({ sub: token, sessionId: "test" }));
 
     const app = express();
+    monitorSaveCommands(mongoose.connection.getClient());
+    app.use(savePerformanceMiddleware);
     app.use(express.json());
+    app.use("/stickynotes", savePerformanceModule("stickynotes"), noteRoutes);
     app.use("/subscriptionentitlement", entitlementRoutes);
     app.use(errorMiddleware);
 

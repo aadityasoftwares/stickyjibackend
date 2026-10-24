@@ -308,6 +308,17 @@ test("create permissions and protected fields; default provisioning still works"
     });
     assert.equal(legacy.status, 201);
     assert.equal(legacy.body.data.slug, "null-slug");
+
+    const createdCols = await StickyNoteColumnModel.find({ workspaceFolderId: legacy.body.data.id })
+        .sort({ position: 1 })
+        .lean();
+    assert.equal(createdCols.length, 2);
+    assert.equal(createdCols[0].name, "To do");
+    assert.equal(createdCols[0].type, "TODO");
+    assert.equal(createdCols[0].isSystem, true);
+    assert.equal(createdCols[1].name, "Completed");
+    assert.equal(createdCols[1].type, "COMPLETED");
+    assert.equal(createdCols[1].isSystem, true);
 });
 
 const operations = [

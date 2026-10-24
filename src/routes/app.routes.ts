@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { savePerformanceModule } from "../utils/savePerformance.util.js";
 import userAuthRoutes from "../modules/user/routes/user.routes.js";
 import userProfileRoutes from "../modules/userprofile/routes/userProfile.routes.js";
 import permissionRoutes from "../modules/permissions/routes/permission.routes.js";
@@ -35,94 +36,106 @@ import stickyNoteRoutes from "../modules/stickynotes/routes/stickynote.routes.js
 
 const router = Router();
 
-router.use("/billing", billingRoutes);
-router.use("/subscriptionentitlement", subscriptionEntitlementRoutes);
-router.use("/subscriptionusage", subscriptionUsageRoutes);
-router.use("/usersubscription", userSubscriptionRoutes);
+router.use("/billing", savePerformanceModule("billing"), billingRoutes);
+router.use(
+    "/subscriptionentitlement",
+    savePerformanceModule("subscriptionentitlement"),
+    subscriptionEntitlementRoutes,
+);
+router.use("/subscriptionusage", savePerformanceModule("subscriptionusage"), subscriptionUsageRoutes);
+router.use("/usersubscription", savePerformanceModule("usersubscription"), userSubscriptionRoutes);
 
 //MANAGE PERMISSIONS
-router.use("/permissions", permissionRoutes);
+router.use("/permissions", savePerformanceModule("permissions"), permissionRoutes);
 
 //MANAGE ROLES
-router.use("/roles", roleRoutes);
+router.use("/roles", savePerformanceModule("roles"), roleRoutes);
 
 //MANAGE LANGUAGES
-router.use("/languages", languageRoutes);
+router.use("/languages", savePerformanceModule("languages"), languageRoutes);
 
 //MANAGE COUNTRIES
-router.use("/countries", countryRoutes);
+router.use("/countries", savePerformanceModule("countries"), countryRoutes);
 
 //MANAGE TIMEZONES
-router.use("/timezones", timezoneRoutes);
+router.use("/timezones", savePerformanceModule("timezones"), timezoneRoutes);
 
 //MANAGE CURRENCIES
-router.use("/currencies", currencyRoutes);
+router.use("/currencies", savePerformanceModule("currencies"), currencyRoutes);
 
 //MANAGE FEATURES
-router.use("/features", featureRoutes);
+router.use("/features", savePerformanceModule("features"), featureRoutes);
 
 //MANAGE PLANS
-router.use("/plans", planRoutes);
+router.use("/plans", savePerformanceModule("plans"), planRoutes);
 
 //MANAGE PLANS PRICES
-router.use("/plans/prices", planPriceRoutes);
+router.use("/plans/prices", savePerformanceModule("planprices"), planPriceRoutes);
 
 //MANAGE PLAN FEATURES
-router.use("/planfeatures", planFeatureRoutes);
+router.use("/planfeatures", savePerformanceModule("planfeatures"), planFeatureRoutes);
 
 //MANAGE SYSTEM SETTINGS
-router.use("/systemsettings", systemSettingRoutes);
+router.use("/systemsettings", savePerformanceModule("systemsettings"), systemSettingRoutes);
 
 //MANAGE USER
-router.use("/user", userAuthRoutes);
+router.use("/user", savePerformanceModule("user"), userAuthRoutes);
 
 //MANAGE USER AUTHENTICATION ROUTES
-router.use("/auth", authRoutes);
+router.use("/auth", savePerformanceModule("auth"), authRoutes);
 
 //MANAGE USER PROFILE ROUTES
-router.use("/userprofile", userProfileRoutes);
+router.use("/userprofile", savePerformanceModule("userprofile"), userProfileRoutes);
 
 //MANAGE USER PROFILE ROUTES
-router.use("/media", mediaRoutes);
+router.use("/media", savePerformanceModule("media"), mediaRoutes);
 
 //MANAGE USER PREFERENCE ROUTES
-router.use("/userpreference", userPreferenceRoutes);
+router.use("/userpreference", savePerformanceModule("userpreference"), userPreferenceRoutes);
 
 //MANAGE USER WORKSPACES ROUTES
-router.use("/workspaces", workspaceRoutes);
+router.use("/workspaces", savePerformanceModule("workspaces"), workspaceRoutes);
 
 //MANAGE WORKSPACES MEMBER INVITATIONS ROUTES
-router.use("/workspacememberinvitations", workspaceMemberInvitationRoutes);
+router.use(
+    "/workspacememberinvitations",
+    savePerformanceModule("workspacememberinvitations"),
+    workspaceMemberInvitationRoutes,
+);
 
 //MANAGE WORKSPACES FOLDERS ROUTES
-router.use("/workspacefolders", workspaceFolderRoutes);
+router.use("/workspacefolders", savePerformanceModule("workspacefolders"), workspaceFolderRoutes);
 
 //MANAGE WORKSPACES MEMBERS ROUTES
-router.use("/workspacemembers", workspaceMemberRoutes);
+router.use("/workspacemembers", savePerformanceModule("workspacemembers"), workspaceMemberRoutes);
 
 //MANAGE STICKY NOTES ROUTES
-router.use("/stickynotescolumns", stickyNoteColumnRoutes);
+router.use("/stickynotescolumns", savePerformanceModule("stickynotescolumns"), stickyNoteColumnRoutes);
 
 //MANAGE STICKY NOTES ROUTES
-router.use("/stickynotes", stickyNoteRoutes);
+router.use("/stickynotes", savePerformanceModule("stickynotes"), stickyNoteRoutes);
 
 //MANAGE STICKY NOTE LABELS ROUTES
-router.use("/stickynoteslabels", stickyNoteLabelRoutes);
+router.use("/stickynoteslabels", savePerformanceModule("stickynoteslabels"), stickyNoteLabelRoutes);
 
 //MANAGE STICKY NOTE CHECKLIST ROUTES
-router.use("/stickynoteschecklist", stickyNoteChecklistRoutes);
+router.use("/stickynoteschecklist", savePerformanceModule("stickynoteschecklist"), stickyNoteChecklistRoutes);
 
 //MANAGE STICKY NOTE CHECKLIST ITEMS ROUTES
-router.use("/stickynoteschecklistitems", stickyNoteChecklistItemRoutes);
+router.use(
+    "/stickynoteschecklistitems",
+    savePerformanceModule("stickynoteschecklistitems"),
+    stickyNoteChecklistItemRoutes,
+);
 
 //MANAGE STICKY NOTE FAVORITES ROUTES
-router.use("/stickynotefavorites", stickyNoteFavoriteRoutes);
+router.use("/stickynotefavorites", savePerformanceModule("stickynotefavorites"), stickyNoteFavoriteRoutes);
 
 //MANAGE STICKY NOTE ASSIGNEES ROUTES
-router.use("/stickynotesassignees", stickyNoteAssigneeRoutes);
-router.use("/stickynoteassignees", stickyNoteAssigneeRoutes);
+router.use("/stickynotesassignees", savePerformanceModule("stickynotesassignees"), stickyNoteAssigneeRoutes);
+router.use("/stickynoteassignees", savePerformanceModule("stickynotesassignees"), stickyNoteAssigneeRoutes);
 
 //MANAGE AUDIT LOGS
-router.use("/auditlogs", auditLogRoutes);
+router.use("/auditlogs", savePerformanceModule("auditlogs"), auditLogRoutes);
 
 export default router;

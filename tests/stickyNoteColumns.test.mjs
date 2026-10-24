@@ -359,7 +359,7 @@ test("4. Fetch columns within authorized workspace and single column by id", asy
     });
     assert.equal(postListRes.status, 200);
     assert.equal(postListRes.body.success, true);
-    assert.equal(postListRes.body.data.length, 3);
+    assert.equal(postListRes.body.data.length, 2);
 
     // GET /getall with query params
     const listRes = await request(
@@ -370,7 +370,7 @@ test("4. Fetch columns within authorized workspace and single column by id", asy
     assert.equal(listRes.status, 200);
     assert.equal(listRes.body.success, true);
     assert.ok(Array.isArray(listRes.body.data));
-    assert.equal(listRes.body.data.length, 3);
+    assert.equal(listRes.body.data.length, 2);
 
     // GET / with query params (route alias matching workspace)
     const rootListRes = await request(
@@ -379,7 +379,7 @@ test("4. Fetch columns within authorized workspace and single column by id", asy
         "editor",
     );
     assert.equal(rootListRes.status, 200);
-    assert.equal(rootListRes.body.data.length, 3);
+    assert.equal(rootListRes.body.data.length, 2);
 
     const firstCol = listRes.body.data[0];
     const singleRes = await request("GET", `/get/${firstCol.id}`, "viewer");
@@ -428,22 +428,21 @@ test("8 & 9 & 10. Reorder columns, reject duplicates and maintain workspace isol
     const ids = defaults.map((c) => c.id);
 
     // Reverse order
-    const reversed = [ids[2], ids[1], ids[0]];
+    const reversed = [ids[1], ids[0]];
     const reorderRes = await request("PUT", "/reorder", "editor", {
         workspaceId: String(ws._id),
         workspaceFolderId: String(folder._id),
         columnIds: reversed,
     });
     assert.equal(reorderRes.status, 200);
-    assert.equal(reorderRes.body.data[0].id, ids[2]);
-    assert.equal(reorderRes.body.data[1].id, ids[1]);
-    assert.equal(reorderRes.body.data[2].id, ids[0]);
+    assert.equal(reorderRes.body.data[0].id, ids[1]);
+    assert.equal(reorderRes.body.data[1].id, ids[0]);
 
     // Reject duplicate IDs
     const dupRes = await request("PUT", "/reorder", "owner", {
         workspaceId: String(ws._id),
         workspaceFolderId: String(folder._id),
-        columnIds: [ids[0], ids[0], ids[1]],
+        columnIds: [ids[0], ids[0]],
     });
     assert.equal(dupRes.status, 400);
 
@@ -451,12 +450,12 @@ test("8 & 9 & 10. Reorder columns, reject duplicates and maintain workspace isol
     const partialRes = await request("PUT", "/reorder", "owner", {
         workspaceId: String(ws._id),
         workspaceFolderId: String(folder._id),
-        columnIds: [ids[0], ids[1]],
+        columnIds: [ids[0]],
     });
     assert.equal(partialRes.status, 400);
 
     // Item reorder
-    const itemReorderRes = await request("PUT", `/reorder/${ids[2]}`, "owner", {
+    const itemReorderRes = await request("PUT", `/reorder/${ids[1]}`, "owner", {
         beforeId: ids[0],
     });
     assert.equal(itemReorderRes.status, 200);

@@ -3,6 +3,20 @@ import type { ICountry, ICountryFilter } from "../interfaces/country.interface.j
 import { CountryCode, CountryCodeAlpha3, CountryNumericCode } from "../constants/country.enums.js";
 
 export class CountryRepository {
+    async findCreateConflicts(data: Pick<ICountry, "code" | "alpha3Code" | "numericCode" | "locale">) {
+        return CountryModel.find({
+            $or: [
+                { code: data.code },
+                { alpha3Code: data.alpha3Code },
+                { numericCode: data.numericCode },
+                { locale: data.locale },
+            ],
+        })
+            .select("code alpha3Code numericCode locale")
+            .lean()
+            .exec();
+    }
+
     async create(data: Partial<ICountry>) {
         return CountryModel.create(data);
     }

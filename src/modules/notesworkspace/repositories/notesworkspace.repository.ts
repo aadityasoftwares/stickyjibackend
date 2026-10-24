@@ -26,7 +26,7 @@ export class NotesWorkspaceRepository {
     async create(data: Partial<INotesWorkspaceDocument>) {
         const workspace = await NotesWorkspaceModel.create(data);
 
-        return await NotesWorkspaceModel.findById(workspace._id).populate(this.populateOptions);
+        return workspace.populate(this.populateOptions);
     }
 
     async findById(id: string, owner: string) {

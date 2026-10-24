@@ -52,8 +52,6 @@ export const requirePermission = (options: IRequirePermissionOptions) => {
                 throw new AppError("Unauthorized: Invalid authenticated user", 401);
             }
 
-            console.log("RequirePermission middleware invoked with options:", options, "for userId:", userId);
-
             if (options.scope === "global") {
                 const auth = await permissionAuthorizationService.resolveGlobalAuthorization(userId);
                 permissionAuthorizationService.assertPermission(auth, options.module, options.action);

@@ -36,8 +36,13 @@ export class SubscriptionEntitlementService {
     ) {}
 
     /** Capability checks complement authorization; they never grant resource access. */
-    async assertFeatureEnabled(scope: IBillingScope, feature: FeatureCode, session?: ClientSession) {
-        const config = await this.getResourceLimit(scope, feature, session);
+    async assertFeatureEnabled(
+        scope: IBillingScope,
+        feature: FeatureCode,
+        session?: ClientSession,
+        limits?: PlanLimitsMap,
+    ) {
+        const config = await this.getResourceLimit(scope, feature, session, limits);
         if (!config.isEnabled) {
             throw new AppError(
                 `The ${feature.toLowerCase().replaceAll("_", " ")} feature is not enabled for this plan.`,
@@ -133,7 +138,6 @@ export class SubscriptionEntitlementService {
 
         const effectivePlan = effectiveSub.effectivePlan;
         const limits = await this.repository.findPlanLimits(effectivePlan._id, session);
-        console.log(limits);
 
         return {
             planId: effectivePlan._id,
@@ -155,8 +159,9 @@ export class SubscriptionEntitlementService {
         scope: IBillingScope,
         resourceCode: string,
         session?: ClientSession,
+        resolvedLimits?: PlanLimitsMap,
     ): Promise<IPlanLimitValue> {
-        const { limits } = await this.resolveEffectivePlanLimits(scope, session);
+        const limits = resolvedLimits ?? (await this.resolveEffectivePlanLimits(scope, session)).limits;
         const limitConfig = limits[resourceCode];
 
         if (!limitConfig) {
@@ -334,9 +339,10 @@ export class SubscriptionEntitlementService {
 
         let limitConfig: IPlanLimitValue;
         try {
+            const { limits } = await this.resolveEffectivePlanLimits(scope);
             const capability = RESOURCE_CAPABILITIES[resourceCode as FeatureCode];
-            if (capability) await this.assertFeatureEnabled(scope, capability);
-            limitConfig = await this.getResourceLimit(scope, resourceCode);
+            if (capability) await this.assertFeatureEnabled(scope, capability, undefined, limits);
+            limitConfig = await this.getResourceLimit(scope, resourceCode, undefined, limits);
         } catch (error) {
             const disabled =
                 error instanceof AppError &&
@@ -356,8 +362,6 @@ export class SubscriptionEntitlementService {
         }
 
         const effectiveLimit = this.effectiveLimit(limitConfig);
-
-        console.log(`Effective limit for ${resourceCode} is ${effectiveLimit}`);
 
         // Check single-file upload size
         if (resourceCode === FeatureCode.MAX_UPLOAD_BYTES) {
@@ -505,8 +509,10 @@ export class SubscriptionEntitlementService {
             throw new AppError(SubscriptionEntitlementMessages.INVALID_QUANTITY, 400);
         }
 
+        // Resolve once per admission, inside the lock. Never cache across requests.
+        const { limits } = await this.resolveEffectivePlanLimits(scope, options?.session);
         const capability = RESOURCE_CAPABILITIES[resource];
-        if (capability) await this.assertFeatureEnabled(scope, capability, options?.session);
+        if (capability) await this.assertFeatureEnabled(scope, capability, options?.session, limits);
         if (resource === FeatureCode.MAX_FOLDERS_PER_WORKSPACE && !options?.workspaceId) {
             throw new AppError(SubscriptionEntitlementMessages.INVALID_WORKSPACE_ID, 400);
         }
@@ -545,7 +551,7 @@ export class SubscriptionEntitlementService {
         }
 
         // 1. Resolve effective limit from PlanFeature
-        const limitConfig = await this.getResourceLimit(scope, resource, options?.session);
+        const limitConfig = await this.getResourceLimit(scope, resource, options?.session, limits);
         const effectiveLimit = this.effectiveLimit(limitConfig);
 
         // 2. Query committed usage + pending reservations

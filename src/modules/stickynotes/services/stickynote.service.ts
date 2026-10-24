@@ -43,7 +43,10 @@ import {
 } from "../utils/stickyNote.mapper.js";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
 import { validateBringStickyNoteIds } from "../validations/overdueStickyNotes.validation.js";
-import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
+import {
+    permissionAuthorizationService,
+    type IWorkspaceAuthorizationContext,
+} from "../../permissions/services/permissionAuthorization.service.js";
 import {
     PermissionAccess,
     PermissionAction,
@@ -161,7 +164,12 @@ export class StickyNoteService {
         });
     }
 
-    async createStickyNote(data: IStickyNoteCreate, createdBy: string, context?: IAuditLogContext) {
+    async createStickyNote(
+        data: IStickyNoteCreate,
+        createdBy: string,
+        context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
+    ) {
         const normalizedTitle =
             data.title !== undefined ? StickyNoteValidation.normalizeTitle(data.title) : "";
         const normalizedContent = StickyNoteValidation.normalizeContent(data.content);
@@ -169,10 +177,7 @@ export class StickyNoteService {
         const workspaceFolderId = String(data.workspaceFolderId);
         const columnId = String(data.columnId);
 
-        const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
-            createdBy,
-            workspaceId,
-        );
+        const auth = await this.resolveWriteAuthorization(createdBy, workspaceId, authorization);
         permissionAuthorizationService.assertPermission(
             auth,
             PermissionModule.NOTES,
@@ -375,6 +380,7 @@ export class StickyNoteService {
         data: IStickyNoteUpdate,
         updatedBy: string,
         context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
     ) {
         if (!Types.ObjectId.isValid(id)) {
             throw new AppError(StickyNoteMessages.NOT_FOUND, 404, "STICKY_NOTE_NOT_FOUND");
@@ -383,9 +389,10 @@ export class StickyNoteService {
         if (!stickyNote) {
             throw new AppError(StickyNoteMessages.NOT_FOUND, 404, "STICKY_NOTE_NOT_FOUND");
         }
-        const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
+        const auth = await this.resolveWriteAuthorization(
             updatedBy,
             stickyNote.workspaceId.toString(),
+            authorization,
         );
         permissionAuthorizationService.assertNoteAccess(auth, stickyNote, PermissionAction.UPDATE);
         await subscriptionEntitlementService.assertWorkspaceFeature(
@@ -802,7 +809,12 @@ export class StickyNoteService {
         return this.resolveNoteDetailResponse(freshNote ?? updatedNote, userId);
     }
 
-    async deleteStickyNote(id: string, updatedBy?: string, context?: IAuditLogContext) {
+    async deleteStickyNote(
+        id: string,
+        updatedBy?: string,
+        context?: IAuditLogContext,
+        authorization?: IWorkspaceAuthorizationContext,
+    ) {
         if (!Types.ObjectId.isValid(id)) {
             throw new AppError(StickyNoteMessages.NOT_FOUND, 404, "STICKY_NOTE_NOT_FOUND");
         }
@@ -811,9 +823,10 @@ export class StickyNoteService {
             throw new AppError(StickyNoteMessages.NOT_FOUND, 404, "STICKY_NOTE_NOT_FOUND");
         }
         if (updatedBy) {
-            const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
+            const auth = await this.resolveWriteAuthorization(
                 updatedBy,
                 stickyNote.workspaceId.toString(),
+                authorization,
             );
             permissionAuthorizationService.assertNoteAccess(auth, stickyNote, [
                 PermissionAction.DELETE,
@@ -948,6 +961,23 @@ export class StickyNoteService {
             }
         }
         return result;
+    }
+
+    private async resolveWriteAuthorization(
+        userId: string,
+        workspaceId: string,
+        authorization?: IWorkspaceAuthorizationContext,
+    ): Promise<IWorkspaceAuthorizationContext> {
+        if (authorization) {
+            if (authorization.userId !== userId || authorization.workspaceId !== workspaceId) {
+                throw new AppError("Workspace access denied.", 403, "FORBIDDEN");
+            }
+            if (authorization.workspaceStatus !== undefined) {
+                permissionAuthorizationService.assertWorkspaceState(authorization.workspaceStatus);
+                return authorization;
+            }
+        }
+        return permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId);
     }
 
     private async resolveNoteDetailResponse(

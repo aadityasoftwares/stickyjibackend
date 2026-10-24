@@ -29,16 +29,19 @@ import { AppModule } from "../../../utils/enums/appModule.enums.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { AuditLogConfig } from "../../../config/auditlog.config.js";
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { StickyNoteColumnService } from "../../stickynotescolumns/services/stickyNoteColumn.service.js";
 
 export class WorkspaceFolderService {
     private readonly workspaceFolderRepository: WorkspaceFolderRepository;
     private readonly auditLogService: AuditLogService;
     private readonly subscriptionEntitlementService: SubscriptionEntitlementService;
+    private readonly stickyNoteColumnService: StickyNoteColumnService;
 
     constructor() {
         this.workspaceFolderRepository = new WorkspaceFolderRepository();
         this.auditLogService = new AuditLogService();
         this.subscriptionEntitlementService = new SubscriptionEntitlementService();
+        this.stickyNoteColumnService = new StickyNoteColumnService();
     }
 
     async createWorkspaceFolder(
@@ -60,6 +63,16 @@ export class WorkspaceFolderService {
         );
         try {
             const result = await this.persistFolder(validated, createdBy, auth, context);
+            try {
+                await this.stickyNoteColumnService.createDefaultColumns(
+                    String(validated.workspaceId),
+                    result.id,
+                    createdBy,
+                );
+            } catch (columnError) {
+                await this.workspaceFolderRepository.hardDeleteById(result.id);
+                throw columnError;
+            }
             await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
             return result;
         } catch (error) {
