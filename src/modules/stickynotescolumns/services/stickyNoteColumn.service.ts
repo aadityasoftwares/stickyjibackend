@@ -80,6 +80,11 @@ export class StickyNoteColumnService {
                   ? (RankUtil.generateRankAfter(highestRank) ?? RankUtil.generateInitialRank())
                   : RankUtil.generateInitialRank();
 
+        const position =
+            data.position !== undefined && StickyNoteColumnValidation.isValidPosition(data.position)
+                ? data.position
+                : highestPosition + 1;
+
         try {
             const column = await this.stickyNoteColumnRepository.create({
                 workspaceId: new Types.ObjectId(workspaceId),
@@ -87,7 +92,7 @@ export class StickyNoteColumnService {
                 name: normalizedName,
                 type: StickyNoteColumnType.CUSTOM,
                 color: data.color ?? StickyNoteColumnColor.YELLOW,
-                position: highestPosition + 1,
+                position,
                 rank,
                 isSystem: false,
                 createdBy: userObjectId,

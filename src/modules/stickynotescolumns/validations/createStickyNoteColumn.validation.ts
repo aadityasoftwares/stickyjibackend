@@ -2,8 +2,9 @@ import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { StickyNoteColumnMessages } from "../constants/stickyNoteColumn.messages.js";
 import { StickyNoteColumnValidation } from "./stickyNoteColumn.validation.js";
+import { RankUtil } from "../../../utils/rank.util.js";
 
-const ALLOWED_FIELDS = ["workspaceId", "workspaceFolderId", "name", "color"] as const;
+const ALLOWED_FIELDS = ["workspaceId", "workspaceFolderId", "name", "color", "position", "rank"] as const;
 
 export const createStickyNoteColumnValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
@@ -15,7 +16,7 @@ export const createStickyNoteColumnValidation = (req: Request, _res: Response, n
             return next(new AppError(StickyNoteColumnMessages.UNSUPPORTED_FIELDS, 400));
         }
 
-        const { workspaceId, workspaceFolderId, name, color } = req.body;
+        const { workspaceId, workspaceFolderId, name, color, position, rank } = req.body;
 
         if (workspaceId === undefined || workspaceId === null) {
             return next(new AppError(StickyNoteColumnMessages.WORKSPACE_ID_REQUIRED, 400));
@@ -40,6 +41,14 @@ export const createStickyNoteColumnValidation = (req: Request, _res: Response, n
 
         if (color !== undefined && !StickyNoteColumnValidation.isValidColor(color)) {
             return next(new AppError(StickyNoteColumnMessages.INVALID_COLOR, 400));
+        }
+
+        if (position !== undefined && !StickyNoteColumnValidation.isValidPosition(position)) {
+            return next(new AppError(StickyNoteColumnMessages.INVALID_POSITION, 400));
+        }
+
+        if (rank !== undefined && !RankUtil.isValidRank(rank)) {
+            return next(new AppError(StickyNoteColumnMessages.INVALID_RANK, 400));
         }
 
         next();

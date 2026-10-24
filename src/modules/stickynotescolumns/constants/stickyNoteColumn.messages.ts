@@ -28,6 +28,7 @@ export const StickyNoteColumnMessages = {
 
     INVALID_COLOR: "Invalid sticky note column color.",
     INVALID_POSITION: "Invalid sticky note column position.",
+    INVALID_RANK: "Invalid sticky note column rank.",
 
     MAX_COLUMNS_REACHED: "Maximum number of sticky note columns has been reached for this folder.",
 

@@ -241,6 +241,25 @@ test("1 & 16. Create column successfully and verify response envelope", async ()
     assert.equal(res.body.data.isSystem, false);
 });
 
+test("1b. Create column successfully with explicit position", async () => {
+    const { ws, folder } = await fixture();
+    const res = await request("POST", "/create", "owner", {
+        workspaceId: String(ws._id),
+        workspaceFolderId: String(folder._id),
+        name: "Todo",
+        color: StickyNoteColumnColor.YELLOW,
+        position: 0,
+    });
+
+    assert.equal(res.status, 201);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.message, StickyNoteColumnMessages.CREATED);
+    assert.ok(res.body.data.id);
+    assert.equal(res.body.data.name, "Todo");
+    assert.equal(res.body.data.color, StickyNoteColumnColor.YELLOW);
+    assert.equal(res.body.data.position, 0);
+});
+
 test("2. Reject invalid input on column creation", async () => {
     const { ws, folder } = await fixture();
 
