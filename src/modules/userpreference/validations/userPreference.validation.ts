@@ -29,6 +29,54 @@ preferenceKeyMap.set("overdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("overdue_view", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("todayoverdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 
+// Note selection aliases
+preferenceKeyMap.set("defaultnotecolor", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+preferenceKeyMap.set("default_note_color", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+preferenceKeyMap.set("notecolor", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+preferenceKeyMap.set("note_color", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+preferenceKeyMap.set("stickynotecolor", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+preferenceKeyMap.set("sticky_note_color", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+
+preferenceKeyMap.set("defaultnoteshape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("default_note_shape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("noteshape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("note_shape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("stickynoteshape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("sticky_note_shape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+preferenceKeyMap.set("shape", USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+
+preferenceKeyMap.set("defaultnotevariant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("default_note_variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("notevariant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("note_variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("papervariant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("paper_variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("defaultpapervariant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("default_paper_variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("stickynotevariant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("sticky_note_variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+preferenceKeyMap.set("variant", USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+
+preferenceKeyMap.set("defaultnotebackgroundpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("default_note_background_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("defaultnotepattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("default_note_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("notebackgroundpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("note_background_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("notepattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("note_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("paperpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("paper_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("defaultpaperpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("default_paper_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("backgroundpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("background_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("stickynotepattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("sticky_note_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("stickynotebackgroundpattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("sticky_note_background_pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+preferenceKeyMap.set("pattern", USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+
 export const UserPreferenceValidation = {
     keys: preferenceKeys,
 
@@ -119,6 +167,13 @@ export const UserPreferenceValidation = {
             case USER_PREFERENCE_KEYS.TIME_FORMAT:
                 // Normalize to lowercase
                 return value.toLowerCase();
+
+            case USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR:
+            case USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE:
+            case USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT:
+            case USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN:
+                // Normalize note selection preferences to uppercase with underscores
+                return value.trim().toUpperCase().replace(/[\s-]+/g, "_");
 
             case USER_PREFERENCE_KEYS.WORKSPACE_STATUS_FILTER:
             case USER_PREFERENCE_KEYS.WORKSPACE_ACCESS_FILTER:

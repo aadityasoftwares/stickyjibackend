@@ -1,4 +1,8 @@
 import {
+    StickyNoteBackgroundPattern,
+    StickyNoteColor,
+    StickyNoteShape,
+    StickyNoteVariant,
     StickyNoteView,
     UserPreferenceCategory,
     UserPreferenceValueType,
@@ -37,6 +41,9 @@ export const USER_PREFERENCE_KEYS = {
 
     // --- Notes ---
     DEFAULT_NOTE_COLOR: "defaultNoteColor",
+    DEFAULT_NOTE_SHAPE: "defaultNoteShape",
+    DEFAULT_NOTE_VARIANT: "defaultNoteVariant",
+    DEFAULT_NOTE_BACKGROUND_PATTERN: "defaultNoteBackgroundPattern",
     STICKY_NOTE_VIEW: "stickyNoteView",
     TODAY_VIEW: "todayView",
     OVERDUE_VIEW: "overdueView",
@@ -209,7 +216,22 @@ export const USER_PREFERENCE_DEFINITIONS = {
     [USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR]: {
         category: UserPreferenceCategory.NOTES,
         type: UserPreferenceValueType.STRING,
-        defaultValue: "YELLOW",
+        defaultValue: StickyNoteColor.YELLOW,
+    },
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: StickyNoteShape.SQUARE,
+    },
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: StickyNoteVariant.PLAIN,
+    },
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: StickyNoteBackgroundPattern.NONE,
     },
     [USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW]: {
         category: UserPreferenceCategory.NOTES,
@@ -387,5 +409,9 @@ export const USER_PREFERENCE_ALLOWED_VALUES: Partial<
         StickyNoteView.TABLE,
         StickyNoteView.GRID,
     ],
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR]: Object.values(StickyNoteColor),
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE]: Object.values(StickyNoteShape),
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT]: Object.values(StickyNoteVariant),
+    [USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN]: Object.values(StickyNoteBackgroundPattern),
     [USER_PREFERENCE_KEYS.OVERDUE_VIEW]: ["BAR", "BUTTON"],
 } as const;

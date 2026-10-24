@@ -484,3 +484,73 @@ test("overdue view preference keys, defaults, aliases, allowed values, and norma
         null,
     );
 });
+
+test("note selection preferences (color, shape, variant, pattern) keys, defaults, aliases, allowed values, and normalization are configured", async () => {
+    const { USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
+
+    // Allowed values
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR], [
+        "WHITE", "YELLOW", "ORANGE", "PINK", "RED", "GREEN", "BLUE", "PURPLE", "BROWN", "BLACK",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE], [
+        "SQUARE", "RECTANGLE", "PORTRAIT", "LANDSCAPE", "STRIP",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT], [
+        "PLAIN", "ROUNDED", "SOFT", "FOLDED", "CUT_CORNER", "TICKET",
+    ]);
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN], [
+        "NONE", "HORIZONTAL_LINES", "VERTICAL_LINES", "GRID",
+    ]);
+
+    // Defaults
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR].defaultValue, "YELLOW");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE].defaultValue, "SQUARE");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT].defaultValue, "PLAIN");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN].defaultValue, "NONE");
+
+    // Key validity and aliases
+    assert.equal(UserPreferenceValidation.isValidKey("defaultNoteColor"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("noteColor"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("stickyNoteColor"), true);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("noteColor"), USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
+
+    assert.equal(UserPreferenceValidation.isValidKey("defaultNoteShape"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("noteShape"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("shape"), true);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("shape"), USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE);
+
+    assert.equal(UserPreferenceValidation.isValidKey("defaultNoteVariant"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("paperVariant"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("variant"), true);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("paperVariant"), USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT);
+
+    assert.equal(UserPreferenceValidation.isValidKey("defaultNoteBackgroundPattern"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("paperPattern"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("pattern"), true);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("paperPattern"), USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN);
+
+    // Normalization
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR, "yellow"), "YELLOW");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE, "strip"), "STRIP");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT, "cut corner"), "CUT_CORNER");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT, "cut-corner"), "CUT_CORNER");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN, "horizontal lines"), "HORIZONTAL_LINES");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN, "grid"), "GRID");
+
+    // Domain validation
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR, "PINK"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR, "CYAN"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE, "PORTRAIT"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_SHAPE, "HEXAGON"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT, "TICKET"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT, "CIRCULAR"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN, "GRID"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN, "DOTS"), null);
+});
+

@@ -1,3 +1,4 @@
+import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
 import { Types, type AnyBulkWriteOperation, type ClientSession } from "mongoose";
 import type { IStickyNoteColumn } from "../interfaces/stickyNoteColumn.interface.js";
 import type { StickyNoteColumnType } from "../constants/stickyNoteColumn.enums.js";
@@ -146,5 +147,13 @@ export class StickyNoteColumnRepository {
         }));
 
         await StickyNoteColumnModel.bulkWrite(bulkOps);
+    }
+
+    async runInTransaction<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return this.runInTransactionIfSupported(operation);
+    }
+
+    async runInTransactionIfSupported<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return runMongoTransaction(operation);
     }
 }

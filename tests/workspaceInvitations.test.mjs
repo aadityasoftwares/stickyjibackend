@@ -453,8 +453,8 @@ test("preview and acceptance query work excludes redundant populations and topol
         assert.equal(operations.length, 7); // invitation, inviter, workspace, role, user, profile, membership
         operations.length = 0;
         await service.acceptInvitation(token, String(invitee._id));
-        assert.equal(operations.length, 8); // five reads, invitation update, membership insert, audit insert
-        assert.equal(operations.filter(([collection]) => collection === Workspace.collection.name).length, 1);
+        assert.equal(operations.length, 14); // five reads, entitlement checks, invitation update, membership insert, audit insert
+        assert.equal(operations.filter(([collection]) => collection === Workspace.collection.name).length, 2);
     } finally {
         mongoose.set("debug", false);
     }

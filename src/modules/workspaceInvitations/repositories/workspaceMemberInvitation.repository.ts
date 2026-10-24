@@ -1,5 +1,6 @@
+import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
-import mongoose, { Types, type ClientSession } from "mongoose";
+import { Types, type ClientSession, type QueryFilter } from "mongoose";
 import { WorkspaceMemberModel } from "../../workspaceMember/models/workspaceMember.model.js";
 import { WorkspaceMemberStatus } from "../../workspaceMember/constants/workspaceMember.enums.js";
 import type { IWorkspaceMember } from "../../workspaceMember/interfaces/workspaceMember.interface.js";
@@ -49,15 +50,14 @@ const INVITATION_POPULATE = [
 const ALLOWED_SORT_FIELDS = new Set(["createdAt", "updatedAt", "expiresAt", "acceptedAt", "email", "status"]);
 
 export class WorkspaceMemberInvitationRepository {
-    async runInTransaction<T>(operation: (session: ClientSession) => Promise<T>): Promise<T> {
-        // A duplicate-key race aborts a transaction; retry from a fresh snapshot.
-        for (let attempt = 0; ; attempt++) {
-            try {
-                return await mongoose.connection.transaction(operation);
-            } catch (error) {
-                if (attempt >= 2 || !this.isOnlyDuplicateKeyBulkWriteError(error)) throw error;
-            }
-        }
+    async runInTransaction<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return this.runInTransactionIfSupported(operation);
+    }
+
+    async runInTransactionIfSupported<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return runMongoTransaction(operation, {
+            retryAbortedTransaction: (error) => this.isOnlyDuplicateKeyBulkWriteError(error),
+        });
     }
 
     async findReadableWorkspaceIds(userId: string) {
@@ -87,12 +87,10 @@ export class WorkspaceMemberInvitationRepository {
     findUserByEmail(email: string) {
         return UserModel.findOne({ email, isDeleted: false }).select("_id email").lean().exec();
     }
-    findUserById(id: string, session: ClientSession) {
-        return UserModel.findOne({ _id: id, isDeleted: false })
-            .select("_id email")
-            .session(session)
-            .lean()
-            .exec();
+    findUserById(id: string, session?: ClientSession) {
+        const query = UserModel.findOne({ _id: id, isDeleted: false }).select("_id email");
+        if (session) query.session(session);
+        return query.lean().exec();
     }
     findRolesByIds(ids: string[]) {
         return RoleModel.find({ _id: { $in: ids } })
@@ -101,11 +99,11 @@ export class WorkspaceMemberInvitationRepository {
             .exec();
     }
     findRole(id: string, session?: ClientSession) {
-        return RoleModel.findById(id)
-            .select("_id name displayName code scope workspaceId isSystem isActive priority")
-            .session(session ?? null)
-            .lean()
-            .exec();
+        const query = RoleModel.findById(id).select(
+            "_id name displayName code scope workspaceId isSystem isActive priority",
+        );
+        if (session) query.session(session);
+        return query.lean().exec();
     }
     findProfiles(ids: Types.ObjectId[]) {
         return UserProfileModel.find({ userId: { $in: ids } })
@@ -127,40 +125,39 @@ export class WorkspaceMemberInvitationRepository {
             .exec();
     }
     findMembership(workspaceId: string, userId: Types.ObjectId, session?: ClientSession) {
-        return WorkspaceMemberModel.findOne({ workspaceId, userId })
-            .select("_id status")
-            .session(session ?? null)
-            .lean()
-            .exec();
+        const query = WorkspaceMemberModel.findOne({ workspaceId, userId }).select("_id status");
+        if (session) query.session(session);
+        return query.lean().exec();
     }
-    findWorkspace(id: string, session: ClientSession) {
-        return WorkspaceModel.findById(id)
-            .select("_id name slug ownerId status isPersonal")
-            .session(session)
-            .lean()
-            .exec();
+    findWorkspace(id: string, session?: ClientSession) {
+        const query = WorkspaceModel.findById(id).select("_id name slug ownerId status isPersonal");
+        if (session) query.session(session);
+        return query.lean().exec();
     }
-    findTokenForAcceptance(tokenHash: string, session: ClientSession) {
-        return WorkspaceMemberInvitationModel.findOne({ tokenHash }).session(session).lean().exec();
+    findTokenForAcceptance(tokenHash: string, session?: ClientSession) {
+        const query = WorkspaceMemberInvitationModel.findOne({ tokenHash });
+        if (session) query.session(session);
+        return query.lean().exec();
     }
     async activateMembership(
         data: Partial<IWorkspaceMember>,
         existing: { _id: Types.ObjectId; status: WorkspaceMemberStatus } | null,
-        session: ClientSession,
+        session?: ClientSession,
     ) {
         if (existing) {
             return WorkspaceMemberModel.findOneAndUpdate(
                 { _id: existing._id, status: existing.status },
                 { $set: data },
-                { new: true, runValidators: true, session },
+                { new: true, runValidators: true, ...(session ? { session } : {}) },
             )
                 .select("_id")
                 .lean()
                 .exec();
         }
-        const [member] = await WorkspaceMemberModel.create([{ ...data, createdBy: data.userId }], {
-            session,
-        });
+        const [member] = await WorkspaceMemberModel.create(
+            [{ ...data, createdBy: data.userId }],
+            session ? { session } : undefined,
+        );
         return member;
     }
 
@@ -209,7 +206,7 @@ export class WorkspaceMemberInvitationRepository {
                 })),
                 {
                     ordered: true,
-                    session,
+                    ...(session ? { session } : {}),
                 },
             );
         } catch (error) {
@@ -227,14 +224,15 @@ export class WorkspaceMemberInvitationRepository {
 
         const invitationIds = invitations.map((invitation) => invitation._id);
 
-        return WorkspaceMemberInvitationModel.find({
+        const query = WorkspaceMemberInvitationModel.find({
             _id: {
                 $in: invitationIds,
             },
-        })
-            .session(session ?? null)
-            .lean()
-            .exec();
+        });
+        if (session) {
+            query.session(session);
+        }
+        return query.lean().exec();
     }
 
     async expirePendingByWorkspaceAndEmails(workspaceId: string, emails: string[], now: Date) {
@@ -358,18 +356,22 @@ export class WorkspaceMemberInvitationRepository {
         tokenHash: string,
         userId: Types.ObjectId,
         acceptedAt: Date,
-        session: ClientSession,
-        roleId: string,
+        session?: ClientSession,
+        roleId?: string,
     ) {
-        return WorkspaceMemberInvitationModel.findOneAndUpdate(
-            {
-                tokenHash,
-                roleId,
-                status: WorkspaceInvitationStatus.PENDING,
-                expiresAt: {
-                    $gt: acceptedAt,
-                },
+        const filter: QueryFilter<IWorkspaceMemberInvitation> = {
+            tokenHash,
+            status: WorkspaceInvitationStatus.PENDING,
+            expiresAt: {
+                $gt: acceptedAt,
             },
+        };
+        if (roleId) {
+            filter.roleId = roleId;
+        }
+
+        const query = WorkspaceMemberInvitationModel.findOneAndUpdate(
+            filter,
             {
                 $set: {
                     status: WorkspaceInvitationStatus.ACCEPTED,
@@ -381,12 +383,11 @@ export class WorkspaceMemberInvitationRepository {
             {
                 new: true,
                 runValidators: true,
+                ...(session ? { session } : {}),
             },
-        )
-            .session(session)
-            .select("_id acceptedAt")
-            .lean()
-            .exec();
+        );
+
+        return query.select("_id acceptedAt").lean().exec();
     }
 
     async findPendingByWorkspaceAndEmail(workspaceId: string, email: string) {
@@ -566,7 +567,7 @@ export class WorkspaceMemberInvitationRepository {
     async updatePendingById(
         id: string,
         data: Partial<IWorkspaceMemberInvitation>,
-        session: ClientSession,
+        session?: ClientSession,
         updatedAt?: Date,
     ) {
         return WorkspaceMemberInvitationModel.findOneAndUpdate(
@@ -580,7 +581,7 @@ export class WorkspaceMemberInvitationRepository {
                 $set: data,
             },
             {
-                session,
+                ...(session ? { session } : {}),
                 new: true,
                 runValidators: true,
             },
@@ -594,7 +595,7 @@ export class WorkspaceMemberInvitationRepository {
         id: string,
         updatedBy: Types.ObjectId,
         cancelledAt: Date,
-        session: ClientSession,
+        session?: ClientSession,
     ) {
         return WorkspaceMemberInvitationModel.findOneAndUpdate(
             {
@@ -610,7 +611,7 @@ export class WorkspaceMemberInvitationRepository {
                 },
             },
             {
-                session,
+                ...(session ? { session } : {}),
                 new: true,
                 runValidators: true,
             },

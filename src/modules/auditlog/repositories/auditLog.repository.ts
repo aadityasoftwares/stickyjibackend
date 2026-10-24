@@ -8,7 +8,10 @@ export class AuditLogRepository {
     }
 
     async createMany(data: Partial<IAuditLog>[], session?: ClientSession) {
-        return AuditLogModel.insertMany(data, { session });
+        if (session) {
+            return AuditLogModel.insertMany(data, { session });
+        }
+        return AuditLogModel.insertMany(data);
     }
 
     async findById(id: string): Promise<IAuditLogDocument | null> {

@@ -1,5 +1,6 @@
 import mongoose, { Types } from "mongoose";
 import dotenv from "dotenv";
+import { mongoConnectionOptions } from "../config/mongoConnectionOptions.js";
 import { pathToFileURL } from "node:url";
 import { UserModel } from "../modules/user/models/user.model.js";
 import { UserStatus, UserAuthProvider } from "../modules/user/constants/user.enums.js";
@@ -150,7 +151,7 @@ export async function main(args = process.argv.slice(2)): Promise<number> {
         const uri = process.env.MONGO_URI;
         if (!uri) throw new AppError("MONGO_URI environment variable is required.", 400);
 
-        await mongoose.connect(uri);
+        await mongoose.connect(uri, mongoConnectionOptions());
         console.log(`[BACKFILL] Connected to MongoDB. Running in ${options.mode.toUpperCase()} mode...`);
 
         const summary = await runPendingUsersBackfill(options);

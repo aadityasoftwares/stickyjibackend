@@ -1,5 +1,6 @@
 import mongoose, { Types } from "mongoose";
 import dotenv from "dotenv";
+import { mongoConnectionOptions } from "../config/mongoConnectionOptions.js";
 import { StickyNoteModel } from "../modules/stickynotes/models/stickynote.model.js";
 import { StickyNoteColumnModel } from "../modules/stickynotescolumns/models/stickyNoteColumn.model.js";
 import { RankUtil } from "../utils/rank.util.js";
@@ -199,7 +200,7 @@ export async function backfillStickyNotes(): Promise<{
 async function run(): Promise<void> {
     try {
         console.log("Connecting to MongoDB...");
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect(MONGO_URI, mongoConnectionOptions());
         console.log("Connected successfully.");
 
         await backfillColumns();

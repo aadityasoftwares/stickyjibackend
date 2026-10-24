@@ -527,7 +527,7 @@ export class WorkspaceMemberRepository {
         );
     }
 
-    async activateFromInvitation(input: ActivateWorkspaceMemberFromInvitationInput, session: ClientSession) {
+    async activateFromInvitation(input: ActivateWorkspaceMemberFromInvitationInput, session?: ClientSession) {
         return WorkspaceMemberModel.findOneAndUpdate(
             {
                 workspaceId: input.workspaceId,
@@ -552,7 +552,7 @@ export class WorkspaceMemberRepository {
                 returnDocument: "after",
                 runValidators: true,
                 setDefaultsOnInsert: true,
-                session,
+                ...(session ? { session } : {}),
             },
         )
             .select("_id workspaceId userId roleId status joinedAt")

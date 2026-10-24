@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { mongoConnectionOptions } from "../config/mongoConnectionOptions.js";
 import { pathToFileURL } from "node:url";
 import { AppError } from "../utils/errors/app.error.js";
 import { SubscriptionSeedService } from "../seeders/subscription/services/subscription-seed.service.js";
@@ -88,7 +89,10 @@ export async function seedDefaultSubscriptions(args = process.argv.slice(2)): Pr
         if (!uri) throw new AppError(SUBSCRIPTION_SEED_CONSTANTS.DATABASE_REQUIRED, 400);
         console.log(SUBSCRIPTION_SEED_CONSTANTS.PREFIX, "Starting", options.mode);
         // Do not call connectDatabase(): that bootstrap seeds unrelated application data.
-        await mongoose.connect(uri, { autoIndex: false, autoCreate: false, serverSelectionTimeoutMS: 10000 });
+        await mongoose.connect(
+            uri,
+            mongoConnectionOptions({ autoIndex: false, autoCreate: false, serverSelectionTimeoutMS: 10000 }),
+        );
         const report = await service.run(options);
         printSubscriptionSeedReport(report);
         return report.valid ? 0 : 1;

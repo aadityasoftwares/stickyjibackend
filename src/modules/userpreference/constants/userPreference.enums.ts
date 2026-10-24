@@ -17,5 +17,12 @@ export enum UserPreferenceValueType {
     JSON = "JSON",
 }
 
-export { StickyNoteView } from "../../stickynotes/constants/stickyNote.enums.js";
+export {
+    StickyNoteBackgroundPattern,
+    StickyNoteColor,
+    StickyNoteShape,
+    StickyNoteVariant,
+    StickyNoteView,
+} from "../../stickynotes/constants/stickyNote.enums.js";
 export { WorkspaceAccessFilter } from "../../workspace/constants/workspace.enums.js";
+

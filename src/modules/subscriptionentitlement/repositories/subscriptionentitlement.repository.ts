@@ -253,7 +253,7 @@ export class SubscriptionEntitlementRepository {
             {
                 $set: { status: ReservationStatus.EXPIRED },
             },
-            { session },
+            session ? { session } : {},
         );
         return result.modifiedCount;
     }

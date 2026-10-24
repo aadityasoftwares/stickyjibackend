@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
+import { mongoConnectionOptions } from "../config/mongoConnectionOptions.js";
 import { pathToFileURL } from "node:url";
 import { DatabaseInitializer } from "../database/initialization/database-initializer.js";
 
@@ -37,7 +38,7 @@ export async function runInitializeDatabase(args = process.argv.slice(2)): Promi
         }
 
         console.log(`[db:init] Connecting to MongoDB...`);
-        await mongoose.connect(uri, { serverSelectionTimeoutMS: 10000 });
+        await mongoose.connect(uri, mongoConnectionOptions({ serverSelectionTimeoutMS: 10000 }));
 
         const initializer = new DatabaseInitializer();
         const report = await initializer.initialize({ force });

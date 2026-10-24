@@ -1,5 +1,6 @@
+import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
-import mongoose, { Types, type ClientSession } from "mongoose";
+import { Types, type ClientSession } from "mongoose";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { WorkspaceStatus } from "../../workspace/constants/workspace.enums.js";
 import { PermissionModule } from "../../permissions/constants/permission.enums.js";
@@ -57,27 +58,39 @@ export class WorkspaceFolderRepository {
         return workspaces.map((workspace) => workspace._id.toString());
     }
 
-    async runInTransaction<T>(operation: (session: ClientSession) => Promise<T>): Promise<T> {
-        return mongoose.connection.transaction(operation);
+    async runInTransaction<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return this.runInTransactionIfSupported(operation);
     }
 
-    async hasDependencies(id: string, session: ClientSession): Promise<boolean> {
+    async runInTransactionIfSupported<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return runMongoTransaction(operation);
+    }
+
+    async hasDependencies(id: string, session?: ClientSession): Promise<boolean> {
         const folderId = new Types.ObjectId(id);
         // Include inconsistent cross-workspace references: never leave dangling children.
-        if (await StickyNoteModel.exists({ workspaceFolderId: folderId }).session(session)) return true;
-        if (await StickyNoteColumnModel.exists({ workspaceFolderId: folderId }).session(session)) return true;
-        return Boolean(await MediaModel.exists({ resourceId: id }).session(session));
+        const noteExists = StickyNoteModel.exists({ workspaceFolderId: folderId });
+        if (session) noteExists.session(session);
+        if (await noteExists) return true;
+
+        const columnExists = StickyNoteColumnModel.exists({ workspaceFolderId: folderId });
+        if (session) columnExists.session(session);
+        if (await columnExists) return true;
+
+        const mediaExists = MediaModel.exists({ resourceId: id });
+        if (session) mediaExists.session(session);
+        return Boolean(await mediaExists);
     }
 
-    async deleteTrashed(id: string, workspaceId: string, session: ClientSession) {
-        return WorkspaceFolderModel.deleteOne({
+    async deleteTrashed(id: string, workspaceId: string, session?: ClientSession) {
+        const query = WorkspaceFolderModel.deleteOne({
             _id: new Types.ObjectId(id),
             workspaceId: new Types.ObjectId(workspaceId),
             status: WorkspaceFolderStatus.DELETED,
             isDefault: false,
-        })
-            .session(session)
-            .exec();
+        });
+        if (session) query.session(session);
+        return query.exec();
     }
     async create(data: Partial<IWorkspaceFolder>) {
         return WorkspaceFolderModel.create(data);

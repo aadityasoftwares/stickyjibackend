@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { mongoConnectionOptions } from "./mongoConnectionOptions.js";
 import dotenv from "dotenv";
 import { monitorSaveCommands, savePerformanceEnabled } from "../utils/savePerformance.util.js";
 dotenv.config();
@@ -11,7 +12,10 @@ export async function connectDatabase(uri?: string): Promise<void> {
         if (!targetUri) {
             throw new Error("MONGO_URI environment variable is required to connect to MongoDB.");
         }
-        await mongoose.connect(targetUri, { monitorCommands: savePerformanceEnabled() });
+        await mongoose.connect(
+            targetUri,
+            mongoConnectionOptions({ monitorCommands: savePerformanceEnabled() }),
+        );
         if (savePerformanceEnabled()) monitorSaveCommands(mongoose.connection.getClient());
         console.log("MongoDB connected successfully");
     } catch (error) {

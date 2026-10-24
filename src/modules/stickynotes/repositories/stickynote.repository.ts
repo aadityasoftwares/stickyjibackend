@@ -1,7 +1,8 @@
+import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
 import { UserPreferenceModel } from "../../userpreference/models/userPreference.model.js";
 import { TimezoneModel } from "../../timezones/models/timezone.model.js";
-import mongoose, { Types, type ClientSession, type PipelineStage, type QueryFilter } from "mongoose";
+import { Types, type ClientSession, type PipelineStage, type QueryFilter } from "mongoose";
 import {
     StickyNoteDateState,
     StickyNoteOverdueSort,
@@ -851,37 +852,9 @@ export class StickyNoteRepository {
     }
 
     async runInTransactionIfSupported<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
-        const database = mongoose.connection.db;
-        if (!database) throw new Error("MongoDB is not connected.");
-
-        try {
-            const hello = (await database.admin().command({ hello: 1 })) as {
-                setName?: string;
-                msg?: string;
-            };
-            const supportsTransactions = Boolean(hello.setName) || hello.msg === "isdbgrid";
-
-            if (!supportsTransactions) return operation();
-
-            const session = await mongoose.startSession();
-            try {
-                const result = await session.withTransaction(() => operation(session));
-                if (result === undefined) throw new Error("Sticky note transaction did not complete.");
-                return result;
-            } finally {
-                await session.endSession();
-            }
-        } catch (error: any) {
-            if (
-                error?.code === 20 ||
-                error?.codeName === "IllegalOperation" ||
-                (typeof error?.message === "string" &&
-                    error.message.includes("Transaction numbers are only allowed"))
-            ) {
-                return operation();
-            }
-            throw error;
-        }
+        return runMongoTransaction(operation, {
+            missingResultMessage: "Sticky note transaction did not complete.",
+        });
     }
 
     async findPurgeCandidate(id: string, session?: ClientSession) {

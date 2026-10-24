@@ -468,19 +468,14 @@ export class StickyNoteColumnService {
         );
         if (!todoColumn) throw new AppError(StickyNoteColumnMessages.DEFAULT_TODO_COLUMN_NOT_FOUND, 409);
 
-        const session = await mongoose.startSession();
-        try {
-            await session.withTransaction(async () => {
-                await StickyNoteModel.updateMany(
-                    { columnId: column._id },
-                    { $set: { columnId: todoColumn._id, updatedBy: userObjectId } },
-                    { session },
-                );
-                await this.stickyNoteColumnRepository.deleteById(id, session);
-            });
-        } finally {
-            await session.endSession();
-        }
+        await this.stickyNoteColumnRepository.runInTransactionIfSupported(async (session) => {
+            await StickyNoteModel.updateMany(
+                { columnId: column._id },
+                { $set: { columnId: todoColumn._id, updatedBy: userObjectId } },
+                session ? { session } : {},
+            );
+            await this.stickyNoteColumnRepository.deleteById(id, session);
+        });
 
         await this.auditLogService.logDelete(
             context ?? {},

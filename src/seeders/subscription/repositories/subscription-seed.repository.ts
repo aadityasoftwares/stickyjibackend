@@ -1,3 +1,4 @@
+import { runMongoTransaction, supportsMongoTransactions } from "../../../utils/mongoTransaction.util.js";
 import mongoose, { type ClientSession } from "mongoose";
 import { PlanModel } from "../../../modules/plan/models/plan.model.js";
 import { FeatureModel } from "../../../modules/feature/models/feature.model.js";
@@ -66,7 +67,7 @@ export class SubscriptionSeedRepository {
         }
         const entries = await Promise.all(
             SUBSCRIPTION_SEED_CONSTANTS.COLLECTIONS.map(
-                async (key) => [key, await this.collection(key).find({}, { session }).toArray()] as const,
+                async (key) => [key, await this.collection(key).find({}).toArray()] as const,
             ),
         );
         return Object.fromEntries(entries) as SeedSnapshot;
@@ -126,10 +127,7 @@ export class SubscriptionSeedRepository {
     }
 
     async supportsTransactions(): Promise<boolean> {
-        const hello = await mongoose.connection.db!.admin().command({ hello: 1 });
-        return Boolean(
-            (hello.setName || hello.msg === "isdbgrid") && hello.logicalSessionTimeoutMinutes != null,
-        );
+        return supportsMongoTransactions();
     }
 
     async execute(operations: SeedOperation[], session?: ClientSession): Promise<void> {
@@ -162,7 +160,7 @@ export class SubscriptionSeedRepository {
                                   upsert: false,
                               },
                 })),
-                { ordered: true, session },
+                { ordered: true, ...(session ? { session } : {}) },
             );
             const creates = stage.filter((operation) => operation.action === "create").length;
             const updates = stage.length - creates;
@@ -172,12 +170,7 @@ export class SubscriptionSeedRepository {
         }
     }
 
-    async transaction<T>(work: (session: ClientSession) => Promise<T>): Promise<T> {
-        const session = await mongoose.startSession();
-        try {
-            return await session.withTransaction(() => work(session));
-        } finally {
-            await session.endSession();
-        }
+    async transaction<T>(work: (session?: ClientSession) => Promise<T>): Promise<T> {
+        return runMongoTransaction(work);
     }
 }

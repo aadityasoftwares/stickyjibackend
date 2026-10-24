@@ -1,4 +1,5 @@
-import mongoose, { Types } from "mongoose";
+import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
+import { Types } from "mongoose";
 import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { StickyNoteCounterModel } from "../../stickynotes/models/stickyNoteCounter.model.js";
 import { StickyNoteChecklistModel } from "../../stickyNoteschecklist/models/stickyNoteChecklist.model.js";
@@ -393,16 +394,15 @@ export class WorkspaceRepository {
         session?: ClientSession,
     ): Promise<Types.ObjectId[]> {
         const userObjectId = new Types.ObjectId(userId);
-        const memberships = await WorkspaceMemberModel.find({
+        const membershipsQuery = WorkspaceMemberModel.find({
             userId: userObjectId,
             status: WorkspaceMemberStatus.ACTIVE,
             ...(workspaceId ? { workspaceId: new Types.ObjectId(workspaceId) } : {}),
-        })
-            .select("workspaceId")
-            .session(session ?? null)
-            .lean()
-            .exec();
-        const workspaces = await WorkspaceModel.find({
+        }).select("workspaceId");
+        if (session) membershipsQuery.session(session);
+        const memberships = await membershipsQuery.lean().exec();
+
+        const workspacesQuery = WorkspaceModel.find({
             status: { $nin: WORKSPACE_TRASH_STATUSES },
             ...(workspaceId ? { _id: new Types.ObjectId(workspaceId) } : {}),
             $or: [
@@ -410,11 +410,9 @@ export class WorkspaceRepository {
                 { createdBy: userObjectId },
                 { _id: { $in: memberships.map((member) => member.workspaceId) } },
             ],
-        })
-            .select("_id")
-            .session(session ?? null)
-            .lean()
-            .exec();
+        }).select("_id");
+        if (session) workspacesQuery.session(session);
+        const workspaces = await workspacesQuery.lean().exec();
         return workspaces.map((workspace) => workspace._id);
     }
 
@@ -629,37 +627,9 @@ export class WorkspaceRepository {
     }
 
     async runInTransactionIfSupported<T>(operation: (session?: ClientSession) => Promise<T>): Promise<T> {
-        const database = mongoose.connection.db;
-        if (!database) throw new Error("MongoDB is not connected.");
-
-        try {
-            const hello = (await database.admin().command({ hello: 1 })) as {
-                setName?: string;
-                msg?: string;
-            };
-            const supportsTransactions = Boolean(hello.setName) || hello.msg === "isdbgrid";
-
-            if (!supportsTransactions) return operation();
-
-            const session = await mongoose.startSession();
-            try {
-                const result = await session.withTransaction(() => operation(session));
-                if (result === undefined) throw new Error("Workspace transaction did not complete.");
-                return result;
-            } finally {
-                await session.endSession();
-            }
-        } catch (error: any) {
-            if (
-                error?.code === 20 ||
-                error?.codeName === "IllegalOperation" ||
-                (typeof error?.message === "string" &&
-                    error.message.includes("Transaction numbers are only allowed"))
-            ) {
-                return operation();
-            }
-            throw error;
-        }
+        return runMongoTransaction(operation, {
+            missingResultMessage: "Workspace transaction did not complete.",
+        });
     }
 
     async findPurgeCandidate(id: string, session?: ClientSession) {

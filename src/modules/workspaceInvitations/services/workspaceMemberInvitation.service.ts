@@ -495,7 +495,7 @@ export class WorkspaceMemberInvitationService {
         rawToken: string,
         authenticatedUserId: string,
         context: IAuditLogContext | undefined,
-        session: ClientSession,
+        session?: ClientSession,
     ) {
         const { tokenHash } = this.prepareInvitationToken(rawToken);
 
