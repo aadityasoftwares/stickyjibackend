@@ -42,4 +42,11 @@ export const MediaMessages = {
     CANNOT_UPDATE_MIME_TYPE: "Media MIME type cannot be updated.",
     CANNOT_UPDATE_MEDIA_TYPE: "Media type cannot be updated.",
     CANNOT_UPDATE_UPLOAD_STATUS: "Media upload status cannot be updated.",
+    DOWNLOAD_URL_CREATED: "Media download URL generated successfully.",
+    PURPOSE_MEDIA_TYPE_MISMATCH: "File media type is not allowed for the selected purpose.",
+    FILE_SIZE_EXCEEDS_PURPOSE_LIMIT: "File size exceeds the allowed limit for the selected purpose.",
+    INVALID_FILE_EXTENSION_FOR_MIME: "File extension does not match the MIME type.",
+    UNAUTHORIZED_RESOURCE_ACCESS: "You are not authorized to associate media with this resource.",
+    CANNOT_DOWNLOAD_UNPROCESSED_MEDIA: "Media file is not active and cannot be downloaded.",
+    STORAGE_DELETION_FAILED: "Storage deletion failed and has been scheduled for retry.",
 } as const;

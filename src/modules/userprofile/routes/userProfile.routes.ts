@@ -5,6 +5,10 @@ import { createUserProfileValidation } from "../validations/createUserProfile.va
 import { updateUserProfileValidation } from "../validations/updateUserProfile.validation.js";
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
 import { getUserProfileValidation } from "../validations/getUserProfile.validation.js";
+import {
+    setProfileImageValidation,
+    requestProfileImageUploadValidation,
+} from "../validations/profileImage.validation.js";
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
 const userProfileRoutes = Router();
@@ -19,6 +23,28 @@ userProfileRoutes.post(
 );
 
 userProfileRoutes.get("/me", authMiddleware, getUserProfileValidation, userProfileController.getMyProfile);
+
+// Profile Image Endpoints
+userProfileRoutes.get("/image", authMiddleware, userProfileController.getMyProfileImage);
+
+userProfileRoutes.post(
+    "/image",
+    authMiddleware,
+    validateContentType("application/json"),
+    setProfileImageValidation,
+    userProfileController.setProfileImage,
+);
+
+userProfileRoutes.post(
+    "/image/upload-request",
+    authMiddleware,
+    validateContentType("application/json"),
+    requestProfileImageUploadValidation,
+    userProfileController.requestProfileImageUpload,
+);
+
+userProfileRoutes.delete("/image", authMiddleware, userProfileController.removeProfileImage);
+userProfileRoutes.delete("/image/:id", authMiddleware, userProfileController.removeProfileImage);
 
 userProfileRoutes.put(
     "/update",

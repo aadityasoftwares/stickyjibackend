@@ -35,6 +35,10 @@ import {
     type IWorkspaceAuthorizationContext,
 } from "../../permissions/services/permissionAuthorization.service.js";
 import { PermissionAction } from "../../permissions/constants/permission.enums.js";
+import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaVisibility } from "../../media/constants/media.enums.js";
+import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
 
 interface AssignableRole {
     _id: Types.ObjectId;
@@ -53,12 +57,16 @@ export class WorkspaceMemberService {
 
     private readonly auditLogService: AuditLogService;
 
+    private readonly storageService: CloudflareR2Service;
+
     constructor() {
         this.workspaceMemberRepository = new WorkspaceMemberRepository();
 
         this.workspaceRepository = new WorkspaceRepository();
 
         this.auditLogService = new AuditLogService();
+
+        this.storageService = new CloudflareR2Service();
     }
 
     async createWorkspaceMember(
@@ -152,7 +160,7 @@ export class WorkspaceMemberService {
             throw error;
         }
 
-        return member;
+        return this.attachMemberProfile(member);
     }
 
     async getWorkspaceMemberById(
@@ -174,7 +182,7 @@ export class WorkspaceMemberService {
             authorization,
         );
 
-        return member;
+        return this.attachMemberProfile(member);
     }
 
     async getWorkspaceMembers(
@@ -229,8 +237,41 @@ export class WorkspaceMemberService {
             workspaceId,
         });
 
+        const mediaIds = [
+            ...result.data.map((r) => r.profileImageId),
+            ...result.data.map((r) => r.inviterProfileImageId),
+        ].filter((id): id is Types.ObjectId => Boolean(id && Types.ObjectId.isValid(String(id))));
+
+        const mediaMap = new Map<string, { id: string; url: string }>();
+        if (mediaIds.length > 0) {
+            const mediaDocs = await MediaModel.find({
+                _id: { $in: mediaIds },
+                isDeleted: { $ne: true },
+            })
+                .select("_id storageKey publicUrl visibility")
+                .lean()
+                .exec();
+
+            for (const media of mediaDocs) {
+                try {
+                    const url =
+                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                            ? media.publicUrl
+                            : await this.storageService.createDownloadUrl(media.storageKey);
+                    mediaMap.set(media._id.toString(), {
+                        id: media._id.toString(),
+                        url,
+                    });
+                } catch (err) {
+                    console.warn(`[WorkspaceMemberService] Failed to create download URL for media ${media._id}:`, err);
+                }
+            }
+        }
+
         return {
-            data: result.data.map((row) => this.toWorkspaceMemberListItem(row, ownerId, requesterUserId)),
+            data: result.data.map((row) =>
+                this.toWorkspaceMemberListItem(row, ownerId, requesterUserId, mediaMap),
+            ),
             pagination: result.pagination,
         };
     }
@@ -550,6 +591,8 @@ export class WorkspaceMemberService {
             profileDisplayName?: string | null;
             profileFirstName?: string | null;
             profileLastName?: string | null;
+            profileImageId?: Types.ObjectId | null;
+            profileAvatarUrl?: string | null;
 
             roleName?: string | null;
             roleDisplayName?: string | null;
@@ -560,9 +603,12 @@ export class WorkspaceMemberService {
             inviterProfileDisplayName?: string | null;
             inviterProfileFirstName?: string | null;
             inviterProfileLastName?: string | null;
+            inviterProfileImageId?: Types.ObjectId | null;
+            inviterProfileAvatarUrl?: string | null;
         },
         ownerId: string,
         requesterUserId: string,
+        mediaMap?: Map<string, { id: string; url: string }>,
     ): IWorkspaceMemberListItem {
         const userId = row.userId.toString();
 
@@ -571,6 +617,19 @@ export class WorkspaceMemberService {
         const roleName = row.roleDisplayName?.trim() || row.roleName?.trim() || "Member";
 
         const roleCode = row.roleCode?.trim() || "WORKSPACE_MEMBER";
+
+        const profileImage =
+            row.profileImageId && mediaMap
+                ? mediaMap.get(row.profileImageId.toString()) ?? null
+                : null;
+        const avatarUrl = profileImage?.url ?? row.profileAvatarUrl ?? null;
+
+        const inviterProfileImage =
+            row.inviterProfileImageId && mediaMap
+                ? mediaMap.get(row.inviterProfileImageId.toString()) ?? null
+                : null;
+        const inviterAvatarUrl =
+            inviterProfileImage?.url ?? row.inviterProfileAvatarUrl ?? null;
 
         const addedBy = row.invitedBy
             ? {
@@ -582,6 +641,8 @@ export class WorkspaceMemberService {
                       row.inviterEmail,
                   ),
                   email: row.inviterEmail?.trim() ?? "",
+                  profileImage: inviterProfileImage,
+                  avatarUrl: inviterAvatarUrl,
               }
             : null;
 
@@ -597,6 +658,8 @@ export class WorkspaceMemberService {
                     userEmail,
                 ),
                 email: userEmail,
+                profileImage,
+                avatarUrl,
             },
 
             role: {
@@ -622,6 +685,70 @@ export class WorkspaceMemberService {
 
             isCurrentUser: userId === requesterUserId,
         };
+    }
+
+    private async attachMemberProfile(member: any): Promise<any> {
+        if (!member) return member;
+
+        const rawUserId = member.userId?._id
+            ? member.userId._id.toString()
+            : this.extractObjectId(member.userId);
+        if (!Types.ObjectId.isValid(rawUserId)) {
+            return member;
+        }
+
+        try {
+            const profile = await UserProfileModel.findOne({ userId: new Types.ObjectId(rawUserId) })
+                .select("displayName firstName lastName profileImage avatarUrl")
+                .lean()
+                .exec();
+
+            let profileImage: { id: string; url: string } | null = null;
+            if (profile?.profileImage && Types.ObjectId.isValid(String(profile.profileImage))) {
+                const media = await MediaModel.findOne({
+                    _id: profile.profileImage,
+                    isDeleted: { $ne: true },
+                })
+                    .select("_id storageKey publicUrl visibility")
+                    .lean()
+                    .exec();
+
+                if (media) {
+                    const url =
+                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                            ? media.publicUrl
+                            : await this.storageService.createDownloadUrl(media.storageKey);
+                    profileImage = { id: media._id.toString(), url };
+                }
+            }
+
+            const avatarUrl = profileImage?.url ?? (profile as any)?.avatarUrl ?? null;
+
+            if (member.userId && typeof member.userId === "object") {
+                member.userId = {
+                    ...member.userId,
+                    displayName:
+                        profile?.displayName ||
+                        member.userId.username ||
+                        member.userId.email ||
+                        "Workspace member",
+                    profileImage,
+                    avatarUrl,
+                };
+            }
+
+            member.profile = {
+                displayName: profile?.displayName ?? null,
+                firstName: profile?.firstName ?? null,
+                lastName: profile?.lastName ?? null,
+                profileImage,
+                avatarUrl,
+            };
+        } catch (err) {
+            console.warn(`[WorkspaceMemberService] Failed to attach member profile:`, err);
+        }
+
+        return member;
     }
 
     private buildPersonDisplayName(

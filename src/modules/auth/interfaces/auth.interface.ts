@@ -100,6 +100,8 @@ export interface IAuthUserProfileResponse {
     firstName: string | null;
     lastName: string | null;
     displayName: string | null;
+    profileImage?: { id: string; url: string } | null;
+    avatarUrl?: string | null;
 }
 
 export interface IAuthUserResponse {

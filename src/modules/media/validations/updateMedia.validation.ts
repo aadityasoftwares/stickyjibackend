@@ -3,6 +3,7 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { MEDIA_CONSTANTS } from "../constants/media.constants.js";
 import { MediaMessages } from "../constants/media.messages.js";
 import { MediaValidation } from "./media.validation.js";
+import { MediaUtil } from "../utils/media.util.js";
 import { validateId } from "../../../utils/validations/validateId.validation.js";
 
 export const updateMediaValidation = (req: Request, res: Response, next: NextFunction) => {
@@ -65,7 +66,7 @@ export const updateMediaValidation = (req: Request, res: Response, next: NextFun
                 return next(new AppError(MediaMessages.INVALID_FILE_NAME, 400));
             }
 
-            const fileName = req.body.originalFileName.trim();
+            const fileName = MediaUtil.sanitizeFileName(req.body.originalFileName);
 
             if (!fileName || fileName.length > MEDIA_CONSTANTS.MAX_FILE_NAME_LENGTH) {
                 return next(new AppError(MediaMessages.INVALID_FILE_NAME, 400));
@@ -89,20 +90,22 @@ export const updateMediaValidation = (req: Request, res: Response, next: NextFun
             return next(new AppError(MediaMessages.INVALID_VISIBILITY, 400));
         }
 
+        if (req.body.resourceId !== undefined && req.body.resourceId !== null) {
+            if (!MediaValidation.isValidObjectId(req.body.resourceId)) {
+                return next(new AppError(MediaMessages.INVALID_RESOURCE_ID, 400));
+            }
+            if (req.body.resourceType === undefined || req.body.resourceType === null) {
+                return next(new AppError(MediaMessages.INVALID_RESOURCE_TYPE, 400));
+            }
+        }
+
         if (req.body.resourceType !== undefined && req.body.resourceType !== null) {
             if (!MediaValidation.isValidResourceType(req.body.resourceType)) {
                 return next(new AppError(MediaMessages.INVALID_RESOURCE_TYPE, 400));
             }
         }
 
-        if (req.body.resourceId !== undefined && req.body.resourceId !== null) {
-            if (!MediaValidation.isValidObjectId(req.body.resourceId)) {
-                return next(new AppError(MediaMessages.INVALID_RESOURCE_ID, 400));
-            }
-        }
-
         const resourceTypeProvided = Object.prototype.hasOwnProperty.call(req.body, "resourceType");
-
         const resourceIdProvided = Object.prototype.hasOwnProperty.call(req.body, "resourceId");
 
         if (resourceTypeProvided !== resourceIdProvided) {

@@ -416,6 +416,33 @@ test("6 & 7. Update column successfully and reject unauthorized updates", async 
     assert.equal(editorRes.status, 200);
     assert.equal(editorRes.body.data.name, "Updated Name");
     assert.equal(editorRes.body.data.color, StickyNoteColumnColor.PINK);
+
+    // Update with name, color, and position (user scenario)
+    const updatePositionRes = await request("PUT", `/update/${col.id}`, "editor", {
+        name: "In progress",
+        color: "YELLOW",
+        position: 1,
+    });
+    assert.equal(updatePositionRes.status, 200);
+    assert.equal(updatePositionRes.body.data.name, "In progress");
+    assert.equal(updatePositionRes.body.data.color, StickyNoteColumnColor.YELLOW);
+    assert.equal(updatePositionRes.body.data.position, 1);
+
+    // Update with lowercase color and string position
+    const updateLowercaseRes = await request("PUT", `/update/${col.id}`, "editor", {
+        color: "blue",
+        position: "2",
+    });
+    assert.equal(updateLowercaseRes.status, 200);
+    assert.equal(updateLowercaseRes.body.data.color, StickyNoteColumnColor.BLUE);
+    assert.equal(updateLowercaseRes.body.data.position, 2);
+
+    // Unsupported fields rejected
+    const unsupportedRes = await request("PUT", `/update/${col.id}`, "editor", {
+        isSystem: true,
+    });
+    assert.equal(unsupportedRes.status, 400);
+    assert.equal(unsupportedRes.body.message, StickyNoteColumnMessages.UNSUPPORTED_FIELDS);
 });
 
 test("8 & 9 & 10. Reorder columns, reject duplicates and maintain workspace isolation", async () => {

@@ -47,6 +47,19 @@ export class MediaController {
         }
     };
 
+    getDownloadUrl = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.mediaService.getDownloadUrl(
+                RequestUtil.getParam(req.params.id),
+                req.user?.id as string,
+            );
+
+            return res.status(200).json(ResponseUtil.success(MediaMessages.DOWNLOAD_URL_CREATED, result));
+        } catch (error) {
+            next(error);
+        }
+    };
+
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const media = await this.mediaService.getMediaFiles(req.user?.id as string, {

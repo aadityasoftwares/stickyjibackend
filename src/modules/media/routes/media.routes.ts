@@ -24,6 +24,8 @@ mediaRoutes.get("/getall", authMiddleware, mediaController.getAll);
 mediaRoutes.post("/:id/complete", authMiddleware, completeUploadValidation, mediaController.completeUpload);
 
 mediaRoutes.get("/get/:id", authMiddleware, getMediaValidation, mediaController.get);
+mediaRoutes.get("/:id/download", authMiddleware, getMediaValidation, mediaController.getDownloadUrl);
+mediaRoutes.get("/download/:id", authMiddleware, getMediaValidation, mediaController.getDownloadUrl);
 
 mediaRoutes.put(
     "/update/:id",

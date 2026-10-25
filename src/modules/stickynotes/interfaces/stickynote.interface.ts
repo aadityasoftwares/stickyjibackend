@@ -133,6 +133,7 @@ export interface IStickyNoteAssigneeNormalized {
     name: string;
     email: string;
     avatarUrl: string | null;
+    profileImage?: { id: string; url: string } | null;
 }
 
 export interface IStickyNoteChecklistSummary {
@@ -179,6 +180,16 @@ export interface IStickyNoteListItemResponse {
     isFavorite: boolean;
     favoriteId: string | null;
     creatorEmail: string | null;
+    creatorName?: string | null;
+    creatorProfileImage?: { id: string; url: string } | null;
+    creatorAvatarUrl?: string | null;
+    creator?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+        profileImage: { id: string; url: string } | null;
+    } | null;
     assignees: IStickyNoteAssigneeNormalized[];
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
@@ -203,6 +214,17 @@ export interface IStickyNoteDetailResponse {
     rank: string;
     isFavorite: boolean;
     favoriteId: string | null;
+    creatorEmail?: string | null;
+    creatorName?: string | null;
+    creatorProfileImage?: { id: string; url: string } | null;
+    creatorAvatarUrl?: string | null;
+    creator?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+        profileImage: { id: string; url: string } | null;
+    } | null;
     assignees: IStickyNoteAssigneeNormalized[];
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];

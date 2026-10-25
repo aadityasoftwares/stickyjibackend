@@ -80,10 +80,20 @@ export class StickyNoteColumnService {
                   ? (RankUtil.generateRankAfter(highestRank) ?? RankUtil.generateInitialRank())
                   : RankUtil.generateInitialRank();
 
+        const rawPosition =
+            typeof data.position === "string" && (data.position as string).trim() !== "" && !Number.isNaN(Number(data.position))
+                ? Number(data.position)
+                : data.position;
+
         const position =
-            data.position !== undefined && StickyNoteColumnValidation.isValidPosition(data.position)
-                ? data.position
+            rawPosition !== undefined && StickyNoteColumnValidation.isValidPosition(rawPosition)
+                ? rawPosition
                 : highestPosition + 1;
+
+        const color =
+            typeof data.color === "string"
+                ? (data.color.toUpperCase() as StickyNoteColumnColor)
+                : (data.color ?? StickyNoteColumnColor.YELLOW);
 
         try {
             const column = await this.stickyNoteColumnRepository.create({
@@ -91,7 +101,7 @@ export class StickyNoteColumnService {
                 workspaceFolderId: new Types.ObjectId(workspaceFolderId),
                 name: normalizedName,
                 type: StickyNoteColumnType.CUSTOM,
-                color: data.color ?? StickyNoteColumnColor.YELLOW,
+                color,
                 position,
                 rank,
                 isSystem: false,
@@ -231,10 +241,20 @@ export class StickyNoteColumnService {
             !StickyNoteColumnValidation.hasOnlyAllowedFields(data as unknown as Record<string, unknown>, [
                 "name",
                 "color",
+                "position",
                 "rank",
+                "workspaceId",
+                "workspaceFolderId",
             ])
         ) {
             throw new AppError(StickyNoteColumnMessages.UNSUPPORTED_FIELDS, 400);
+        }
+
+        if (data.workspaceId !== undefined && data.workspaceId.toString() !== workspaceId) {
+            throw new AppError(StickyNoteColumnMessages.COLUMN_WORKSPACE_MISMATCH, 400);
+        }
+        if (data.workspaceFolderId !== undefined && data.workspaceFolderId.toString() !== workspaceFolderId) {
+            throw new AppError(StickyNoteColumnMessages.COLUMN_WORKSPACE_MISMATCH, 400);
         }
 
         const changes: Array<{ field: string; oldValue?: unknown; newValue?: unknown }> = [];
@@ -252,12 +272,28 @@ export class StickyNoteColumnService {
         }
 
         if (data.color !== undefined) {
-            if (!StickyNoteColumnValidation.isValidColor(data.color)) {
+            const normalizedColor =
+                typeof data.color === "string" ? (data.color.toUpperCase() as StickyNoteColumnColor) : data.color;
+            if (!StickyNoteColumnValidation.isValidColor(normalizedColor)) {
                 throw new AppError(StickyNoteColumnMessages.INVALID_COLOR, 400);
             }
-            if (data.color !== column.color) {
-                updateData.color = data.color;
-                changes.push({ field: "color", oldValue: column.color, newValue: data.color });
+            if (normalizedColor !== column.color) {
+                updateData.color = normalizedColor;
+                changes.push({ field: "color", oldValue: column.color, newValue: normalizedColor });
+            }
+        }
+
+        if (data.position !== undefined) {
+            const rawPosition =
+                typeof data.position === "string" && (data.position as string).trim() !== "" && !Number.isNaN(Number(data.position))
+                    ? Number(data.position)
+                    : data.position;
+            if (!StickyNoteColumnValidation.isValidPosition(rawPosition)) {
+                throw new AppError(StickyNoteColumnMessages.INVALID_POSITION, 400);
+            }
+            if (rawPosition !== column.position) {
+                updateData.position = rawPosition;
+                changes.push({ field: "position", oldValue: column.position, newValue: rawPosition });
             }
         }
 

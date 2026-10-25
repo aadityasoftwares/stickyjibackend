@@ -54,6 +54,12 @@ import {
 } from "../../permissions/constants/permission.enums.js";
 
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { UserModel } from "../../user/models/user.model.js";
+import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaVisibility } from "../../media/constants/media.enums.js";
+import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import type { IStickyNoteAssigneeNormalized } from "../interfaces/stickynote.interface.js";
 
 export class StickyNoteService {
     private readonly stickyNoteRepository: StickyNoteRepository;
@@ -63,6 +69,7 @@ export class StickyNoteService {
     private readonly stickyNoteAssigneeService: StickyNoteAssigneeService;
     private readonly workspaceRepository = new WorkspaceRepository();
     private readonly subscriptionEntitlementService: SubscriptionEntitlementService;
+    private readonly storageService: CloudflareR2Service;
 
     constructor() {
         this.stickyNoteRepository = new StickyNoteRepository();
@@ -71,6 +78,7 @@ export class StickyNoteService {
         this.stickyNotePurgeService = new StickyNotePurgeService();
         this.stickyNoteAssigneeService = new StickyNoteAssigneeService();
         this.subscriptionEntitlementService = new SubscriptionEntitlementService();
+        this.storageService = new CloudflareR2Service();
     }
 
     async getOverdueStickyNotes(filters: IStickyNoteOverdueFilter, userId: string) {
@@ -351,6 +359,15 @@ export class StickyNoteService {
             this.stickyNoteRepository.findChecklistsMap(noteIds),
         ]);
 
+        const allUserIdsSet = new Set<string>(creatorUserIdsSet);
+        for (const [_, noteAssignees] of assigneesMap) {
+            for (const a of noteAssignees) {
+                if (a.id) allUserIdsSet.add(a.id);
+            }
+        }
+
+        const userProfilesMap = await this.resolveUserProfilesMap(Array.from(allUserIdsSet));
+
         const mappedData = result.data.map((note) => {
             const noteIdStr = note._id.toString();
             const folderIdStr = note.workspaceFolderId ? note.workspaceFolderId.toString() : null;
@@ -359,12 +376,38 @@ export class StickyNoteService {
             const favId = favoriteMap.get(noteIdStr);
             const checklists = checklistsMap.get(noteIdStr) ?? [];
 
+            const rawAssignees = assigneesMap.get(noteIdStr) ?? [];
+            const enrichedAssignees: IStickyNoteAssigneeNormalized[] = rawAssignees.map((a) => {
+                const profile = userProfilesMap.get(a.id);
+                return {
+                    id: a.id,
+                    name: profile?.name || a.name,
+                    email: profile?.email || a.email,
+                    avatarUrl: profile?.avatarUrl ?? a.avatarUrl ?? null,
+                    profileImage: profile?.profileImage ?? (a.avatarUrl ? { id: "", url: a.avatarUrl } : null),
+                };
+            });
+
+            const creatorProfile = creatorIdStr ? userProfilesMap.get(creatorIdStr) : null;
+
             return mapStickyNoteListItem(note, {
                 folderName: folderIdStr ? (folderMap.get(folderIdStr) ?? null) : null,
                 isFavorite: Boolean(favId),
                 favoriteId: favId ?? null,
-                creatorEmail: creatorIdStr ? (creatorMap.get(creatorIdStr) ?? null) : null,
-                assignees: assigneesMap.get(noteIdStr) ?? [],
+                creatorEmail: creatorProfile?.email ?? (creatorIdStr ? (creatorMap.get(creatorIdStr) ?? null) : null),
+                creatorName: creatorProfile?.name ?? null,
+                creatorAvatarUrl: creatorProfile?.avatarUrl ?? null,
+                creatorProfileImage: creatorProfile?.profileImage ?? null,
+                creator: creatorProfile
+                    ? {
+                          id: creatorProfile.id,
+                          name: creatorProfile.name,
+                          email: creatorProfile.email,
+                          avatarUrl: creatorProfile.avatarUrl,
+                          profileImage: creatorProfile.profileImage,
+                      }
+                    : null,
+                assignees: enrichedAssignees,
                 checklists,
             });
         });
@@ -980,6 +1023,123 @@ export class StickyNoteService {
         return permissionAuthorizationService.resolveWorkspaceAuthorization(userId, workspaceId);
     }
 
+    private async resolveUserProfilesMap(
+        userIds: string[],
+    ): Promise<
+        Map<
+            string,
+            {
+                id: string;
+                name: string;
+                email: string;
+                avatarUrl: string | null;
+                profileImage: { id: string; url: string } | null;
+            }
+        >
+    > {
+        const result = new Map<
+            string,
+            {
+                id: string;
+                name: string;
+                email: string;
+                avatarUrl: string | null;
+                profileImage: { id: string; url: string } | null;
+            }
+        >();
+
+        const validIds = userIds
+            .filter((id) => id && Types.ObjectId.isValid(id))
+            .map((id) => new Types.ObjectId(id));
+
+        if (validIds.length === 0) return result;
+
+        const [users, profiles] = await Promise.all([
+            UserModel.find({ _id: { $in: validIds } })
+                .select("_id email")
+                .lean()
+                .exec(),
+            UserProfileModel.find({ userId: { $in: validIds } })
+                .select("userId displayName firstName lastName profileImage avatarUrl")
+                .lean()
+                .exec(),
+        ]);
+
+        const userMap = new Map<string, { email: string }>();
+        for (const u of users) {
+            userMap.set(u._id.toString(), { email: u.email ?? "" });
+        }
+
+        const profileMap = new Map<string, (typeof profiles)[0]>();
+        const mediaIds: Types.ObjectId[] = [];
+
+        for (const p of profiles) {
+            const uidStr = p.userId.toString();
+            profileMap.set(uidStr, p);
+            if (p.profileImage && Types.ObjectId.isValid(String(p.profileImage))) {
+                mediaIds.push(new Types.ObjectId(String(p.profileImage)));
+            }
+        }
+
+        const mediaMap = new Map<string, { id: string; url: string }>();
+        if (mediaIds.length > 0) {
+            const mediaDocs = await MediaModel.find({
+                _id: { $in: mediaIds },
+                isDeleted: { $ne: true },
+            })
+                .select("_id storageKey publicUrl visibility")
+                .lean()
+                .exec();
+
+            for (const media of mediaDocs) {
+                try {
+                    let url: string;
+                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
+                        url = media.publicUrl;
+                    } else if (media.visibility === MediaVisibility.PUBLIC) {
+                        url = this.storageService.getPublicUrl(media.storageKey);
+                    } else {
+                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                    }
+                    mediaMap.set(media._id.toString(), {
+                        id: media._id.toString(),
+                        url,
+                    });
+                } catch (err) {
+                    console.warn(`[StickyNoteService] Failed to create download URL for media ${media._id}:`, err);
+                }
+            }
+        }
+
+        for (const idObj of validIds) {
+            const idStr = idObj.toString();
+            const user = userMap.get(idStr);
+            const profile = profileMap.get(idStr);
+
+            const email = user?.email ?? "";
+            const firstName = profile?.firstName ?? "";
+            const lastName = profile?.lastName ?? "";
+            const fullName = `${firstName} ${lastName}`.trim();
+            const name = profile?.displayName || (fullName.length > 0 ? fullName : email);
+
+            const profileImage =
+                profile?.profileImage && mediaMap.has(profile.profileImage.toString())
+                    ? (mediaMap.get(profile.profileImage.toString()) ?? null)
+                    : null;
+            const avatarUrl = profileImage?.url ?? (profile as any)?.avatarUrl ?? null;
+
+            result.set(idStr, {
+                id: idStr,
+                name,
+                email,
+                avatarUrl,
+                profileImage,
+            });
+        }
+
+        return result;
+    }
+
     private async resolveNoteDetailResponse(
         note: IStickyNoteRecord,
         userId?: string,
@@ -987,7 +1147,7 @@ export class StickyNoteService {
         const noteId = note._id.toString();
         const folderId = note.workspaceFolderId ? note.workspaceFolderId.toString() : null;
 
-        const [folderName, fav, assignees, checklists] = await Promise.all([
+        const [folderName, fav, rawAssignees, checklists] = await Promise.all([
             folderId ? this.stickyNoteRepository.findSingleFolderName(folderId) : Promise.resolve(null),
             userId
                 ? this.stickyNoteRepository.findSingleFavorite(noteId, userId)
@@ -996,11 +1156,46 @@ export class StickyNoteService {
             this.stickyNoteRepository.findSingleChecklists(noteId),
         ]);
 
+        const userIdsSet = new Set<string>();
+        if (note.createdBy) userIdsSet.add(note.createdBy.toString());
+        for (const a of rawAssignees) {
+            if (a.id) userIdsSet.add(a.id);
+        }
+
+        const userProfilesMap = await this.resolveUserProfilesMap(Array.from(userIdsSet));
+
+        const enrichedAssignees: IStickyNoteAssigneeNormalized[] = rawAssignees.map((a) => {
+            const profile = userProfilesMap.get(a.id);
+            return {
+                id: a.id,
+                name: profile?.name || a.name,
+                email: profile?.email || a.email,
+                avatarUrl: profile?.avatarUrl ?? a.avatarUrl ?? null,
+                profileImage: profile?.profileImage ?? (a.avatarUrl ? { id: "", url: a.avatarUrl } : null),
+            };
+        });
+
+        const creatorIdStr = note.createdBy ? note.createdBy.toString() : null;
+        const creatorProfile = creatorIdStr ? userProfilesMap.get(creatorIdStr) : null;
+
         return mapStickyNoteDetail(note, {
             folderName,
             isFavorite: fav.isFavorite,
             favoriteId: fav.favoriteId,
-            assignees,
+            creatorEmail: creatorProfile?.email ?? null,
+            creatorName: creatorProfile?.name ?? null,
+            creatorAvatarUrl: creatorProfile?.avatarUrl ?? null,
+            creatorProfileImage: creatorProfile?.profileImage ?? null,
+            creator: creatorProfile
+                ? {
+                      id: creatorProfile.id,
+                      name: creatorProfile.name,
+                      email: creatorProfile.email,
+                      avatarUrl: creatorProfile.avatarUrl,
+                      profileImage: creatorProfile.profileImage,
+                  }
+                : null,
+            assignees: enrichedAssignees,
             checklists,
         });
     }

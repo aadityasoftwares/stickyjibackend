@@ -7,6 +7,10 @@ import { UserAuthProvider, UserStatus } from "../../user/constants/user.enums.js
 import type { IUser, IUserDocument } from "../../user/interfaces/user.interface.js";
 import { UserProfileProvisioningService } from "../../userprofile/services/userProfileProvisioning.service.js";
 import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
+import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaVisibility } from "../../media/constants/media.enums.js";
+import type { IAuthUserProfileResponse } from "../interfaces/auth.interface.js";
 
 import { SessionService } from "./session.service.js";
 import { AppError } from "../../../utils/errors/app.error.js";
@@ -419,11 +423,13 @@ export class AuthService {
         });
 
         const userProfile = await UserProfileModel.findOne({ userId: user._id })
-            .select("firstName lastName displayName")
+            .select("firstName lastName displayName profileImage avatarUrl")
             .lean()
             .exec();
 
-        return this.toAuthServiceResult(user, session, userProfile);
+        const profileResponse = userProfile ? await this.resolveAuthProfile(userProfile) : null;
+
+        return this.toAuthServiceResult(user, session, profileResponse);
     }
 
     async refreshToken(
@@ -460,11 +466,13 @@ export class AuthService {
         }
 
         const userProfile = await UserProfileModel.findOne({ userId: user._id })
-            .select("firstName lastName displayName")
+            .select("firstName lastName displayName profileImage avatarUrl")
             .lean()
             .exec();
 
-        return this.toAuthServiceResult(user, session, userProfile);
+        const profileResponse = userProfile ? await this.resolveAuthProfile(userProfile) : null;
+
+        return this.toAuthServiceResult(user, session, profileResponse);
     }
 
     async verifyEmail(token: string, context?: IAuditLogContext): Promise<void> {
@@ -1027,7 +1035,7 @@ export class AuthService {
 
     private toAuthUserResponse(
         user: IUserDocument,
-        profile?: { firstName?: string | null; lastName?: string | null; displayName?: string | null } | null,
+        profile?: IAuthUserProfileResponse | null,
     ): IAuthUserResponse {
         return {
             id: this.resolveId(user._id),
@@ -1043,10 +1051,44 @@ export class AuthService {
                       firstName: profile.firstName ?? null,
                       lastName: profile.lastName ?? null,
                       displayName: profile.displayName ?? null,
+                      profileImage: profile.profileImage ?? null,
+                      avatarUrl: profile.avatarUrl ?? null,
                   }
                 : null,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+        };
+    }
+
+    private async resolveAuthProfile(profile: any): Promise<IAuthUserProfileResponse> {
+        let profileImage: { id: string; url: string } | null = null;
+        if (profile.profileImage && Types.ObjectId.isValid(String(profile.profileImage))) {
+            const media = await MediaModel.findOne({
+                _id: profile.profileImage,
+                isDeleted: { $ne: true },
+            })
+                .select("_id storageKey publicUrl visibility")
+                .lean()
+                .exec();
+
+            if (media) {
+                const storageService = new CloudflareR2Service();
+                const url =
+                    media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                        ? media.publicUrl
+                        : await storageService.createDownloadUrl(media.storageKey);
+                profileImage = { id: media._id.toString(), url };
+            }
+        }
+
+        const avatarUrl = profileImage?.url ?? profile.avatarUrl ?? null;
+
+        return {
+            firstName: profile.firstName ?? null,
+            lastName: profile.lastName ?? null,
+            displayName: profile.displayName ?? null,
+            profileImage,
+            avatarUrl,
         };
     }
 
@@ -1062,7 +1104,7 @@ export class AuthService {
     private toAuthServiceResult(
         user: IUserDocument,
         session: AuthSessionResult,
-        profile?: { firstName?: string | null; lastName?: string | null; displayName?: string | null } | null,
+        profile?: IAuthUserProfileResponse | null,
     ): IAuthServiceResult {
         return {
             data: {

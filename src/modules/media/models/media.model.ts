@@ -34,7 +34,6 @@ const MediaSchema = new Schema<IMediaDocument>(
             required: true,
             unique: true,
             trim: true,
-            index: true,
         },
         publicUrl: {
             type: String,
@@ -65,6 +64,10 @@ const MediaSchema = new Schema<IMediaDocument>(
             type: Number,
             required: true,
             min: 1,
+            validate: {
+                validator: (v: number) => Number.isSafeInteger(v) && v > 0,
+                message: "Media size must be a positive safe integer.",
+            },
         },
         mediaType: {
             type: String,
@@ -120,9 +123,17 @@ const MediaSchema = new Schema<IMediaDocument>(
     },
 );
 
+MediaSchema.pre("validate", function () {
+    if (this.resourceId && !this.resourceType) {
+        throw new Error("Resource type is required when resource ID is provided.");
+    }
+});
+
+// Paginated user media listing sorted by createdAt desc
 MediaSchema.index({
     uploadedBy: 1,
     status: 1,
+    createdAt: -1,
 });
 
 MediaSchema.index({
@@ -145,6 +156,12 @@ MediaSchema.index({
 MediaSchema.index({
     status: 1,
     uploadExpiresAt: 1,
+});
+
+MediaSchema.index({
+    status: 1,
+    storageDeletionPending: 1,
+    deletedAt: 1,
 });
 
 MediaSchema.index({

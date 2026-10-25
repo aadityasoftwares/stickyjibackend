@@ -12,15 +12,24 @@ export const StickyNoteColumnValidation = {
     },
 
     isValidColor(value: unknown): value is StickyNoteColumnColor {
-        return typeof value === "string" && VALID_COLORS.has(value as StickyNoteColumnColor);
+        if (typeof value !== "string") return false;
+        return (
+            VALID_COLORS.has(value as StickyNoteColumnColor) ||
+            VALID_COLORS.has(value.toUpperCase() as StickyNoteColumnColor)
+        );
     },
 
     isValidPosition(value: unknown): value is number {
+        const num =
+            typeof value === "number"
+                ? value
+                : typeof value === "string" && value.trim() !== ""
+                  ? Number(value)
+                  : NaN;
         return (
-            typeof value === "number" &&
-            Number.isFinite(value) &&
-            Number.isInteger(value) &&
-            value >= STICKY_NOTE_COLUMN_CONSTANTS.POSITION.MIN
+            Number.isFinite(num) &&
+            Number.isInteger(num) &&
+            num >= STICKY_NOTE_COLUMN_CONSTANTS.POSITION.MIN
         );
     },
 

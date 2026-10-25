@@ -24,4 +24,9 @@ export const USER_PROFILE_CONSTANTS = {
         MAX_ITEMS: 20,
         MAX_ITEM_LENGTH: 100,
     },
+    PROFILE_IMAGE: {
+        MAX_SIZE: 5 * 1024 * 1024,
+        ALLOWED_MIME_TYPES: ["image/jpeg", "image/png", "image/webp"] as const,
+        ALLOWED_EXTENSIONS: ["jpg", "jpeg", "png", "webp"] as const,
+    },
 } as const;

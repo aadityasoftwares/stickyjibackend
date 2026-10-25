@@ -21,7 +21,7 @@ import {
  */
 export function normalizeAssignee(raw: any): IStickyNoteAssigneeNormalized {
     if (!raw) {
-        return { id: "", name: "", email: "", avatarUrl: null };
+        return { id: "", name: "", email: "", avatarUrl: null, profileImage: null };
     }
 
     const user = raw.userId && typeof raw.userId === "object" ? raw.userId : raw;
@@ -42,13 +42,34 @@ export function normalizeAssignee(raw: any): IStickyNoteAssigneeNormalized {
     const name = user.displayName || user.name || (fullName.length > 0 ? fullName : user.email || "");
 
     const email = user.email || "";
-    const avatarUrl = user.avatarUrl || user.avatar || user.profile?.avatarUrl || null;
+    const avatarUrl =
+        user.avatarUrl ||
+        user.avatar ||
+        user.profile?.avatarUrl ||
+        user.profileImage?.url ||
+        user.profile?.profileImage?.url ||
+        null;
+
+    const profileImage =
+        user.profileImage && typeof user.profileImage === "object" && user.profileImage.url
+            ? {
+                  id: user.profileImage.id
+                      ? String(user.profileImage.id)
+                      : user.profileImage._id
+                        ? String(user.profileImage._id)
+                        : "",
+                  url: String(user.profileImage.url),
+              }
+            : avatarUrl
+              ? { id: "", url: avatarUrl }
+              : null;
 
     return {
         id,
         name,
         email,
         avatarUrl,
+        profileImage,
     };
 }
 
@@ -57,6 +78,16 @@ export interface IMapStickyNoteOptions {
     isFavorite?: boolean;
     favoriteId?: string | null;
     creatorEmail?: string | null;
+    creatorName?: string | null;
+    creatorAvatarUrl?: string | null;
+    creatorProfileImage?: { id: string; url: string } | null;
+    creator?: {
+        id: string;
+        name: string;
+        email: string;
+        avatarUrl: string | null;
+        profileImage: { id: string; url: string } | null;
+    } | null;
     assignees?: IStickyNoteAssigneeNormalized[];
     checklists?: IStickyNoteChecklistResponse[];
     checklistSummary?: IStickyNoteChecklistSummary;
@@ -123,6 +154,10 @@ export function mapStickyNoteListItem(
         isFavorite: Boolean(options.isFavorite),
         favoriteId: options.favoriteId ?? null,
         creatorEmail: options.creatorEmail ?? null,
+        creatorName: options.creatorName ?? null,
+        creatorAvatarUrl: options.creatorAvatarUrl ?? null,
+        creatorProfileImage: options.creatorProfileImage ?? null,
+        creator: options.creator ?? null,
         assignees: options.assignees ?? [],
         checklistSummary,
         checklists,
@@ -160,6 +195,11 @@ export function mapStickyNoteDetail(
         rank: note.rank ?? "",
         isFavorite: Boolean(options.isFavorite),
         favoriteId: options.favoriteId ?? null,
+        creatorEmail: options.creatorEmail ?? null,
+        creatorName: options.creatorName ?? null,
+        creatorAvatarUrl: options.creatorAvatarUrl ?? null,
+        creatorProfileImage: options.creatorProfileImage ?? null,
+        creator: options.creator ?? null,
         assignees: options.assignees ?? [],
         checklistSummary,
         checklists,

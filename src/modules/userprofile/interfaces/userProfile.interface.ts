@@ -2,6 +2,11 @@ import type { Document, Types } from "mongoose";
 
 import type { UserProfileType } from "../constants/userProfile.enums.js";
 
+export interface IProfileImageSummary {
+    id: string;
+    url: string;
+}
+
 export interface IUserProfile {
     userId: Types.ObjectId;
 
@@ -22,6 +27,8 @@ export interface IUserProfile {
     timezoneId?: Types.ObjectId | null;
     languageId?: Types.ObjectId | null;
     currencyId?: Types.ObjectId | null;
+
+    profileImage?: Types.ObjectId | null;
 
     createdAt?: Date;
     updatedAt?: Date;
@@ -52,6 +59,7 @@ export interface IUserProfileCreate {
     languageId?: Types.ObjectId | string | null;
 
     currencyId?: Types.ObjectId | string | null;
+    profileImage?: Types.ObjectId | string | null;
 }
 
 export interface IUserProfileUpdate {
@@ -75,6 +83,7 @@ export interface IUserProfileUpdate {
     languageId?: Types.ObjectId | string | null;
 
     currencyId?: Types.ObjectId | string | null;
+    profileImage?: Types.ObjectId | string | null;
 }
 
 export interface IUserProfileFilter {
@@ -128,4 +137,7 @@ export interface IUserProfileResponse {
     timezoneId: string | null;
     languageId: string | null;
     currencyId: string | null;
+
+    profileImage: IProfileImageSummary | null;
+    avatarUrl?: string | null;
 }

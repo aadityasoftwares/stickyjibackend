@@ -104,6 +104,12 @@ const UserProfileSchema = new Schema<IUserProfileDocument>(
             ref: "Currency",
             default: null,
         },
+
+        profileImage: {
+            type: Schema.Types.ObjectId,
+            ref: "Media",
+            default: null,
+        },
     },
     {
         timestamps: true,
@@ -144,6 +150,10 @@ UserProfileSchema.index({
 
 UserProfileSchema.index({
     currencyId: 1,
+});
+
+UserProfileSchema.index({
+    profileImage: 1,
 });
 
 UserProfileSchema.index({

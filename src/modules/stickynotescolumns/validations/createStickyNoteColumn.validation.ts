@@ -16,6 +16,18 @@ export const createStickyNoteColumnValidation = (req: Request, _res: Response, n
             return next(new AppError(StickyNoteColumnMessages.UNSUPPORTED_FIELDS, 400));
         }
 
+        if (
+            typeof req.body.position === "string" &&
+            req.body.position.trim() !== "" &&
+            !Number.isNaN(Number(req.body.position))
+        ) {
+            req.body.position = Number(req.body.position);
+        }
+
+        if (typeof req.body.color === "string") {
+            req.body.color = req.body.color.toUpperCase();
+        }
+
         const { workspaceId, workspaceFolderId, name, color, position, rank } = req.body;
 
         if (workspaceId === undefined || workspaceId === null) {

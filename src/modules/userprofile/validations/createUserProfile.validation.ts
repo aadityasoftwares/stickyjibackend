@@ -12,6 +12,7 @@ export const createUserProfileValidation = (req: Request, res: Response, next: N
             displayName,
             bio,
             dateOfBirth,
+            profileImage,
             profileType,
             occupation,
             education,
@@ -21,6 +22,12 @@ export const createUserProfileValidation = (req: Request, res: Response, next: N
             languageId,
             currencyId,
         } = req.body;
+
+        if (profileImage !== undefined && profileImage !== null) {
+            if (typeof profileImage !== "string" || !/^[a-fA-F0-9]{24}$/.test(profileImage)) {
+                return next(new AppError(UserProfileMessages.INVALID_PROFILE_IMAGE, 400));
+            }
+        }
 
         if (!firstName) {
             return next(new AppError(UserProfileMessages.FIRST_NAME_REQUIRED, 400));

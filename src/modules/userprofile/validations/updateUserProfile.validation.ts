@@ -146,6 +146,15 @@ export const updateUserProfileValidation = (req: Request, res: Response, next: N
             }
         }
 
+        if (req.body.profileImage !== undefined && req.body.profileImage !== null) {
+            if (
+                typeof req.body.profileImage !== "string" ||
+                !/^[a-fA-F0-9]{24}$/.test(req.body.profileImage)
+            ) {
+                return next(new AppError(UserProfileMessages.INVALID_PROFILE_IMAGE, 400));
+            }
+        }
+
         next();
     } catch (error) {
         next(error);

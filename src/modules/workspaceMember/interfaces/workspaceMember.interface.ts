@@ -43,6 +43,11 @@ export interface IWorkspaceMemberFilter {
     sortOrder?: "asc" | "desc";
 }
 
+export interface IWorkspaceMemberProfileImage {
+    id: string;
+    url: string;
+}
+
 /**
  * Small user-facing shape used by the members list screen.
  * It intentionally does not expose the complete User/UserProfile document.
@@ -51,6 +56,8 @@ export interface IWorkspaceMemberListPerson {
     id: string;
     displayName: string;
     email: string;
+    profileImage: IWorkspaceMemberProfileImage | null;
+    avatarUrl: string | null;
 }
 
 /**

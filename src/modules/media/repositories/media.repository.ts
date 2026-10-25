@@ -1,18 +1,16 @@
+import { Types } from "mongoose";
 import { MediaModel } from "../models/media.model.js";
 import { WorkspaceModel } from "../../workspace/models/workspace.model.js";
 import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { WORKSPACE_TRASH_STATUSES } from "../../workspace/constants/workspace.enums.js";
-import { MediaResourceType } from "../constants/media.enums.js";
-
+import { MediaResourceType, MediaStatus } from "../constants/media.enums.js";
 import type { IMedia, IMediaFilter } from "../interfaces/media.interface.js";
 
-import { MediaStatus } from "../constants/media.enums.js";
-
 export class MediaRepository {
-    async findPendingStorageDeletions() {
+    async findPendingStorageDeletions(limit = 100) {
         return MediaModel.find({ status: MediaStatus.DELETED, storageDeletionPending: true })
             .sort({ deletedAt: 1, _id: 1 })
-            .limit(100)
+            .limit(limit)
             .select("_id bucket storageKey")
             .lean()
             .exec();
@@ -25,27 +23,48 @@ export class MediaRepository {
             storageDeletionPending: true,
         }).exec();
     }
+
+    async isStorageKeyReferencedElsewhere(storageKey: string, excludeId?: string): Promise<boolean> {
+        const query: Record<string, unknown> = {
+            storageKey,
+            status: { $ne: MediaStatus.DELETED },
+        };
+        if (excludeId && Types.ObjectId.isValid(excludeId)) {
+            query._id = { $ne: new Types.ObjectId(excludeId) };
+        }
+        const count = await MediaModel.countDocuments(query);
+        return count > 0;
+    }
+
     async create(data: Partial<IMedia>) {
         return MediaModel.create(data);
     }
 
-    async findById(id: string) {
-        return MediaModel.findOne({
+    async findById(id: string, lean = false) {
+        const query = MediaModel.findOne({
             _id: id,
             status: {
                 $ne: MediaStatus.DELETED,
             },
         });
+        if (lean) {
+            query.lean();
+        }
+        return query.exec();
     }
 
-    async findByIdForUser(id: string, userId: string) {
-        return MediaModel.findOne({
+    async findByIdForUser(id: string, userId: string, lean = false) {
+        const query = MediaModel.findOne({
             _id: id,
             uploadedBy: userId,
             status: {
                 $ne: MediaStatus.DELETED,
             },
         });
+        if (lean) {
+            query.lean();
+        }
+        return query.exec();
     }
 
     async findAll(filters: IMediaFilter = {}) {
@@ -126,7 +145,9 @@ export class MediaRepository {
                     [sortBy]: sortOrder === "asc" ? 1 : -1,
                 })
                 .skip(skip)
-                .limit(limit),
+                .limit(limit)
+                .lean()
+                .exec(),
             MediaModel.countDocuments(query),
         ]);
 
@@ -151,7 +172,30 @@ export class MediaRepository {
             },
             data,
             {
-                new: true,
+                returnDocument: "after",
+                runValidators: true,
+            },
+        );
+    }
+
+    async updateStatusFromPending(
+        id: string,
+        newStatus: MediaStatus,
+        additionalData: Partial<IMedia> = {},
+    ) {
+        return MediaModel.findOneAndUpdate(
+            {
+                _id: id,
+                status: MediaStatus.PENDING,
+            },
+            {
+                $set: {
+                    status: newStatus,
+                    ...additionalData,
+                },
+            },
+            {
+                returnDocument: "after",
                 runValidators: true,
             },
         );
@@ -168,21 +212,26 @@ export class MediaRepository {
             {
                 status: MediaStatus.DELETED,
                 deletedAt: new Date(),
+                storageDeletionPending: true,
+                publicUrl: null,
             },
             {
-                new: true,
+                returnDocument: "after",
                 runValidators: true,
             },
         );
     }
 
-    async findExpiredPendingUploads() {
+    async findExpiredPendingUploads(limit = 100) {
         return MediaModel.find({
             status: MediaStatus.PENDING,
             uploadExpiresAt: {
                 $lt: new Date(),
             },
-        });
+        })
+            .limit(limit)
+            .lean()
+            .exec();
     }
 
     async deleteDocument(id: string) {

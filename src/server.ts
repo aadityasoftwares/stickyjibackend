@@ -7,6 +7,7 @@ import app from "./app.js";
 import { connectDatabase } from "./config/database.js";
 import { initializeDatabaseIfRequired } from "./database/initialization/database-initializer.js";
 import { startStickyNoteRetentionScheduler } from "./modules/stickynotes/schedulers/stickyNoteRetention.scheduler.js";
+import { startMediaCleanupScheduler } from "./modules/media/schedulers/mediaCleanup.scheduler.js";
 
 const PORT = process.env.PORT || 5000;
 
@@ -24,6 +25,7 @@ async function startServer() {
         startStickyNoteRetentionScheduler();
         startWorkspaceRetentionScheduler();
         startUserSubscriptionReconciliationScheduler();
+        startMediaCleanupScheduler();
 
         app.listen(PORT, () => {
             console.log(`🚀 Server running at http://localhost:${PORT}`);

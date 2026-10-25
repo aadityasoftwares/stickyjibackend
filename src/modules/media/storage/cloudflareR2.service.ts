@@ -1,9 +1,9 @@
-import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { MEDIA_CONSTANTS } from "../constants/media.constants.js";
 import { MediaMessages } from "../constants/media.messages.js";
-import { cloudflareR2Client, R2_CONFIG, } from "../../../config/cloudflareR2.config.js";
+import { cloudflareR2Client, R2_CONFIG } from "../../../config/cloudflareR2.config.js";
 
 export class CloudflareR2Service {
     private readonly client = cloudflareR2Client;
@@ -38,6 +38,20 @@ export class CloudflareR2Service {
                     MEDIA_CONSTANTS.UPLOAD_URL_EXPIRES_IN_SECONDS,
             },
         );
+    }
+
+    async createDownloadUrl(
+        storageKey: string,
+        expiresInSeconds: number = MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
+    ): Promise<string> {
+        const command = new GetObjectCommand({
+            Bucket: this.bucketName,
+            Key: storageKey,
+        });
+
+        return getSignedUrl(this.client, command, {
+            expiresIn: expiresInSeconds,
+        });
     }
 
     async headObject(storageKey: string) {

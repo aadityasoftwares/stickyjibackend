@@ -35,8 +35,11 @@ export interface IStickyNoteColumnCreate {
 }
 
 export interface IStickyNoteColumnUpdate {
+    workspaceId?: Types.ObjectId | string;
+    workspaceFolderId?: Types.ObjectId | string;
     name?: string;
     color?: StickyNoteColumnColor;
+    position?: number;
     rank?: string;
 }
 

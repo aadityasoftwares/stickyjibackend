@@ -15,6 +15,7 @@ export enum MediaType {
 
 export enum MediaPurpose {
     AVATAR = "AVATAR",
+    PROFILE_IMAGE = "PROFILE_IMAGE",
     LOGO = "LOGO",
     ICON = "ICON",
     COVER = "COVER",

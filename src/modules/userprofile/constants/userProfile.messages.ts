@@ -25,4 +25,12 @@ export const UserProfileMessages = {
     INVALID_TIMEZONE: "Invalid timezone.",
     INVALID_LANGUAGE: "Invalid language.",
     INVALID_CURRENCY: "Invalid currency.",
+    PROFILE_IMAGE_UPLOADED: "Profile image uploaded successfully.",
+    PROFILE_IMAGE_REMOVED: "Profile image removed successfully.",
+    PROFILE_IMAGE_NOT_FOUND: "Profile image not found.",
+    INVALID_PROFILE_IMAGE: "Invalid profile image.",
+    UNSUPPORTED_IMAGE_FORMAT: "Unsupported image format. Allowed formats are JPEG, PNG, and WebP.",
+    PROFILE_IMAGE_TOO_LARGE: "Profile image exceeds the 5MB size limit.",
+    CANNOT_ATTACH_FOREIGN_MEDIA: "You can only attach your own media files.",
+    MEDIA_NOT_VERIFIED: "Media upload must be active and verified before attaching.",
 } as const;

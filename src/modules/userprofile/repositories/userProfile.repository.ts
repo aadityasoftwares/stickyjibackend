@@ -41,6 +41,7 @@ const USER_PROFILE_PUBLIC_FIELDS = [
     "timezoneId",
     "languageId",
     "currencyId",
+    "profileImage",
 
     "createdAt",
     "updatedAt",

@@ -128,4 +128,79 @@ export class UserProfileController {
             next(error);
         }
     };
+
+    setProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const context = {
+                actorId: req.user?.id ?? null,
+                ipAddress: req.ip ?? null,
+                userAgent: req.get("user-agent") ?? null,
+                requestId: req.headers["x-request-id"]?.toString() ?? null,
+            };
+
+            const profile = await this.userProfileService.setProfileImage(
+                req.user?.id as string,
+                req.body.mediaId,
+                context,
+            );
+
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserProfileMessages.PROFILE_IMAGE_UPLOADED, profile));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    removeProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const context = {
+                actorId: req.user?.id ?? null,
+                ipAddress: req.ip ?? null,
+                userAgent: req.get("user-agent") ?? null,
+                requestId: req.headers["x-request-id"]?.toString() ?? null,
+            };
+
+            const profile = await this.userProfileService.removeProfileImage(
+                req.user?.id as string,
+                context,
+            );
+
+            return res
+                .status(200)
+                .json(ResponseUtil.success(UserProfileMessages.PROFILE_IMAGE_REMOVED, profile));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    requestProfileImageUpload = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.userProfileService.requestProfileImageUpload(
+                req.user?.id as string,
+                req.body,
+            );
+
+            return res
+                .status(201)
+                .json(ResponseUtil.created("Profile image upload URL generated successfully.", result));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    getMyProfileImage = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const profile = await this.userProfileService.getMyProfile(req.user?.id as string);
+
+            return res.status(200).json(
+                ResponseUtil.success(UserProfileMessages.FETCHED, {
+                    profileImage: profile.profileImage,
+                    avatarUrl: profile.avatarUrl,
+                }),
+            );
+        } catch (error) {
+            next(error);
+        }
+    };
 }

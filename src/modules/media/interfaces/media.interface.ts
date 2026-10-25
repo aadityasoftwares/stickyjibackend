@@ -16,6 +16,7 @@ export interface IMedia {
     bucket: string;
     storageKey: string;
     publicUrl?: string | null;
+    downloadUrl?: string | null;
     originalFileName: string;
     mimeType: string;
     extension?: string | null;

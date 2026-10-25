@@ -53,6 +53,8 @@ export interface WorkspaceMemberListRawRow {
     profileDisplayName?: string | null;
     profileFirstName?: string | null;
     profileLastName?: string | null;
+    profileImageId?: Types.ObjectId | null;
+    profileAvatarUrl?: string | null;
 
     roleName?: string | null;
     roleDisplayName?: string | null;
@@ -63,6 +65,8 @@ export interface WorkspaceMemberListRawRow {
     inviterProfileDisplayName?: string | null;
     inviterProfileFirstName?: string | null;
     inviterProfileLastName?: string | null;
+    inviterProfileImageId?: Types.ObjectId | null;
+    inviterProfileAvatarUrl?: string | null;
 }
 
 export interface ActivateWorkspaceMemberFromInvitationInput {
@@ -360,6 +364,8 @@ export class WorkspaceMemberRepository {
                             profileDisplayName: "$profile.displayName",
                             profileFirstName: "$profile.firstName",
                             profileLastName: "$profile.lastName",
+                            profileImageId: "$profile.profileImage",
+                            profileAvatarUrl: "$profile.avatarUrl",
 
                             roleName: "$role.name",
                             roleDisplayName: "$role.displayName",
@@ -370,6 +376,8 @@ export class WorkspaceMemberRepository {
                             inviterProfileDisplayName: "$inviterProfile.displayName",
                             inviterProfileFirstName: "$inviterProfile.firstName",
                             inviterProfileLastName: "$inviterProfile.lastName",
+                            inviterProfileImageId: "$inviterProfile.profileImage",
+                            inviterProfileAvatarUrl: "$inviterProfile.avatarUrl",
                         },
                     },
                 ],
