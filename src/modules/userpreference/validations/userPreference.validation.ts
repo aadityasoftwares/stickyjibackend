@@ -62,6 +62,62 @@ preferenceKeyMap.set("favourite_sort_order", USER_PREFERENCE_KEYS.FAVOURITE_SORT
 preferenceKeyMap.set("favoritesortorder", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
 preferenceKeyMap.set("favorite_sort_order", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
 
+preferenceKeyMap.set("favouriteselectedworkspace", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favourite_selected_workspace", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favouriteselectedworkspaceid", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favourite_selected_workspace_id", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favoriteselectedworkspace", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favorite_selected_workspace", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favoriteselectedworkspaceid", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+preferenceKeyMap.set("favorite_selected_workspace_id", USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+
+// My Notes screen aliases
+preferenceKeyMap.set("mynotesview", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("mynotes_view", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("my_notes_view", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("mynoteview", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("my_note_view", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("noteslibraryview", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+preferenceKeyMap.set("noteslibrarynotesview", USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+
+preferenceKeyMap.set("mynotesstatusfilter", USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+preferenceKeyMap.set("mynotes_status_filter", USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+preferenceKeyMap.set("my_notes_status_filter", USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+preferenceKeyMap.set("mynotestatusfilter", USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+preferenceKeyMap.set("my_note_status_filter", USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+
+preferenceKeyMap.set("mynotessortorder", USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+preferenceKeyMap.set("mynotes_sort_order", USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+preferenceKeyMap.set("my_notes_sort_order", USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+preferenceKeyMap.set("mynotesortorder", USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+preferenceKeyMap.set("my_note_sort_order", USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+
+preferenceKeyMap.set("mynotesselectedworkspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("mynotes_selected_workspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("my_notes_selected_workspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("mynotesselectedworkspaceid", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("mynotes_selected_workspace_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("my_notes_selected_workspace_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("mynoteselectedworkspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("my_note_selected_workspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("notesselectedworkspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("notes_selected_workspace", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("notesselectedworkspaceid", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+preferenceKeyMap.set("notes_selected_workspace_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+
+preferenceKeyMap.set("mynotesselectedfolder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("mynotes_selected_folder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("my_notes_selected_folder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("mynotesselectedfolderid", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("mynotes_selected_folder_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("my_notes_selected_folder_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("mynoteselectedfolder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("my_note_selected_folder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("notesselectedfolder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("notes_selected_folder", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("notesselectedfolderid", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+preferenceKeyMap.set("notes_selected_folder_id", USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+
 // Note selection aliases
 preferenceKeyMap.set("defaultnotecolor", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
 preferenceKeyMap.set("default_note_color", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
@@ -233,18 +289,26 @@ export const UserPreferenceValidation = {
             case USER_PREFERENCE_KEYS.OVERDUE_VIEW:
             case USER_PREFERENCE_KEYS.FAVOURITE_VIEW:
             case USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER:
+            case USER_PREFERENCE_KEYS.MY_NOTES_VIEW:
+            case USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER:
                 // Normalize screen-specific preferences to uppercase
                 return value.trim().toUpperCase();
 
-            case USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER: {
+            case USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER:
+            case USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER: {
                 const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, "_");
                 if (normalized === "TITLE_A_Z" || normalized === "A_Z") return "TITLE_ASC";
                 if (normalized === "TITLE_Z_A" || normalized === "Z_A") return "TITLE_DESC";
+                if (normalized === "RECENTLY_UPDATED" || normalized === "UPDATED_AT") return "RECENTLY_UPDATED";
+                if (normalized === "RECENTLY_CREATED" || normalized === "CREATED_AT") return "RECENTLY_CREATED";
                 return normalized;
             }
 
             case USER_PREFERENCE_KEYS.TIMEZONE:
-                // Preserve IANA timezone casing (e.g. "Asia/Kolkata")
+            case USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE:
+            case USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE:
+            case USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER:
+                // Preserve IANA timezone casing or workspace/folder ID
                 return value.trim();
 
             case USER_PREFERENCE_KEYS.LOCALE:

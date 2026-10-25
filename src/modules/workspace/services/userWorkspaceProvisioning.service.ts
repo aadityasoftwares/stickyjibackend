@@ -11,7 +11,17 @@ import { WorkspaceFolderService } from "../../workspaceFolders/services/workspac
 import { StickyNoteColumnService } from "../../stickynotescolumns/services/stickyNoteColumn.service.js";
 import { StickyNoteColumnType } from "../../stickynotescolumns/constants/stickyNoteColumn.enums.js";
 import { StickyNoteRepository } from "../../stickynotes/repositories/stickynote.repository.js";
-import { StickyNoteColor, StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
+import {
+    StickyNoteBackgroundPattern,
+    StickyNoteColor,
+    StickyNotePriority,
+    StickyNoteShape,
+    StickyNoteStatus,
+    StickyNoteVariant,
+} from "../../stickynotes/constants/stickyNote.enums.js";
+import { UserPreferenceModel } from "../../userpreference/models/userPreference.model.js";
+import { UserPreferenceValidation } from "../../userpreference/validations/userPreference.validation.js";
+import { USER_PREFERENCE_KEYS } from "../../userpreference/constants/userPreference.constants.js";
 
 export class UserWorkspaceProvisioningService {
     private readonly workspaceService: WorkspaceService;
@@ -97,6 +107,7 @@ export class UserWorkspaceProvisioningService {
             }
 
             await this.ensureDefaultStickyNote(workspaceId, workspaceFolderId, todoColumnId, userId);
+            await this.seedInitialUserPreferences(userId, workspaceId, workspaceFolderId);
         } catch (error) {
             this.logProvisioningError(userId, WorkspaceMessages.PROVISIONING.UNEXPECTED_ERROR, error);
         }
@@ -224,34 +235,128 @@ export class UserWorkspaceProvisioningService {
         workspaceFolderId: string,
         columnId: string,
         userId: string,
-    ): Promise<void> {
+    ): Promise<unknown> {
+        let defaultNote: unknown = await this.stickyNoteRepository.findByWorkspaceFolderAndTitle(
+            workspaceId,
+            workspaceFolderId,
+            USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
+        );
+
+        if (defaultNote) {
+            return defaultNote;
+        }
+
         try {
-            const existingNote = await this.stickyNoteRepository.findByWorkspaceFolderAndTitle(
-                workspaceId,
-                workspaceFolderId,
-                USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
-            );
+            const [position, rank, stickyNoteNumber] = await Promise.all([
+                this.stickyNoteRepository.getNextPositionByColumn(columnId),
+                this.stickyNoteRepository.getNextRankByColumn(columnId),
+                this.stickyNoteRepository.getNextStickyNoteNumber(workspaceId),
+            ]);
 
-            if (existingNote) {
-                return;
-            }
-
-            const position = await this.stickyNoteRepository.getNextPositionByColumn(columnId);
-
-            await this.stickyNoteRepository.create({
+            defaultNote = await this.stickyNoteRepository.create({
                 workspaceId: new Types.ObjectId(workspaceId),
                 workspaceFolderId: new Types.ObjectId(workspaceFolderId),
                 columnId: new Types.ObjectId(columnId),
+                stickyNoteNumber,
                 title: USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
                 content: USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.CONTENT,
                 color: StickyNoteColor.YELLOW,
+                priority: StickyNotePriority.NONE,
+                shape: StickyNoteShape.SQUARE,
+                variant: StickyNoteVariant.PLAIN,
+                backgroundPattern: StickyNoteBackgroundPattern.NONE,
                 position,
+                rank,
                 status: StickyNoteStatus.ACTIVE,
+                noteDate: null,
                 createdBy: new Types.ObjectId(userId),
                 updatedBy: new Types.ObjectId(userId),
             });
+
+            return defaultNote;
         } catch (error) {
-            this.logProvisioningError(userId, "Failed to provision default sticky note.", error);
+            try {
+                defaultNote = await this.stickyNoteRepository.findByWorkspaceFolderAndTitle(
+                    workspaceId,
+                    workspaceFolderId,
+                    USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
+                );
+            } catch (lookupError) {
+                this.logProvisioningError(
+                    userId,
+                    WorkspaceMessages.PROVISIONING.DEFAULT_NOTE_VERIFY_FAILED,
+                    lookupError,
+                );
+                return null;
+            }
+
+            if (defaultNote) {
+                this.logProvisioningError(
+                    userId,
+                    WorkspaceMessages.PROVISIONING.DEFAULT_NOTE_POST_CREATE_FAILED,
+                    error,
+                );
+                return defaultNote;
+            }
+
+            this.logProvisioningError(
+                userId,
+                WorkspaceMessages.PROVISIONING.DEFAULT_NOTE_CREATE_FAILED,
+                error,
+            );
+
+            return null;
+        }
+    }
+
+    private async seedInitialUserPreferences(
+        userId: string,
+        workspaceId: string,
+        workspaceFolderId: string,
+    ): Promise<void> {
+        try {
+            const updates = [
+                {
+                    key: UserPreferenceValidation.getStorageKey(USER_PREFERENCE_KEYS.SELECTED_WORKSPACE_ID),
+                    value: workspaceId,
+                },
+                {
+                    key: UserPreferenceValidation.getStorageKey(USER_PREFERENCE_KEYS.SELECTED_FOLDER_ID),
+                    value: workspaceFolderId,
+                },
+                {
+                    key: UserPreferenceValidation.getStorageKey(USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE),
+                    value: workspaceId,
+                },
+                {
+                    key: UserPreferenceValidation.getStorageKey(USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER),
+                    value: workspaceFolderId,
+                },
+                {
+                    key: UserPreferenceValidation.getStorageKey(USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE),
+                    value: workspaceId,
+                },
+            ];
+
+            const userObjectId = new Types.ObjectId(userId);
+
+            await UserPreferenceModel.bulkWrite(
+                updates.map((pref) => ({
+                    updateOne: {
+                        filter: {
+                            userId: userObjectId,
+                            key: pref.key,
+                            value: { $in: ["", null] },
+                        },
+                        update: {
+                            $set: { value: pref.value },
+                        },
+                    },
+                })),
+                { ordered: false },
+            );
+        } catch (error) {
+            this.logProvisioningError(userId, "Failed to initialize selected workspace/folder preferences.", error);
         }
     }
 

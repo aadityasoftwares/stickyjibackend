@@ -64,5 +64,8 @@ export const WorkspaceMessages = {
         DEFAULT_FOLDER_CREATE_FAILED: "Failed to create default workspace folder.",
         DEFAULT_FOLDER_VERIFY_FAILED: "Failed to verify default folder after folder creation error.",
         DEFAULT_FOLDER_POST_CREATE_FAILED: "Default folder was created but a post-create operation failed.",
+        DEFAULT_NOTE_CREATE_FAILED: "Failed to create default sticky note.",
+        DEFAULT_NOTE_VERIFY_FAILED: "Failed to verify default sticky note after note creation error.",
+        DEFAULT_NOTE_POST_CREATE_FAILED: "Default sticky note was created but a post-create operation failed.",
     },
 } as const;

@@ -564,16 +564,19 @@ test("favourite view, status filter, and sort order preference keys, defaults, a
     assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "favouriteView");
     assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER, "favouriteStatusFilter");
     assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "favouriteSortOrder");
+    assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE, "favouriteSelectedWorkspace");
 
     // US-spelling aliases match canonical keys
     assert.equal(USER_PREFERENCE_KEYS.FAVORITE_VIEW, USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
     assert.equal(USER_PREFERENCE_KEYS.FAVORITE_STATUS_FILTER, USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
     assert.equal(USER_PREFERENCE_KEYS.FAVORITE_SORT_ORDER, USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+    assert.equal(USER_PREFERENCE_KEYS.FAVORITE_SELECTED_WORKSPACE, USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
 
     // Definitions and defaults
     assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_VIEW].defaultValue, "GRID");
     assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER].defaultValue, "ALL");
     assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER].defaultValue, "TITLE_ASC");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE].defaultValue, "");
 
     // Allowed values
     assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.FAVOURITE_VIEW].includes("GRID"));
@@ -595,6 +598,10 @@ test("favourite view, status filter, and sort order preference keys, defaults, a
     assert.equal(UserPreferenceValidation.isValidKey("favorite_status_filter"), true);
     assert.equal(UserPreferenceValidation.isValidKey("favouritesortorder"), true);
     assert.equal(UserPreferenceValidation.isValidKey("favorite_sort_order"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favouriteSelectedWorkspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favourite_selected_workspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favoriteSelectedWorkspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favorite_selected_workspace"), true);
 
     // Canonical key mapping
     assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteView"), USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
@@ -605,6 +612,8 @@ test("favourite view, status filter, and sort order preference keys, defaults, a
     assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteStatusFilter"), USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
     assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteSortOrder"), USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
     assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteSortOrder"), USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteSelectedWorkspace"), USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteSelectedWorkspace"), USER_PREFERENCE_KEYS.FAVOURITE_SELECTED_WORKSPACE);
 
     // Normalization
     assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "grid"), "GRID");
@@ -672,6 +681,125 @@ test("sidebar collapsed preference key, defaults, aliases, and boolean normaliza
     assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, "true"), true);
     assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, "false"), false);
 });
+
+test("my notes view, status filter, and sort order preference keys, defaults, aliases, and allowed values are configured", async () => {
+    const { USER_PREFERENCE_KEYS, USER_PREFERENCE_DEFINITIONS, USER_PREFERENCE_ALLOWED_VALUES } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
+    const { UserPreferenceCategory, UserPreferenceValueType } =
+        await import("../src/modules/userpreference/constants/userPreference.enums.js");
+
+    // Keys exist
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "myNotesView");
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER, "myNotesStatusFilter");
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER, "myNotesSortOrder");
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE, "myNotesSelectedWorkspace");
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER, "myNotesSelectedFolder");
+
+    // Singular aliases match canonical keys
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTE_VIEW, USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTE_STATUS_FILTER, USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTE_SORT_ORDER, USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTE_SELECTED_WORKSPACE, USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+    assert.equal(USER_PREFERENCE_KEYS.MY_NOTE_SELECTED_FOLDER, USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+    assert.equal(USER_PREFERENCE_KEYS.NOTES_SELECTED_WORKSPACE, USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+    assert.equal(USER_PREFERENCE_KEYS.NOTES_SELECTED_FOLDER, USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+
+    // Definitions and defaults
+    const viewDef = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.MY_NOTES_VIEW];
+    assert.ok(viewDef);
+    assert.equal(viewDef.category, UserPreferenceCategory.NOTES);
+    assert.equal(viewDef.type, UserPreferenceValueType.STRING);
+    assert.equal(viewDef.defaultValue, "GRID");
+
+    const statusDef = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER];
+    assert.ok(statusDef);
+    assert.equal(statusDef.category, UserPreferenceCategory.NOTES);
+    assert.equal(statusDef.type, UserPreferenceValueType.STRING);
+    assert.equal(statusDef.defaultValue, "ALL");
+
+    const sortDef = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER];
+    assert.ok(sortDef);
+    assert.equal(sortDef.category, UserPreferenceCategory.NOTES);
+    assert.equal(sortDef.type, UserPreferenceValueType.STRING);
+    assert.equal(sortDef.defaultValue, "RECENTLY_UPDATED");
+
+    const wsDef = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE];
+    assert.ok(wsDef);
+    assert.equal(wsDef.category, UserPreferenceCategory.NOTES);
+    assert.equal(wsDef.type, UserPreferenceValueType.STRING);
+    assert.equal(wsDef.defaultValue, "");
+
+    const folderDef = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER];
+    assert.ok(folderDef);
+    assert.equal(folderDef.category, UserPreferenceCategory.NOTES);
+    assert.equal(folderDef.type, UserPreferenceValueType.STRING);
+    assert.equal(folderDef.defaultValue, "");
+
+    // Allowed values
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.MY_NOTES_VIEW].includes("GRID"));
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.MY_NOTES_VIEW].includes("LIST"));
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER], [
+        "ALL",
+        "ACTIVE",
+        "ARCHIVED",
+        "TRASHED",
+        "DELETED",
+    ]);
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER].includes("RECENTLY_UPDATED"));
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER].includes("TITLE_ASC"));
+
+    // Key validation & aliases
+    assert.equal(UserPreferenceValidation.isValidKey("myNotesView"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("my_notes_view"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("mynotesview"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("myNoteView"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("myNotesStatusFilter"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("my_notes_status_filter"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("myNotesSortOrder"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("my_notes_sort_order"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("myNotesSelectedWorkspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("my_notes_selected_workspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("myNotesSelectedFolder"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("my_notes_selected_folder"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("notesSelectedWorkspace"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("notesSelectedFolder"), true);
+
+    // Canonical key mapping
+    assert.equal(UserPreferenceValidation.getCanonicalKey("myNotesView"), USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("my_notes_view"), USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("mynoteview"), USER_PREFERENCE_KEYS.MY_NOTES_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("myNotesStatusFilter"), USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("my_notes_status_filter"), USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("myNotesSortOrder"), USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("my_notes_sort_order"), USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("myNotesSelectedWorkspace"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("my_notes_selected_workspace"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("myNotesSelectedFolder"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("my_notes_selected_folder"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("notesSelectedWorkspace"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_WORKSPACE);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("notesSelectedFolder"), USER_PREFERENCE_KEYS.MY_NOTES_SELECTED_FOLDER);
+
+    // Normalization
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "grid"), "GRID");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "list"), "LIST");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER, "active"), "ACTIVE");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER, "recently updated"), "RECENTLY_UPDATED");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER, "title a-z"), "TITLE_ASC");
+
+    // Domain validation
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "GRID"), null);
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "LIST"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_VIEW, "INVALID"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER, "ACTIVE"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_STATUS_FILTER, "INVALID"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER, "RECENTLY_UPDATED"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.MY_NOTES_SORT_ORDER, "INVALID"), null);
+});
+
 
 
 
