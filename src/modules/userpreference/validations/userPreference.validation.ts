@@ -10,6 +10,19 @@ const preferenceKeys = Object.keys(USER_PREFERENCE_DEFINITIONS);
 
 // Build a case-insensitive lookup map: lowercase key -> canonical key
 const preferenceKeyMap = new Map(preferenceKeys.map((key) => [key.toLowerCase(), key]));
+
+// Sidebar collapsed aliases
+preferenceKeyMap.set("sidebarcollapsed", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("sidebar_collapsed", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("sidebarcollapsd", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("sidebar_collapsd", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("issidebarcollapsed", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("is_sidebar_collapsed", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("sidebarcollapse", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("sidebar_collapse", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("collapsesidebar", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+preferenceKeyMap.set("collapse_sidebar", USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+
 preferenceKeyMap.set("folderstatusfilter", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_STATUS_FILTER);
 preferenceKeyMap.set("foldersortorder", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_SORT_ORDER);
 preferenceKeyMap.set("folderview", USER_PREFERENCE_KEYS.WORKSPACE_FOLDER_VIEW);
@@ -28,6 +41,26 @@ preferenceKeyMap.set("sticky_note_view", USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW);
 preferenceKeyMap.set("overdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("overdue_view", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
 preferenceKeyMap.set("todayoverdueview", USER_PREFERENCE_KEYS.OVERDUE_VIEW);
+
+// Favourite / Favorite screen aliases
+preferenceKeyMap.set("favouriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("favourite_view", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("favoriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("favorite_view", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("stickynotefavouriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("stickynotefavoriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("noteslibraryfavouriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+preferenceKeyMap.set("noteslibraryfavoriteview", USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+
+preferenceKeyMap.set("favouritestatusfilter", USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+preferenceKeyMap.set("favourite_status_filter", USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+preferenceKeyMap.set("favoritestatusfilter", USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+preferenceKeyMap.set("favorite_status_filter", USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+
+preferenceKeyMap.set("favouritesortorder", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+preferenceKeyMap.set("favourite_sort_order", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+preferenceKeyMap.set("favoritesortorder", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+preferenceKeyMap.set("favorite_sort_order", USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
 
 // Note selection aliases
 preferenceKeyMap.set("defaultnotecolor", USER_PREFERENCE_KEYS.DEFAULT_NOTE_COLOR);
@@ -111,7 +144,7 @@ export const UserPreferenceValidation = {
     },
 
     isBoolean(value: unknown): value is boolean {
-        return typeof value === "boolean";
+        return typeof value === "boolean" || value === "true" || value === "false";
     },
 
     isNumber(value: unknown): value is number {
@@ -149,6 +182,13 @@ export const UserPreferenceValidation = {
      * IMPORTANT: timezone preserves case (e.g. "Asia/Kolkata" must not become "asia/kolkata").
      */
     normalizeValue(canonicalKey: string, value: UserPreferenceValue): UserPreferenceValue {
+        const def = USER_PREFERENCE_DEFINITIONS[canonicalKey as keyof typeof USER_PREFERENCE_DEFINITIONS];
+        if (def?.type === UserPreferenceValueType.BOOLEAN && typeof value === "string") {
+            const trimmed = value.trim().toLowerCase();
+            if (trimmed === "true") return true;
+            if (trimmed === "false") return false;
+        }
+
         if (typeof value !== "string") {
             return value;
         }
@@ -191,8 +231,17 @@ export const UserPreferenceValidation = {
             case USER_PREFERENCE_KEYS.STICKY_NOTE_VIEW:
             case USER_PREFERENCE_KEYS.TODAY_VIEW:
             case USER_PREFERENCE_KEYS.OVERDUE_VIEW:
+            case USER_PREFERENCE_KEYS.FAVOURITE_VIEW:
+            case USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER:
                 // Normalize screen-specific preferences to uppercase
                 return value.trim().toUpperCase();
+
+            case USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER: {
+                const normalized = value.trim().toUpperCase().replace(/[\s-]+/g, "_");
+                if (normalized === "TITLE_A_Z" || normalized === "A_Z") return "TITLE_ASC";
+                if (normalized === "TITLE_Z_A" || normalized === "Z_A") return "TITLE_DESC";
+                return normalized;
+            }
 
             case USER_PREFERENCE_KEYS.TIMEZONE:
                 // Preserve IANA timezone casing (e.g. "Asia/Kolkata")

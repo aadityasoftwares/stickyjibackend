@@ -9,9 +9,12 @@ import { restoreUserValidation } from "../validations/restoreUser.validation.js"
 import { requireBodyFields } from "../../../utils/validations/validateBody.validation.js";
 import { requireRouteParam } from "../../../utils/validations/validateParam.validation.js";
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
+import { AuthController } from "../../auth/controllers/auth.controller.js";
+import { authMiddleware, logoutAuthMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
 const userRoutes = Router();
 const userController = new UserController();
+const authController = new AuthController();
 
 userRoutes.post(
     "/create",
@@ -58,5 +61,9 @@ userRoutes.patch(
     restoreUserValidation,
     userController.restoreUser,
 );
+
+userRoutes.post("/logout", logoutAuthMiddleware, authController.logout);
+userRoutes.get("/logout", logoutAuthMiddleware, authController.logout);
+userRoutes.post("/logoutall", authMiddleware, authController.logoutAll);
 
 export default userRoutes;

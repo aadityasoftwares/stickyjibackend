@@ -76,6 +76,31 @@ export class JwtUtil {
         };
     }
 
+    static verifyAccessTokenIgnoreExpiration(token: string): IAccessTokenPayload {
+        const decoded = jwt.verify(token, ACCESS_SECRET, { ignoreExpiration: true });
+        const payload = getJwtPayload(decoded);
+
+        if (typeof payload.sub !== "string") {
+            throw new Error("Invalid access token subject.");
+        }
+
+        if (typeof payload.sessionId !== "string") {
+            throw new Error("Invalid access token session.");
+        }
+
+        if (payload.tokenType !== AuthTokenType.ACCESS) {
+            throw new Error("Invalid access token type.");
+        }
+
+        return {
+            sub: payload.sub,
+            sessionId: payload.sessionId,
+            tokenType: AuthTokenType.ACCESS,
+            ...(payload.iat !== undefined && { iat: payload.iat }),
+            ...(payload.exp !== undefined && { exp: payload.exp }),
+        };
+    }
+
     static verifyRefreshToken(token: string): IRefreshTokenPayload {
         const decoded = jwt.verify(token, REFRESH_SECRET);
         const payload = getJwtPayload(decoded);

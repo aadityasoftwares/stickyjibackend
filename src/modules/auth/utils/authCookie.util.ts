@@ -14,5 +14,11 @@ export class AuthCookieUtil {
             AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_NAME,
             AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_OPTIONS,
         );
+        if (AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_NAME !== "msn_refresh") {
+            res.clearCookie("msn_refresh", AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_OPTIONS);
+        }
+        if (AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_NAME !== "__Host-msn_refresh") {
+            res.clearCookie("__Host-msn_refresh", AUTH_COOKIE_CONSTANTS.REFRESH_TOKEN_OPTIONS);
+        }
     }
 }

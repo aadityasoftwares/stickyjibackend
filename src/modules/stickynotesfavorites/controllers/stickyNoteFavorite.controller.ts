@@ -1,17 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
-
 import { StickyNoteFavoriteService } from "../services/stickyNoteFavorite.service.js";
-
 import { StickyNoteFavoriteMessages } from "../constants/stickyNoteFavorite.messages.js";
-
 import { ResponseUtil } from "../../../utils/response.util.js";
-
 import { RequestUtil } from "../../../utils/request.util.js";
-
 import type { StickyNoteFavoriteStatus } from "../constants/stickyNoteFavorite.enums.js";
 
 export class StickyNoteFavoriteController {
-    private stickyNoteFavoriteService: StickyNoteFavoriteService;
+    private readonly stickyNoteFavoriteService: StickyNoteFavoriteService;
 
     constructor() {
         this.stickyNoteFavoriteService = new StickyNoteFavoriteService();
@@ -29,9 +24,10 @@ export class StickyNoteFavoriteController {
     createStickyNoteFavorite = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
+            const stickyNoteId = req.body.stickyNoteId ?? req.body.noteId;
 
             const favorite = await this.stickyNoteFavoriteService.createStickyNoteFavorite(
-                req.body.stickyNoteId,
+                stickyNoteId,
                 userId,
                 this.getAuditContext(req),
             );
@@ -60,7 +56,6 @@ export class StickyNoteFavoriteController {
     checkStickyNoteFavorite = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
-
             const stickyNoteId = RequestUtil.getParam(req.params.stickyNoteId);
 
             const result = await this.stickyNoteFavoriteService.checkStickyNoteFavorite(stickyNoteId, userId);
@@ -83,23 +78,20 @@ export class StickyNoteFavoriteController {
     getStickyNoteFavorites = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
-
             const source = (req.method === "POST" ? req.body : req.query) ?? {};
 
             const page = Number(source.page) > 0 ? Number(source.page) : 1;
-
             const limit = Number(source.limit) > 0 ? Math.min(Number(source.limit), 100) : 10;
 
             const favorites = await this.stickyNoteFavoriteService.getStickyNoteFavorites(userId, {
                 stickyNoteId: source.stickyNoteId ? String(source.stickyNoteId).trim() : undefined,
-
+                workspaceId: source.workspaceId ? String(source.workspaceId).trim() : undefined,
+                workspaceFolderId: source.workspaceFolderId ? String(source.workspaceFolderId).trim() : undefined,
+                search: source.search ? String(source.search).trim() : undefined,
                 status: source.status as StickyNoteFavoriteStatus | undefined,
-
                 page,
                 limit,
-
                 sortBy: source.sortBy as string | undefined,
-
                 sortOrder: source.sortOrder as "asc" | "desc" | undefined,
             });
 
@@ -140,13 +132,13 @@ export class StickyNoteFavoriteController {
         try {
             const userId = (req.user?.id as string) ?? RequestUtil.getUserId(req);
 
-            await this.stickyNoteFavoriteService.deleteStickyNoteFavorite(
+            const favorite = await this.stickyNoteFavoriteService.deleteStickyNoteFavorite(
                 RequestUtil.getParam(req.params.id),
                 userId,
                 this.getAuditContext(req),
             );
 
-            return res.status(200).json(ResponseUtil.success(StickyNoteFavoriteMessages.DELETED));
+            return res.status(200).json(ResponseUtil.success(StickyNoteFavoriteMessages.DELETED, favorite));
         } catch (error) {
             next(error);
         }

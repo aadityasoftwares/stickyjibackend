@@ -156,9 +156,16 @@ export class AuthController {
 
     logout = async (req: Request, res: Response, next: NextFunction) => {
         try {
-            const sessionId = RequestUtil.getParam(req.user?.sessionId);
+            const bodySessionId =
+                typeof req.body?.sessionId === "string" ? req.body.sessionId.trim() : "";
+            const querySessionId =
+                typeof req.query?.sessionId === "string" ? req.query.sessionId.trim() : "";
+            const sessionId =
+                bodySessionId || querySessionId || RequestUtil.getParam(req.user?.sessionId);
 
-            await this.authService.logout(sessionId, this.getAuditContext(req));
+            if (sessionId) {
+                await this.authService.logout(sessionId, this.getAuditContext(req));
+            }
 
             AuthCookieUtil.clearRefreshToken(res);
 

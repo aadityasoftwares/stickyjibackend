@@ -1,7 +1,8 @@
 import type { Document, Types } from "mongoose";
 import type { StickyNoteFavoriteStatus } from "../constants/stickyNoteFavorite.enums.js";
+import type { IStickyNoteListItemResponse } from "../../stickynotes/interfaces/stickynote.interface.js";
 
-export type StickyNoteFavoriteSortField = "createdAt" | "updatedAt";
+export type StickyNoteFavoriteSortField = "createdAt" | "updatedAt" | "title" | "position";
 
 export interface IStickyNoteFavorite {
     stickyNoteId: Types.ObjectId;
@@ -23,6 +24,9 @@ export interface IStickyNoteFavoriteCreate {
 export interface IStickyNoteFavoriteFilter {
     userId?: Types.ObjectId | string;
     stickyNoteId?: Types.ObjectId | string;
+    workspaceId?: Types.ObjectId | string;
+    workspaceFolderId?: Types.ObjectId | string;
+    search?: string;
     status?: StickyNoteFavoriteStatus;
     page?: number;
     limit?: number;
@@ -37,15 +41,18 @@ export interface IStickyNoteFavoritePagination {
     totalPages: number;
 }
 
-export interface IStickyNoteFavoriteResponse {
+export interface IStickyNoteFavoriteResponse extends Partial<IStickyNoteListItemResponse> {
     id: string;
     _id?: string;
-    stickyNoteId: unknown;
-    userId: unknown;
+    stickyNoteId: string | unknown;
+    userId: string | unknown;
     status: StickyNoteFavoriteStatus;
+    isFavorite: boolean;
+    favoriteId: string;
     deletedAt?: Date | null;
     createdAt?: Date;
     updatedAt?: Date;
+    stickyNote?: IStickyNoteListItemResponse | null;
 }
 
 export interface IStickyNoteFavoritePaginatedResult {

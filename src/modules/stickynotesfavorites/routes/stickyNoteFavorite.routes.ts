@@ -1,27 +1,19 @@
 import { Router } from "express";
-
 import { StickyNoteFavoriteController } from "../controllers/stickyNoteFavorite.controller.js";
-
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
-
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
-
 import { createStickyNoteFavoriteValidation } from "../validations/createStickyNoteFavorite.validation.js";
-
 import { getStickyNoteFavoriteValidation } from "../validations/getStickyNoteFavorite.validation.js";
-
 import { getStickyNoteFavoritesValidation } from "../validations/getStickyNoteFavorites.validation.js";
-
 import { updateStickyNoteFavoriteStatusValidation } from "../validations/updateStickyNoteFavoriteStatus.validation.js";
 
 const stickyNoteFavoriteRoutes = Router();
-
 const stickyNoteFavoriteController = new StickyNoteFavoriteController();
 
 stickyNoteFavoriteRoutes.use(authMiddleware);
 
 stickyNoteFavoriteRoutes.post(
-    "/create",
+    ["/", "/create"],
     validateContentType("application/json"),
     createStickyNoteFavoriteValidation,
     stickyNoteFavoriteController.createStickyNoteFavorite,
@@ -36,23 +28,29 @@ stickyNoteFavoriteRoutes.get(
 stickyNoteFavoriteRoutes.get("/check/:stickyNoteId", stickyNoteFavoriteController.checkStickyNoteFavorite);
 
 stickyNoteFavoriteRoutes.get(
-    "/getall",
+    ["/", "/getall"],
     getStickyNoteFavoritesValidation,
     stickyNoteFavoriteController.getStickyNoteFavorites,
 );
 
 stickyNoteFavoriteRoutes.post(
-    "/getall",
+    ["/", "/getall"],
     validateContentType("application/json"),
     getStickyNoteFavoritesValidation,
     stickyNoteFavoriteController.getStickyNoteFavorites,
 );
 
 stickyNoteFavoriteRoutes.put(
-    "/status/:id",
+    ["/status/:id", "/update/:id"],
     validateContentType("application/json"),
     updateStickyNoteFavoriteStatusValidation,
     stickyNoteFavoriteController.updateStickyNoteFavoriteStatus,
+);
+
+stickyNoteFavoriteRoutes.put(
+    "/trash/:id",
+    getStickyNoteFavoriteValidation,
+    stickyNoteFavoriteController.deleteStickyNoteFavorite,
 );
 
 stickyNoteFavoriteRoutes.delete(

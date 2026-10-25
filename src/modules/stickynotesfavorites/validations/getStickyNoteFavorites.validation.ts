@@ -6,7 +6,7 @@ import { StickyNoteFavoriteValidation } from "./stickyNoteFavorite.validation.js
 export const getStickyNoteFavoritesValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
         const source = (req.method === "POST" ? req.body : req.query) ?? {};
-        const { stickyNoteId, status, page, limit, sortBy, sortOrder } = source;
+        const { stickyNoteId, workspaceId, workspaceFolderId, search, status, page, limit, sortBy, sortOrder } = source;
 
         if (
             stickyNoteId !== undefined &&
@@ -14,6 +14,22 @@ export const getStickyNoteFavoritesValidation = (req: Request, _res: Response, n
             !StickyNoteFavoriteValidation.isValidObjectId(stickyNoteId)
         ) {
             return next(new AppError(StickyNoteFavoriteMessages.INVALID_STICKY_NOTE_ID, 400));
+        }
+
+        if (
+            workspaceId !== undefined &&
+            workspaceId !== "" &&
+            !StickyNoteFavoriteValidation.isValidObjectId(workspaceId)
+        ) {
+            return next(new AppError("Invalid workspace ID.", 400));
+        }
+
+        if (
+            workspaceFolderId !== undefined &&
+            workspaceFolderId !== "" &&
+            !StickyNoteFavoriteValidation.isValidObjectId(workspaceFolderId)
+        ) {
+            return next(new AppError("Invalid workspace folder ID.", 400));
         }
 
         if (status !== undefined && !StickyNoteFavoriteValidation.isValidStatus(status)) {

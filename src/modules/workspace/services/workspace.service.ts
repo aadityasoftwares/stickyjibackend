@@ -48,6 +48,11 @@ import { AppError } from "../../../utils/errors/app.error.js";
 import { AuditLogConfig } from "../../../config/auditlog.config.js";
 
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
+import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaVisibility } from "../../media/constants/media.enums.js";
+import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import type { IWorkspaceProfileImage } from "../interfaces/workspace.interface.js";
 
 const WORKSPACE_MEMBER_PREVIEW_LIMIT = 4;
 
@@ -58,6 +63,7 @@ export class WorkspaceService {
     private readonly workspaceFolderRepository: WorkspaceFolderRepository;
     private readonly auditLogService: AuditLogService;
     private readonly subscriptionEntitlementService: SubscriptionEntitlementService;
+    private readonly storageService: CloudflareR2Service = new CloudflareR2Service();
 
     constructor() {
         this.workspaceRepository = new WorkspaceRepository();
@@ -192,11 +198,30 @@ export class WorkspaceService {
             throw new AppError(WorkspaceMessages.CANNOT_ACCESS_WORKSPACE, 403);
         }
 
-        return this.toWorkspaceResponse(
+        const baseResponse = this.toWorkspaceResponse(
             workspace,
             userId,
             auth.isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : auth.role.name,
         );
+
+        const ownerId = workspace.ownerId.toString();
+        const profilesMap = await this.resolveUserProfilesMap([ownerId]);
+        const resolvedOwner = profilesMap.get(ownerId);
+
+        return {
+            ...baseResponse,
+            owner: resolvedOwner
+                ? {
+                      id: ownerId,
+                      displayName: resolvedOwner.displayName,
+                      email: resolvedOwner.email,
+                      profileImage: resolvedOwner.profileImage,
+                      avatarUrl: resolvedOwner.avatarUrl,
+                  }
+                : null,
+            ownerProfileImage: resolvedOwner?.profileImage ?? null,
+            ownerAvatarUrl: resolvedOwner?.avatarUrl ?? null,
+        };
     }
 
     async getWorkspaces(userId: string, filters: WorkspaceListFilters) {
@@ -336,6 +361,17 @@ export class WorkspaceService {
             this.getWorkspaceOwners(ownerIds),
         ]);
 
+        const allMemberUserIds: string[] = [];
+        for (const summary of memberSummaryMap.values()) {
+            for (const member of summary.members) {
+                if (member.id) {
+                    allMemberUserIds.push(member.id);
+                }
+            }
+        }
+        const allUserIdsToResolve = [...new Set<string>([...ownerIds, ...allMemberUserIds])];
+        const userProfilesMap = await this.resolveUserProfilesMap(allUserIdsToResolve);
+
         const ownerMap = new Map(ownerUsers.map((owner: any) => [String(owner._id), owner]));
 
         return {
@@ -347,20 +383,39 @@ export class WorkspaceService {
                 const membership = workspace.membership ?? null;
                 const memberSummary = memberSummaryMap.get(workspaceId) ?? { count: 0, members: [] };
                 const owner = ownerMap.get(ownerId);
+                const resolvedOwner = userProfilesMap.get(ownerId);
+
+                const ownerDisplayName =
+                    resolvedOwner?.displayName || this.getUserDisplayName(owner);
+                const ownerEmail =
+                    resolvedOwner?.email || String(owner?.email ?? "").trim();
+                const ownerProfileImage = resolvedOwner?.profileImage ?? null;
+                const ownerAvatarUrl = resolvedOwner?.avatarUrl ?? null;
+
                 const ownerPreview = {
                     id: ownerId,
-                    displayName: this.getUserDisplayName(owner),
-                    email: String(owner?.email ?? "").trim(),
+                    displayName: ownerDisplayName,
+                    email: ownerEmail,
                     role: "Owner",
                     isOwner: true,
+                    profileImage: ownerProfileImage,
+                    avatarUrl: ownerAvatarUrl,
                 };
 
                 const isPersonal = isOwner && Boolean(workspace.isPersonal);
                 const memberRole = membership?.roleName;
-                const members = [ownerPreview, ...memberSummary.members].slice(
-                    0,
-                    WORKSPACE_MEMBER_PREVIEW_LIMIT,
-                );
+                const members = [
+                    ownerPreview,
+                    ...memberSummary.members.map((member) => {
+                        const resolvedMember = userProfilesMap.get(member.id);
+                        return {
+                            ...member,
+                            displayName: resolvedMember?.displayName || member.displayName,
+                            profileImage: resolvedMember?.profileImage ?? null,
+                            avatarUrl: resolvedMember?.avatarUrl ?? null,
+                        };
+                    }),
+                ].slice(0, WORKSPACE_MEMBER_PREVIEW_LIMIT);
 
                 return {
                     ...this.toWorkspaceResponse(
@@ -368,6 +423,15 @@ export class WorkspaceService {
                         userId,
                         isOwner ? WORKSPACE_ACCESS_LABELS.OWNER : memberRole,
                     ),
+                    owner: {
+                        id: ownerId,
+                        displayName: ownerDisplayName,
+                        email: ownerEmail,
+                        profileImage: ownerProfileImage,
+                        avatarUrl: ownerAvatarUrl,
+                    },
+                    ownerProfileImage,
+                    ownerAvatarUrl,
                     summary: {
                         folderCount: folders.length,
                         folders,
@@ -794,14 +858,21 @@ export class WorkspaceService {
             .exec();
     }
 
-    private getUserDisplayName(user: any): string {
-        const displayName = String(user?.displayName ?? "").trim();
-
-        if (displayName) {
-            return displayName;
+    private getUserDisplayName(user: any, profile?: any): string {
+        const profileDisplayName = String(profile?.displayName ?? "").trim();
+        if (profileDisplayName) {
+            return profileDisplayName;
         }
 
-        const fullName = [String(user?.firstName ?? "").trim(), String(user?.lastName ?? "").trim()]
+        const userDisplayName = String(user?.displayName ?? "").trim();
+        if (userDisplayName) {
+            return userDisplayName;
+        }
+
+        const fullName = [
+            String(profile?.firstName || user?.firstName || "").trim(),
+            String(profile?.lastName || user?.lastName || "").trim(),
+        ]
             .filter(Boolean)
             .join(" ");
 
@@ -810,12 +881,125 @@ export class WorkspaceService {
         }
 
         const email = String(user?.email ?? "").trim();
-
         if (email) {
             return email.split("@")[0] || "Workspace owner";
         }
 
         return "Workspace owner";
+    }
+
+    private async resolveUserProfilesMap(
+        userIds: string[],
+    ): Promise<
+        Map<
+            string,
+            {
+                id: string;
+                displayName: string;
+                email: string;
+                avatarUrl: string | null;
+                profileImage: IWorkspaceProfileImage | null;
+            }
+        >
+    > {
+        const result = new Map<
+            string,
+            {
+                id: string;
+                displayName: string;
+                email: string;
+                avatarUrl: string | null;
+                profileImage: IWorkspaceProfileImage | null;
+            }
+        >();
+
+        const validIds = userIds
+            .filter((id) => id && Types.ObjectId.isValid(id))
+            .map((id) => new Types.ObjectId(id));
+
+        if (validIds.length === 0) return result;
+
+        const [users, profiles] = await Promise.all([
+            UserModel.find({ _id: { $in: validIds } })
+                .select("_id email displayName firstName lastName")
+                .lean()
+                .exec(),
+            UserProfileModel.find({ userId: { $in: validIds } })
+                .select("userId displayName firstName lastName profileImage avatarUrl")
+                .lean()
+                .exec(),
+        ]);
+
+        const userMap = new Map<string, any>();
+        for (const u of users) {
+            userMap.set(u._id.toString(), u);
+        }
+
+        const profileMap = new Map<string, (typeof profiles)[0]>();
+        const mediaIds: Types.ObjectId[] = [];
+
+        for (const p of profiles) {
+            const uidStr = p.userId.toString();
+            profileMap.set(uidStr, p);
+            if (p.profileImage && Types.ObjectId.isValid(String(p.profileImage))) {
+                mediaIds.push(new Types.ObjectId(String(p.profileImage)));
+            }
+        }
+
+        const mediaMap = new Map<string, { id: string; url: string }>();
+        if (mediaIds.length > 0) {
+            const mediaDocs = await MediaModel.find({
+                _id: { $in: mediaIds },
+                isDeleted: { $ne: true },
+            })
+                .select("_id storageKey publicUrl visibility")
+                .lean()
+                .exec();
+
+            for (const media of mediaDocs) {
+                try {
+                    let url: string;
+                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
+                        url = media.publicUrl;
+                    } else if (media.visibility === MediaVisibility.PUBLIC) {
+                        url = this.storageService.getPublicUrl(media.storageKey);
+                    } else {
+                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                    }
+                    mediaMap.set(media._id.toString(), {
+                        id: media._id.toString(),
+                        url,
+                    });
+                } catch {
+                    // Gracefully skip presigned URL generation failure
+                }
+            }
+        }
+
+        for (const idObj of validIds) {
+            const idStr = idObj.toString();
+            const user = userMap.get(idStr);
+            const profile = profileMap.get(idStr);
+
+            const email = String(user?.email ?? "").trim();
+            const displayName = this.getUserDisplayName(user, profile);
+
+            const profileImage: IWorkspaceProfileImage | null =
+                profile?.profileImage && mediaMap.has(profile.profileImage.toString())
+                    ? (mediaMap.get(profile.profileImage.toString()) ?? null)
+                    : null;
+            const avatarUrl = profileImage?.url ?? (profile as any)?.avatarUrl ?? null;
+
+            result.set(idStr, {
+                id: idStr,
+                displayName,
+                email,
+                avatarUrl,
+                profileImage,
+            });
+        }
+
+        return result;
     }
 
     private normalizeFilters(filters: IWorkspaceFilter): IWorkspaceFilter {

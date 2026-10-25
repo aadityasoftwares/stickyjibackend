@@ -1,12 +1,9 @@
 import type { Request, Response, NextFunction } from "express";
-
 import { AppError } from "../../../utils/errors/app.error.js";
-
 import { StickyNoteFavoriteMessages } from "../constants/stickyNoteFavorite.messages.js";
-
 import { StickyNoteFavoriteValidation } from "./stickyNoteFavorite.validation.js";
 
-const ALLOWED_CREATE_FIELDS = new Set(["stickyNoteId"]);
+const ALLOWED_CREATE_FIELDS = new Set(["stickyNoteId", "noteId"]);
 
 export const createStickyNoteFavoriteValidation = (req: Request, _res: Response, next: NextFunction) => {
     try {
@@ -14,7 +11,8 @@ export const createStickyNoteFavoriteValidation = (req: Request, _res: Response,
             return next(new AppError("Request body is required.", 400));
         }
 
-        const { stickyNoteId, userId, status } = req.body;
+        const stickyNoteId = req.body.stickyNoteId ?? req.body.noteId;
+        const { userId, status } = req.body;
 
         if (stickyNoteId === undefined || stickyNoteId === null || stickyNoteId === "") {
             return next(new AppError(StickyNoteFavoriteMessages.STICKY_NOTE_ID_REQUIRED, 400));
@@ -23,6 +21,8 @@ export const createStickyNoteFavoriteValidation = (req: Request, _res: Response,
         if (!StickyNoteFavoriteValidation.isValidObjectId(stickyNoteId)) {
             return next(new AppError(StickyNoteFavoriteMessages.INVALID_STICKY_NOTE_ID, 400));
         }
+
+        req.body.stickyNoteId = stickyNoteId;
 
         /**
          * User ID must be taken from the authenticated

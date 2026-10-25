@@ -70,6 +70,11 @@ export interface IWorkspaceFilter {
     sortOrder?: "asc" | "desc";
 }
 
+export interface IWorkspaceProfileImage {
+    id: string;
+    url: string;
+}
+
 export interface IWorkspaceResponse {
     id: string;
     name: string;
@@ -85,6 +90,15 @@ export interface IWorkspaceResponse {
     workspaceType?: WorkspaceType;
     workspaceTypeLabel?: string;
     label?: "PERSONAL" | "INVITED" | "WORKSPACE" | string;
+    owner?: {
+        id: string;
+        displayName: string;
+        email: string;
+        profileImage?: IWorkspaceProfileImage | null;
+        avatarUrl?: string | null;
+    } | null;
+    ownerProfileImage?: IWorkspaceProfileImage | null;
+    ownerAvatarUrl?: string | null;
     summary?: {
         folderCount: number;
         folders: Array<{
@@ -98,6 +112,8 @@ export interface IWorkspaceResponse {
             email: string;
             role: string;
             isOwner: boolean;
+            profileImage?: IWorkspaceProfileImage | null;
+            avatarUrl?: string | null;
         }>;
     };
     createdBy?: string | null;

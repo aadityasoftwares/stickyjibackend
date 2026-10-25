@@ -554,3 +554,124 @@ test("note selection preferences (color, shape, variant, pattern) keys, defaults
     assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN, "DOTS"), null);
 });
 
+test("favourite view, status filter, and sort order preference keys, defaults, aliases, and allowed values are configured", async () => {
+    const { USER_PREFERENCE_KEYS, USER_PREFERENCE_DEFINITIONS, USER_PREFERENCE_ALLOWED_VALUES } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
+
+    // Keys exist
+    assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "favouriteView");
+    assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER, "favouriteStatusFilter");
+    assert.equal(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "favouriteSortOrder");
+
+    // US-spelling aliases match canonical keys
+    assert.equal(USER_PREFERENCE_KEYS.FAVORITE_VIEW, USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+    assert.equal(USER_PREFERENCE_KEYS.FAVORITE_STATUS_FILTER, USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+    assert.equal(USER_PREFERENCE_KEYS.FAVORITE_SORT_ORDER, USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+
+    // Definitions and defaults
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_VIEW].defaultValue, "GRID");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER].defaultValue, "ALL");
+    assert.equal(USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER].defaultValue, "TITLE_ASC");
+
+    // Allowed values
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.FAVOURITE_VIEW].includes("GRID"));
+    assert.ok(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.FAVOURITE_VIEW].includes("LIST"));
+    assert.deepEqual(USER_PREFERENCE_ALLOWED_VALUES[USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER], [
+        "ALL",
+        "ACTIVE",
+        "ARCHIVED",
+        "TRASHED",
+        "DELETED",
+    ]);
+
+    // Key validation & aliases
+    assert.equal(UserPreferenceValidation.isValidKey("favouriteView"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favourite_view"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favoriteView"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favorite_view"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favouritestatusfilter"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favorite_status_filter"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favouritesortorder"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("favorite_sort_order"), true);
+
+    // Canonical key mapping
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteView"), USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteView"), USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favourite_view"), USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favorite_view"), USER_PREFERENCE_KEYS.FAVOURITE_VIEW);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteStatusFilter"), USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteStatusFilter"), USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favouriteSortOrder"), USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("favoriteSortOrder"), USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER);
+
+    // Normalization
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "grid"), "GRID");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "list"), "LIST");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER, "archived"), "ARCHIVED");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "title a-z"), "TITLE_ASC");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "title z-a"), "TITLE_DESC");
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "recently_updated"), "RECENTLY_UPDATED");
+
+    // Domain validation
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "GRID"), null);
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "LIST"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_VIEW, "INVALID"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER, "ACTIVE"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER, "INVALID"), null);
+
+    assert.equal(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "TITLE_ASC"), null);
+    assert.notEqual(UserPreferenceValidation.validateDomainValue(USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER, "INVALID"), null);
+});
+
+test("sidebar collapsed preference key, defaults, aliases, and boolean normalization are configured", async () => {
+    const { USER_PREFERENCE_KEYS, USER_PREFERENCE_DEFINITIONS } =
+        await import("../src/modules/userpreference/constants/userPreference.constants.ts");
+    const { UserPreferenceValidation } =
+        await import("../src/modules/userpreference/validations/userPreference.validation.ts");
+    const { UserPreferenceCategory, UserPreferenceValueType } =
+        await import("../src/modules/userpreference/constants/userPreference.enums.js");
+
+    // Key exists
+    assert.equal(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, "sidebarCollapsed");
+
+    // Definition and defaults
+    const def = USER_PREFERENCE_DEFINITIONS[USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED];
+    assert.ok(def);
+    assert.equal(def.category, UserPreferenceCategory.APPEARANCE);
+    assert.equal(def.type, UserPreferenceValueType.BOOLEAN);
+    assert.equal(def.defaultValue, false);
+
+    // Key validation & aliases
+    assert.equal(UserPreferenceValidation.isValidKey("sidebarCollapsed"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("sidebar_collapsed"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("sidebarcollapsed"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("sidebarcollapsd"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("isSidebarCollapsed"), true);
+    assert.equal(UserPreferenceValidation.isValidKey("sidebarCollapse"), true);
+
+    // Canonical key mapping
+    assert.equal(UserPreferenceValidation.getCanonicalKey("sidebarCollapsed"), USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("sidebar_collapsed"), USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("sidebarcollapsd"), USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("issidebarcollapsed"), USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+    assert.equal(UserPreferenceValidation.getCanonicalKey("sidebarcollapse"), USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED);
+
+    // Type validation
+    assert.equal(UserPreferenceValidation.isValidValue(true, UserPreferenceValueType.BOOLEAN), true);
+    assert.equal(UserPreferenceValidation.isValidValue(false, UserPreferenceValueType.BOOLEAN), true);
+    assert.equal(UserPreferenceValidation.isValidValue("true", UserPreferenceValueType.BOOLEAN), true);
+    assert.equal(UserPreferenceValidation.isValidValue("false", UserPreferenceValueType.BOOLEAN), true);
+    assert.equal(UserPreferenceValidation.isValidValue("invalid", UserPreferenceValueType.BOOLEAN), false);
+
+    // Normalization
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, true), true);
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, false), false);
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, "true"), true);
+    assert.equal(UserPreferenceValidation.normalizeValue(USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED, "false"), false);
+});
+
+
+

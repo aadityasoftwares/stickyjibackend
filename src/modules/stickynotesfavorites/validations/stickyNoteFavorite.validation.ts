@@ -2,7 +2,12 @@ import { Types } from "mongoose";
 import { StickyNoteFavoriteStatus } from "../constants/stickyNoteFavorite.enums.js";
 import type { StickyNoteFavoriteSortField } from "../interfaces/stickyNoteFavorite.interface.js";
 
-const STICKY_NOTE_FAVORITE_SORT_FIELDS: readonly StickyNoteFavoriteSortField[] = ["createdAt", "updatedAt"];
+const STICKY_NOTE_FAVORITE_SORT_FIELDS: readonly StickyNoteFavoriteSortField[] = [
+    "createdAt",
+    "updatedAt",
+    "title",
+    "position",
+];
 
 export const StickyNoteFavoriteValidation = {
     statuses: Object.values(StickyNoteFavoriteStatus),

@@ -10,7 +10,7 @@ import { resetPasswordValidation } from "../validations/resetPassword.validation
 import { changePasswordValidation } from "../validations/changePassword.validation.js";
 import { requireBodyFields } from "../../../utils/validations/validateBody.validation.js";
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
-import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
+import { authMiddleware, logoutAuthMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 
 const authRoutes = Router();
 const authController = new AuthController();
@@ -74,7 +74,8 @@ authRoutes.post(
     authController.changePassword,
 );
 
-authRoutes.post("/logout", authMiddleware, authController.logout);
+authRoutes.post("/logout", logoutAuthMiddleware, authController.logout);
+authRoutes.get("/logout", logoutAuthMiddleware, authController.logout);
 
 authRoutes.post("/logoutall", authMiddleware, authController.logoutAll);
 

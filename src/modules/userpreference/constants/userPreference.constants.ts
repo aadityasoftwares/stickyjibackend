@@ -12,6 +12,7 @@ import {
 export const USER_PREFERENCE_KEYS = {
     // --- Appearance ---
     THEME: "theme",
+    SIDEBAR_COLLAPSED: "sidebarCollapsed",
 
     // --- Localization ---
     TIMEZONE: "timezone",
@@ -47,6 +48,12 @@ export const USER_PREFERENCE_KEYS = {
     STICKY_NOTE_VIEW: "stickyNoteView",
     TODAY_VIEW: "todayView",
     OVERDUE_VIEW: "overdueView",
+    FAVOURITE_STATUS_FILTER: "favouriteStatusFilter",
+    FAVOURITE_SORT_ORDER: "favouriteSortOrder",
+    FAVOURITE_VIEW: "favouriteView",
+    FAVORITE_STATUS_FILTER: "favouriteStatusFilter",
+    FAVORITE_SORT_ORDER: "favouriteSortOrder",
+    FAVORITE_VIEW: "favouriteView",
     STICKY_NOTE_LAYOUT: "stickyNoteLayout",
     STICKY_NOTE_FONT: "stickyNoteFont",
     STICKY_NOTE_FONT_SIZE: "stickyNoteFontSize",
@@ -76,6 +83,11 @@ export const USER_PREFERENCE_DEFINITIONS = {
         category: UserPreferenceCategory.APPEARANCE,
         type: UserPreferenceValueType.STRING,
         defaultValue: "system",
+    },
+    [USER_PREFERENCE_KEYS.SIDEBAR_COLLAPSED]: {
+        category: UserPreferenceCategory.APPEARANCE,
+        type: UserPreferenceValueType.BOOLEAN,
+        defaultValue: false,
     },
 
     // --- Localization ---
@@ -248,6 +260,21 @@ export const USER_PREFERENCE_DEFINITIONS = {
         type: UserPreferenceValueType.STRING,
         defaultValue: "BAR",
     },
+    [USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: "ALL",
+    },
+    [USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: "TITLE_ASC",
+    },
+    [USER_PREFERENCE_KEYS.FAVOURITE_VIEW]: {
+        category: UserPreferenceCategory.NOTES,
+        type: UserPreferenceValueType.STRING,
+        defaultValue: "GRID",
+    },
     [USER_PREFERENCE_KEYS.STICKY_NOTE_LAYOUT]: {
         category: UserPreferenceCategory.NOTES,
         type: UserPreferenceValueType.STRING,
@@ -414,4 +441,25 @@ export const USER_PREFERENCE_ALLOWED_VALUES: Partial<
     [USER_PREFERENCE_KEYS.DEFAULT_NOTE_VARIANT]: Object.values(StickyNoteVariant),
     [USER_PREFERENCE_KEYS.DEFAULT_NOTE_BACKGROUND_PATTERN]: Object.values(StickyNoteBackgroundPattern),
     [USER_PREFERENCE_KEYS.OVERDUE_VIEW]: ["BAR", "BUTTON"],
-} as const;
+    [USER_PREFERENCE_KEYS.FAVOURITE_STATUS_FILTER]: [
+        "ALL",
+        "ACTIVE",
+        "ARCHIVED",
+        "TRASHED",
+        "DELETED",
+    ],
+    [USER_PREFERENCE_KEYS.FAVOURITE_SORT_ORDER]: [
+        "TITLE_ASC",
+        "TITLE_DESC",
+        "TITLE_A_Z",
+        "TITLE_Z_A",
+        "NAME_ASC",
+        "NAME_DESC",
+        "RECENTLY_UPDATED",
+        "UPDATED_AT",
+        "RECENTLY_CREATED",
+        "CREATED_AT",
+        "OLDEST_FIRST",
+    ],
+    [USER_PREFERENCE_KEYS.FAVOURITE_VIEW]: ["GRID", "LIST", "KANBAN", "TABLE", "NOTES"],
+};

@@ -729,21 +729,27 @@ export class AuthService {
     }
 
     async logout(sessionId: string, context?: IAuditLogContext): Promise<void> {
+        if (!sessionId) {
+            return;
+        }
+
         await this.sessionService.logout(sessionId);
 
-        await this.auditLogService.log({
-            ...context,
-            action: AuditLogAction.LOGOUT,
-            module: AppModule.AUTH,
-            resourceType: "Session",
-            resourceId: sessionId,
-            description: "User session was logged out successfully.",
-            status: AuditLogStatus.SUCCESS,
-            severity: AuditLogSeverity.INFO,
-            metadata: {
-                sessionId,
-            },
-        });
+        if (Types.ObjectId.isValid(sessionId)) {
+            await this.auditLogService.log({
+                ...context,
+                action: AuditLogAction.LOGOUT,
+                module: AppModule.AUTH,
+                resourceType: "Session",
+                resourceId: sessionId,
+                description: "User session was logged out successfully.",
+                status: AuditLogStatus.SUCCESS,
+                severity: AuditLogSeverity.INFO,
+                metadata: {
+                    sessionId,
+                },
+            });
+        }
     }
 
     async logoutAll(userId: string, context?: IAuditLogContext): Promise<void> {

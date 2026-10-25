@@ -148,6 +148,10 @@ export class SessionService {
     }
 
     async logout(sessionId: string): Promise<void> {
+        if (!sessionId || !Types.ObjectId.isValid(sessionId)) {
+            return;
+        }
+
         const session = await this.sessionRepository.findActiveById(sessionId);
 
         if (!session) {
@@ -158,6 +162,10 @@ export class SessionService {
     }
 
     async logoutAll(userId: string): Promise<void> {
+        if (!userId || !Types.ObjectId.isValid(userId)) {
+            return;
+        }
+
         await this.sessionRepository.revokeAllByUserId(userId);
     }
 
