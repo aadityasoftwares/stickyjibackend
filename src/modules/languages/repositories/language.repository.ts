@@ -23,6 +23,12 @@ export class LanguageRepository {
         });
     }
 
+    async findDefault() {
+        return LanguageModel.findOne({
+            isDefault: true,
+        });
+    }
+
     async findAll(filters: ILanguageFilter = {}) {
         const {
             page = 1,

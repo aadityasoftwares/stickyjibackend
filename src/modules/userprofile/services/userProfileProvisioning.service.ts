@@ -2,6 +2,9 @@ import type { Types } from "mongoose";
 import { UserProfileService } from "./userProfile.service.js";
 import { CountryRepository } from "../../countries/repositories/country.repository.js";
 import { TimezoneRepository } from "../../timezones/repositories/timezone.repository.js";
+import { LanguageRepository } from "../../languages/repositories/language.repository.js";
+import { LanguageCode } from "../../languages/constants/language.enums.js";
+import { LanguageModel } from "../../languages/models/language.model.js";
 import type { IAuditLogContext } from "../../auditlog/interfaces/auditLog.interface.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { StringHelper } from "../../../utils/helpers/string.helper.js";
@@ -13,19 +16,28 @@ export interface IUserProfileRegistrationInput {
     countryCodeHint?: string;
     timezoneCode?: string;
     locale?: string;
+    languageCode?: string;
 }
 
 export class UserProfileProvisioningService {
     private userProfileService: UserProfileService;
     private countryRepository: CountryRepository;
     private timezoneRepository: TimezoneRepository;
+    private languageRepository: LanguageRepository;
 
-    constructor() {
-        this.userProfileService = new UserProfileService();
+    constructor(
+        userProfileService?: UserProfileService,
+        countryRepository?: CountryRepository,
+        timezoneRepository?: TimezoneRepository,
+        languageRepository?: LanguageRepository,
+    ) {
+        this.userProfileService = userProfileService ?? new UserProfileService();
 
-        this.countryRepository = new CountryRepository();
+        this.countryRepository = countryRepository ?? new CountryRepository();
 
-        this.timezoneRepository = new TimezoneRepository();
+        this.timezoneRepository = timezoneRepository ?? new TimezoneRepository();
+
+        this.languageRepository = languageRepository ?? new LanguageRepository();
     }
 
     async provisionRegistrationProfile(
@@ -56,6 +68,12 @@ export class UserProfileProvisioningService {
             );
         }
 
+        const language = await this.resolveLanguage(data.languageCode || data.locale);
+
+        if (!language) {
+            throw new AppError("Language 'en' is not configured.", 503);
+        }
+
         return this.userProfileService.createProfile(
             {
                 userId,
@@ -70,7 +88,7 @@ export class UserProfileProvisioningService {
 
                 timezoneId: timezone._id,
 
-                languageId: null,
+                languageId: language._id,
 
                 currencyId: null,
 
@@ -98,5 +116,36 @@ export class UserProfileProvisioningService {
         }
 
         return timezone;
+    }
+
+    private async resolveLanguage(localeOrCode?: string) {
+        const normalized = localeOrCode?.trim();
+
+        if (normalized) {
+            const byLocale = await this.languageRepository.findByLocale(normalized);
+            if (byLocale) {
+                return byLocale;
+            }
+
+            const byCode = await this.languageRepository.findByCode(normalized);
+            if (byCode) {
+                return byCode;
+            }
+
+            const prefix = normalized.split(/[-_]/)[0];
+            if (prefix) {
+                const byPrefix = await this.languageRepository.findByCode(prefix);
+                if (byPrefix) {
+                    return byPrefix;
+                }
+            }
+        }
+
+        const defaultLanguage = await this.languageRepository.findByCode(LanguageCode.ENGLISH);
+        if (defaultLanguage) {
+            return defaultLanguage;
+        }
+
+        return this.languageRepository.findDefault();
     }
 }

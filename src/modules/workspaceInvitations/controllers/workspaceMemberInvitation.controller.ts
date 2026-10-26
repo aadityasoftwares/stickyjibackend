@@ -125,19 +125,19 @@ export class WorkspaceMemberInvitationController {
                 res.locals.workspaceAuth,
             );
 
-            return res
-                .status(200)
-                .json(
-                    ResponseUtil.paginated(
-                        WorkspaceMemberInvitationMessages.FETCHED_ALL,
-                        invitations.data,
-                        invitations.pagination.page,
-                        invitations.pagination.limit,
-                        invitations.pagination.total,
-                    ),
-                );
+            return res.status(200).json({
+                ...ResponseUtil.success(
+                    WorkspaceMemberInvitationMessages.FETCHED_ALL,
+                    invitations.data,
+                ),
+                meta: {
+                    ...invitations.pagination,
+                    counts: invitations.counts,
+                    statusFilters: invitations.statusFilters,
+                },
+            });
         } catch (error) {
-            return next(error);
+            next(error);
         }
     };
 

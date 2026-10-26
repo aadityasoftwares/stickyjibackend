@@ -59,9 +59,10 @@ export interface IWorkspaceMemberInvitationFilter {
     workspaceId?: Types.ObjectId | string;
     userId?: Types.ObjectId | string;
     email?: string;
+    search?: string;
     roleId?: Types.ObjectId | string;
     invitedBy?: Types.ObjectId | string;
-    status?: WorkspaceInvitationStatus;
+    status?: WorkspaceInvitationStatus | "ALL";
     page?: number;
     limit?: number;
     sortBy?: string;

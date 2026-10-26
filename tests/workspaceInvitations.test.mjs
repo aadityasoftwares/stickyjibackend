@@ -225,6 +225,26 @@ test("unscoped lists restrict access, pagination and query validation", async ()
     assert.equal(result.status, 200);
     assert.equal(result.body.data.length, 1);
     assert.equal(result.body.meta.total, 2);
+    assert.ok(result.body.meta.counts, "meta must include counts");
+    assert.ok(Array.isArray(result.body.meta.statusFilters), "meta must include statusFilters");
+    assert.equal(result.body.meta.counts.PENDING, 2);
+
+    // Verify POST /getall with body (matching workspace api calling format)
+    const postResult = await request("POST", "/getall", owner, {
+        workspaceId: String(ws._id),
+        limit: 1,
+        status: "ALL",
+    });
+    assert.equal(postResult.status, 200);
+    assert.equal(postResult.body.data.length, 1);
+    assert.equal(postResult.body.meta.total, 2);
+    assert.equal(postResult.body.meta.counts.ALL, 2);
+
+    // Verify GET ["/"] alias
+    const slashResult = await request("GET", `/?workspaceId=${ws._id}`, owner);
+    assert.equal(slashResult.status, 200);
+    assert.equal(slashResult.body.data.length, 2);
+
     assert.equal((await request("GET", "/getall", outsider)).body.meta.total, 0);
     assert.equal((await request("GET", "/getall?page=1.5", owner)).status, 400);
     assert.equal((await request("GET", "/getall?status=INVALID", owner)).status, 400);

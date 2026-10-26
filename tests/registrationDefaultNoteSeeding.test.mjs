@@ -100,7 +100,7 @@ test("1. Registration automatically provisions workspace, folder, columns, defau
 
     // 1. Verify Personal Workspace exists
     const workspace = await WorkspaceModel.findOne({
-        owner: new Types.ObjectId(userId),
+        ownerId: new Types.ObjectId(userId),
         isPersonal: true,
     });
     assert.ok(workspace, "Personal workspace must be provisioned");
@@ -114,12 +114,12 @@ test("1. Registration automatically provisions workspace, folder, columns, defau
     assert.ok(folder, "Default folder must be provisioned");
     assert.equal(folder.name, USER_WORKSPACE_CONSTANTS.DEFAULT_FOLDER.NAME);
 
-    // 3. Verify Default Columns exist (TODO, IN_PROGRESS, DONE)
+    // 3. Verify Default Columns exist (TODO, COMPLETED)
     const columns = await StickyNoteColumnModel.find({
         workspaceId: workspace._id,
         workspaceFolderId: folder._id,
     });
-    assert.equal(columns.length, 3, "There must be 3 default columns");
+    assert.equal(columns.length, 2, "There must be 2 default columns (TODO and COMPLETED)");
 
     const todoColumn = columns.find((c) => c.type === StickyNoteColumnType.TODO);
     assert.ok(todoColumn, "Default TODO column must exist");
@@ -186,7 +186,7 @@ test("2. Default provisioning is idempotent and does not create duplicates on se
     await provisioningService.provisionUserDefaults(user);
 
     const workspaceCount = await WorkspaceModel.countDocuments({
-        owner: user._id,
+        ownerId: user._id,
         isPersonal: true,
     });
     assert.equal(workspaceCount, 1, "Only 1 personal workspace should exist");

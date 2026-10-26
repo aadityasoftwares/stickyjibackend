@@ -22,6 +22,8 @@ import { FeatureModel } from "../src/modules/feature/models/feature.model.ts";
 import { PlanFeatureModel } from "../src/modules/planfeature/models/planfeature.model.ts";
 import { PlanPriceModel } from "../src/modules/planprice/models/planPrice.model.ts";
 import { UserSubscriptionModel } from "../src/modules/usersubscription/models/usersubscription.model.ts";
+import { LanguageModel } from "../src/modules/languages/models/language.model.ts";
+import { LanguageCode } from "../src/modules/languages/constants/language.enums.js";
 import { AuthService } from "../src/modules/auth/services/auth.service.ts";
 import { UserSubscriptionService } from "../src/modules/usersubscription/services/usersubscription.service.ts";
 import { SubscriptionEntitlementService } from "../src/modules/subscriptionentitlement/services/subscriptionentitlement.service.ts";
@@ -164,6 +166,17 @@ test("1. New user registration automatically assigns active Free subscription an
     assert.equal(subscription.autoRenew, false);
     assert.equal(subscription.planPriceId, null);
     assert.equal(subscription.billingInterval, null);
+
+    // Verify user profile language in database
+    const userProfile = await UserProfileModel.findOne({ userId: result.data.user.id });
+    assert.ok(userProfile, "User profile must exist for the user");
+    const englishLanguage = await LanguageModel.findOne({ code: LanguageCode.ENGLISH });
+    assert.ok(englishLanguage, "English language should exist");
+    assert.equal(
+        userProfile.languageId?.toString(),
+        englishLanguage._id.toString(),
+        "User profile default languageId must be seeded with English ('en')",
+    );
 });
 
 test("2. Unverified active user can log in with valid credentials", async () => {

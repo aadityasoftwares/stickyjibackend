@@ -18,7 +18,10 @@ import type {
     IWorkspaceMemberInvitationFilter,
 } from "../interfaces/workspaceMemberInvitation.interface.js";
 import { WorkspaceInvitationStatus } from "../constants/workspaceMemberInvitation.enums.js";
-import { WORKSPACE_MEMBER_INVITATION_CONSTANTS } from "../constants/workspaceMemberInvitation.constants.js";
+import {
+    WORKSPACE_MEMBER_INVITATION_CONSTANTS,
+    WORKSPACE_INVITATION_STATUS_FILTER_LABELS,
+} from "../constants/workspaceMemberInvitation.constants.js";
 
 const INVITATION_POPULATE = [
     {
@@ -480,6 +483,7 @@ export class WorkspaceMemberInvitationRepository {
             workspaceId,
             userId,
             email,
+            search,
             roleId,
             invitedBy,
             status,
@@ -497,14 +501,12 @@ export class WorkspaceMemberInvitationRepository {
             query.userId = userId;
         }
 
-        if (email) {
-            const normalizedEmail = email.trim().toLowerCase();
-
-            if (normalizedEmail) {
-                query.email = {
-                    $regex: `^${this.escapeRegex(normalizedEmail)}`,
-                };
-            }
+        const searchTerm = (search || email)?.trim().toLowerCase();
+        if (searchTerm) {
+            query.email = {
+                $regex: this.escapeRegex(searchTerm),
+                $options: "i",
+            };
         }
 
         if (roleId) {
@@ -515,7 +517,7 @@ export class WorkspaceMemberInvitationRepository {
             query.invitedBy = invitedBy;
         }
 
-        if (status) {
+        if (status && status !== "ALL") {
             query.status = status;
         }
 
@@ -537,7 +539,36 @@ export class WorkspaceMemberInvitationRepository {
 
         const { skip } = getPagination(safePage, safeLimit);
 
-        const [data, total] = await Promise.all([
+        // Build base aggregation match query to count across all statuses in the resolved scope
+        const baseQuery: Record<string, unknown> = {};
+        if (workspaceId && Types.ObjectId.isValid(String(workspaceId))) {
+            baseQuery.workspaceId = new Types.ObjectId(String(workspaceId));
+        } else if (workspaceIds.length) {
+            const validWorkspaceIds = workspaceIds
+                .filter((id) => Types.ObjectId.isValid(String(id)))
+                .map((id) => new Types.ObjectId(String(id)));
+            baseQuery.workspaceId = { $in: validWorkspaceIds };
+        } else if (!workspaceId) {
+            baseQuery.workspaceId = { $in: [] };
+        }
+
+        if (userId && Types.ObjectId.isValid(String(userId))) {
+            baseQuery.userId = new Types.ObjectId(String(userId));
+        }
+        if (searchTerm) {
+            baseQuery.email = {
+                $regex: this.escapeRegex(searchTerm),
+                $options: "i",
+            };
+        }
+        if (roleId && Types.ObjectId.isValid(String(roleId))) {
+            baseQuery.roleId = new Types.ObjectId(String(roleId));
+        }
+        if (invitedBy && Types.ObjectId.isValid(String(invitedBy))) {
+            baseQuery.invitedBy = new Types.ObjectId(String(invitedBy));
+        }
+
+        const [data, total, statusAgg] = await Promise.all([
             WorkspaceMemberInvitationModel.find(query)
                 .populate(INVITATION_POPULATE)
                 .sort({
@@ -548,11 +579,41 @@ export class WorkspaceMemberInvitationRepository {
                 .lean()
                 .exec(),
             WorkspaceMemberInvitationModel.countDocuments(query).exec(),
+            WorkspaceMemberInvitationModel.aggregate([
+                { $match: baseQuery },
+                { $group: { _id: "$status", count: { $sum: 1 } } },
+            ]),
         ]);
+
+        let totalAcrossStatuses = 0;
+        const counts: Record<string, number> = {
+            ALL: 0,
+            [WorkspaceInvitationStatus.PENDING]: 0,
+            [WorkspaceInvitationStatus.ACCEPTED]: 0,
+            [WorkspaceInvitationStatus.REJECTED]: 0,
+            [WorkspaceInvitationStatus.EXPIRED]: 0,
+            [WorkspaceInvitationStatus.CANCELLED]: 0,
+        };
+
+        for (const item of statusAgg) {
+            if (item._id && counts[item._id] !== undefined) {
+                counts[item._id] = item.count;
+                totalAcrossStatuses += item.count;
+            }
+        }
+        counts.ALL = totalAcrossStatuses;
+
+        const statusFilters = Object.entries(WORKSPACE_INVITATION_STATUS_FILTER_LABELS).map(([value, label]) => ({
+            value,
+            label,
+            count: counts[value] ?? 0,
+        }));
 
         return {
             data,
             pagination: paginationMeta(safePage, safeLimit, total),
+            counts,
+            statusFilters,
         };
     }
 

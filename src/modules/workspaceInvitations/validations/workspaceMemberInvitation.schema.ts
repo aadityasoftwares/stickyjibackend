@@ -72,10 +72,16 @@ export const invitationListSchema = z
         roleId: objectId.optional(),
         invitedBy: objectId.optional(),
         email: z.string().trim().toLowerCase().max(C.EMAIL.MAX_LENGTH).optional(),
-        status: z.enum(WorkspaceInvitationStatus).optional(),
+        search: z.string().trim().max(100).optional(),
+        status: z
+            .union([z.enum(WorkspaceInvitationStatus), z.literal("ALL")])
+            .optional(),
         sortBy: z
             .enum(["createdAt", "updatedAt", "expiresAt", "acceptedAt", "email", "status"])
             .default("createdAt"),
         sortOrder: z.enum(["asc", "desc"]).default("desc"),
     })
     .strict();
+
+export type WorkspaceMemberInvitationListFilters = z.infer<typeof invitationListSchema>;
+

@@ -1,8 +1,6 @@
 import { Router } from "express";
 import { requirePermission } from "../../permissions/middlewares/permission.middleware.js";
 import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
-import { validateUsingZOD } from "../../../utils/zodvalidate.util.js";
-import { invitationListSchema } from "../validations/workspaceMemberInvitation.schema.js";
 
 import { WorkspaceMemberInvitationController } from "../controllers/workspaceMemberInvitation.controller.js";
 
@@ -12,6 +10,7 @@ import { validateContentType } from "../../../utils/validations/validateContentT
 import { createWorkspaceMemberInvitationValidation } from "../validations/createWorkspaceMemberInvitation.validation.js";
 import { getWorkspaceMemberInvitationValidation } from "../validations/getWorkspaceMemberInvitation.validation.js";
 import { updateWorkspaceMemberInvitationValidation } from "../validations/updateWorkspaceMemberInvitation.validation.js";
+import { getAllWorkspaceMemberInvitationsValidation } from "../validations/getAllWorkspaceMemberInvitations.validation.js";
 import {
     validateWorkspaceMemberInvitationTokenValidation,
     acceptWorkspaceMemberInvitationValidation,
@@ -67,14 +66,19 @@ workspaceMemberInvitationRoutes.get(
     workspaceMemberInvitationController.getInvitationById,
 );
 
-workspaceMemberInvitationRoutes.get(
+workspaceMemberInvitationRoutes.post(
     "/getall",
     authMiddleware,
-    (req, _res, next) => {
-        req.body = { ...req.query };
-        next();
-    },
-    validateUsingZOD(invitationListSchema),
+    validateContentType("application/json"),
+    getAllWorkspaceMemberInvitationsValidation,
+    invitationPermission(PermissionAction.READ),
+    workspaceMemberInvitationController.getInvitations,
+);
+
+workspaceMemberInvitationRoutes.get(
+    ["/", "/getall"],
+    authMiddleware,
+    getAllWorkspaceMemberInvitationsValidation,
     invitationPermission(PermissionAction.READ),
     workspaceMemberInvitationController.getInvitations,
 );
@@ -90,6 +94,14 @@ workspaceMemberInvitationRoutes.put(
 
 workspaceMemberInvitationRoutes.put(
     "/cancel/:id",
+    authMiddleware,
+    getWorkspaceMemberInvitationValidation,
+    invitationPermission(PermissionAction.REMOVE, "invitation"),
+    workspaceMemberInvitationController.cancelInvitation,
+);
+
+workspaceMemberInvitationRoutes.delete(
+    ["/delete/:id", "/cancel/:id"],
     authMiddleware,
     getWorkspaceMemberInvitationValidation,
     invitationPermission(PermissionAction.REMOVE, "invitation"),
