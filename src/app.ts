@@ -16,9 +16,10 @@ app.use(savePerformanceMiddleware);
  */
 app.use(helmet());
 app.use(cookieParser());
+
 app.use(
     cors({
-        origin: "http://localhost:4200",
+        origin: process.env.CLIENT_URL?.trim() || "http://localhost:4200",
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         credentials: true,
