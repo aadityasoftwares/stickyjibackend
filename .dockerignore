@@ -1,0 +1,54 @@
+# Dependencies
+
+node_modules
+
+# Compiled files
+
+dist
+build
+coverage
+
+# Environment variables and secrets
+
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+
+# Git
+
+.git
+.github
+
+# Editor settings
+
+.vscode
+.idea
+
+# Tests
+
+tests
+
+# Temporary files
+
+tmp
+temp
+*.log
+
+# Documentation
+
+docs
+*.md
+
+# Local deployment configurations
+
+deploy
+docker
+
+# OS files
+
+.DS_Store
+Thumbs.db
