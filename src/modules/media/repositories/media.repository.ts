@@ -8,10 +8,16 @@ import type { IMedia, IMediaFilter } from "../interfaces/media.interface.js";
 
 export class MediaRepository {
     async findPendingStorageDeletions(limit = 100) {
-        return MediaModel.find({ status: MediaStatus.DELETED, storageDeletionPending: true })
+        return MediaModel.find({
+            status: { $in: [MediaStatus.DELETED, MediaStatus.FAILED] },
+            storageDeletionPending: true,
+            $or: [
+                { uploadUrlExpiresAt: null },
+                { uploadUrlExpiresAt: { $lt: new Date(Date.now() - 3600000) } },
+            ],
+        })
             .sort({ deletedAt: 1, _id: 1 })
             .limit(limit)
-            .select("_id bucket storageKey")
             .lean()
             .exec();
     }
@@ -19,7 +25,7 @@ export class MediaRepository {
     async deleteStorageTombstone(id: string) {
         return MediaModel.deleteOne({
             _id: id,
-            status: MediaStatus.DELETED,
+            status: { $in: [MediaStatus.DELETED, MediaStatus.FAILED] },
             storageDeletionPending: true,
         }).exec();
     }
@@ -38,6 +44,10 @@ export class MediaRepository {
 
     async create(data: Partial<IMedia>) {
         return MediaModel.create(data);
+    }
+
+    async findByOperationId(uploadOperationId: string) {
+        return MediaModel.findOne({ uploadOperationId }).exec();
     }
 
     async findById(id: string, lean = false) {
@@ -84,6 +94,15 @@ export class MediaRepository {
         } = filters;
 
         const query: Record<string, unknown> = {};
+        if (filters.tenantId && filters.workspaceId) {
+            query.$or = [
+                { tenantId: filters.tenantId, workspaceId: filters.workspaceId },
+                { tenantId: null, storageKeyVersion: { $ne: 2 } },
+            ];
+        } else {
+            query.resourceType = { $in: [MediaResourceType.USER, null] };
+            query.tenantId = null;
+        }
 
         if (uploadedBy) {
             query.uploadedBy = uploadedBy;
@@ -122,27 +141,14 @@ export class MediaRepository {
 
         const skip = (page - 1) * limit;
 
-        const workspaces = await WorkspaceModel.find({ status: { $in: WORKSPACE_TRASH_STATUSES } })
-            .select("_id")
-            .lean()
-            .exec();
-        const workspaceIds = workspaces.map((row) => row._id);
-        if (workspaceIds.length) {
-            const notes = await StickyNoteModel.find({ workspaceId: { $in: workspaceIds } })
-                .select("_id")
-                .lean()
-                .exec();
-            query.$nor = [
-                { resourceType: MediaResourceType.WORKSPACE, resourceId: { $in: workspaceIds } },
-                { resourceType: MediaResourceType.NOTE, resourceId: { $in: notes.map((row) => row._id) } },
-            ];
-        }
+        // Availability and membership are resolved before entering this repository.
         query.storageDeletionPending = { $ne: true };
 
         const [data, total] = await Promise.all([
             MediaModel.find(query)
                 .sort({
                     [sortBy]: sortOrder === "asc" ? 1 : -1,
+                    _id: 1,
                 })
                 .skip(skip)
                 .limit(limit)
@@ -178,11 +184,7 @@ export class MediaRepository {
         );
     }
 
-    async updateStatusFromPending(
-        id: string,
-        newStatus: MediaStatus,
-        additionalData: Partial<IMedia> = {},
-    ) {
+    async updateStatusFromPending(id: string, newStatus: MediaStatus, additionalData: Partial<IMedia> = {}) {
         return MediaModel.findOneAndUpdate(
             {
                 _id: id,

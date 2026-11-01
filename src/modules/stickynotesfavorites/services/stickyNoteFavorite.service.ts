@@ -19,6 +19,7 @@ import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
 import { StickyNoteRepository } from "../../stickynotes/repositories/stickynote.repository.js";
 import { StickyNoteStatus } from "../../stickynotes/constants/stickyNote.enums.js";
 import { mapStickyNoteListItem } from "../../stickynotes/utils/stickyNote.mapper.js";
+import { StickyNoteAttachmentRepository } from "../../stickynoteattachment/repositories/stickyNoteAttachment.repository.js";
 import type {
     IStickyNoteRecord,
     IStickyNoteAssigneeNormalized,
@@ -447,11 +448,12 @@ export class StickyNoteFavoriteService {
             }
         }
 
-        const [folderMap, creatorMap, assigneesMap, checklistsMap] = await Promise.all([
+        const [folderMap, creatorMap, assigneesMap, checklistsMap, attachmentsMap] = await Promise.all([
             this.stickyNoteRepository.findFolderNamesMap(Array.from(folderIdsSet)),
             this.stickyNoteRepository.findCreatorEmailsMap(Array.from(creatorUserIdsSet)),
             this.stickyNoteRepository.findAssigneesMap(noteIds),
             this.stickyNoteRepository.findChecklistsMap(noteIds),
+            new StickyNoteAttachmentRepository().findMap(noteIds),
         ]);
 
         const allUserIdsSet = new Set<string>(creatorUserIdsSet);
@@ -506,6 +508,7 @@ export class StickyNoteFavoriteService {
                     : null,
                 assignees: enrichedAssignees,
                 checklists,
+                attachments: attachmentsMap.get(noteIdStr) ?? [],
             });
             enrichedNotesMap.set(noteIdStr, mappedNote);
         }
@@ -616,19 +619,19 @@ export class StickyNoteFavoriteService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     let url: string;
-                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
+                    if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl) {
                         url = media.publicUrl;
-                    } else if (media.visibility === MediaVisibility.PUBLIC) {
+                    } else if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket)) {
                         url = this.storageService.getPublicUrl(media.storageKey);
                     } else {
-                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                        url = await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     }
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),

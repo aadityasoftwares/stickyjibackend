@@ -11,6 +11,15 @@ import {
 
 const MediaSchema = new Schema<IMediaDocument>(
     {
+        tenantId: { type: Schema.Types.ObjectId, ref: "User", default: null, immutable: true },
+        workspaceId: { type: Schema.Types.ObjectId, ref: "Workspace", default: null, immutable: true },
+        storageKeyVersion: { type: Number, default: 1, immutable: true },
+        checksum: { type: String, default: null },
+        uploadedAt: { type: Date, default: null },
+        uploadUrlExpiresAt: { type: Date, default: null },
+        lastVerifiedAt: { type: Date, default: null },
+        sortOrder: { type: Number, default: 0, min: 0 },
+        uploadOperationId: { type: String },
         uploadedBy: {
             type: Schema.Types.ObjectId,
             ref: "User",
@@ -33,6 +42,7 @@ const MediaSchema = new Schema<IMediaDocument>(
             type: String,
             required: true,
             unique: true,
+            immutable: true,
             trim: true,
         },
         publicUrl: {
@@ -169,5 +179,16 @@ MediaSchema.index({
     deletedAt: 1,
 });
 MediaSchema.index({ storageDeletionPending: 1, deletedAt: 1 });
+MediaSchema.index({
+    tenantId: 1,
+    workspaceId: 1,
+    resourceType: 1,
+    resourceId: 1,
+    status: 1,
+    sortOrder: 1,
+    createdAt: 1,
+});
+MediaSchema.index({ tenantId: 1, status: 1, createdAt: -1 });
+MediaSchema.index({ uploadOperationId: 1 }, { unique: true, sparse: true });
 
 export const MediaModel: Model<IMediaDocument> = mongoose.model<IMediaDocument>("Media", MediaSchema);

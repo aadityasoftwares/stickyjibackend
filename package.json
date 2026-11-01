@@ -5,6 +5,9 @@
     "type": "module",
     "main": "dist/server.js",
     "scripts": {
+        "storage:cors": "tsx src/scripts/configure-r2-cors.ts",
+        "migrate:media": "tsx src/scripts/migrate-media-ownership.ts",
+        "migrate:media-key": "tsx src/scripts/migrate-media-key.ts",
         "dev": "nodemon --watch src --exec tsx src/server.ts",
         "build": "tsc",
         "test": "node --import tsx --test --test-concurrency=4 tests/*.test.mjs",

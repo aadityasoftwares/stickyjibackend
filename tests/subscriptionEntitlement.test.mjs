@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import "./helpers/mediaVerificationMock.mjs";
 import { before, after, test, mock } from "node:test";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
@@ -511,7 +512,7 @@ test("pending upload requests consume storage before completion and failures rel
     try {
         await withPlanFeature(FeatureCode.MAX_STORAGE_BYTES, { limit: 1000 }, async () => {
             const first = await mediaService.requestUpload(upload, userId);
-            assert.equal((await usageService.getMyUsage(userId, { fresh: true })).storageBytesUsed, 600);
+            assert.equal((await usageService.getMyUsage(userId, { fresh: true })).storageBytesUsed, 0);
             await assert.rejects(() => mediaService.requestUpload(upload, userId), {
                 code: EntitlementErrorCode.SUBSCRIPTION_LIMIT_EXCEEDED,
             });

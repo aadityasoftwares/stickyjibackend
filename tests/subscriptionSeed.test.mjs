@@ -149,12 +149,12 @@ async function command(args, environment = {}) {
     return { code, output };
 }
 
-test("empty database seeds three plans, equal capabilities, six quotas and four paise prices", async () => {
+test("empty database seeds three plans, equal capabilities, seven quotas and four paise prices", async () => {
     const report = await seed();
     assert.equal(report.transactions, false);
     assert.equal(report.counts.plans.created, 3);
-    assert.equal(report.counts.features.created, 21);
-    assert.equal(report.counts.planFeatures.created, 63);
+    assert.equal(report.counts.features.created, 22);
+    assert.equal(report.counts.planFeatures.created, 66);
     assert.equal(report.counts.planPrices.created, 4);
     assert.equal(report.counts.planPrices.skipped, 2);
     assert.equal(await PlanModel.countDocuments({ isDefault: true }), 1);
@@ -208,7 +208,7 @@ test("existing feature and relationship IDs survive partial-catalog completion",
         isUnlimited: false,
     });
     const report = await seed();
-    assert.equal(report.counts.planFeatures.created, 62);
+    assert.equal(report.counts.planFeatures.created, 65);
     assert.equal(String((await FeatureModel.findOne({ code: feature.code }))._id), String(feature._id));
     assert.equal((await FeatureModel.findById(feature._id)).description, "Custom workspace description");
     assert.ok(await PlanFeatureModel.findById(relation._id));

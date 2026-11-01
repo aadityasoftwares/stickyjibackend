@@ -1,4 +1,5 @@
 import type { Document, Types } from "mongoose";
+import type { StickyNoteAttachmentResponse } from "../../stickynoteattachment/utils/attachmentResponse.js";
 import type { StickyNoteColumnType } from "../../stickynotescolumns/constants/stickyNoteColumn.enums.js";
 import type {
     StickyNoteBackgroundPattern,
@@ -172,6 +173,7 @@ export interface IStickyNoteListItemResponse {
     content: string;
     noteDate: string | null;
     color: StickyNoteColor;
+    priority: StickyNotePriority;
     shape: StickyNoteStoredShape;
     variant: StickyNoteVariant;
     backgroundPattern: StickyNoteBackgroundPattern;
@@ -193,6 +195,7 @@ export interface IStickyNoteListItemResponse {
     assignees: IStickyNoteAssigneeNormalized[];
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
+    attachments: StickyNoteAttachmentResponse[];
     updatedAt: Date | string;
 }
 
@@ -207,6 +210,7 @@ export interface IStickyNoteDetailResponse {
     content: string;
     noteDate: string | null;
     color: StickyNoteColor;
+    priority: StickyNotePriority;
     shape: StickyNoteStoredShape;
     variant: StickyNoteVariant;
     backgroundPattern: StickyNoteBackgroundPattern;
@@ -229,7 +233,7 @@ export interface IStickyNoteDetailResponse {
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
     reminders: unknown[];
-    attachments: unknown[];
+    attachments: StickyNoteAttachmentResponse[];
     links: unknown[];
     updatedAt: Date | string;
 }
@@ -275,6 +279,7 @@ export interface IStickyNoteOverdueRecord extends Pick<
 }
 
 export interface IStickyNoteOverdueListItem {
+    attachments: StickyNoteAttachmentResponse[];
     id: string;
     noteKey: string;
     workspaceId: string;

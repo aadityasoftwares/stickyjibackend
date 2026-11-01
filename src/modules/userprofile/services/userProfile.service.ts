@@ -678,18 +678,18 @@ export class UserProfileService {
             mediaDoc = await this.mediaRepository.findById(idStr, true);
         }
 
-        if (!mediaDoc || mediaDoc.status === MediaStatus.DELETED) {
+        if (!mediaDoc || mediaDoc.status !== MediaStatus.ACTIVE || mediaDoc.storageDeletionPending) {
             return null;
         }
 
         let url: string;
         try {
-            if (mediaDoc.visibility === MediaVisibility.PUBLIC && mediaDoc.publicUrl) {
+            if (mediaDoc.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(mediaDoc.bucket) && mediaDoc.publicUrl) {
                 url = mediaDoc.publicUrl;
-            } else if (mediaDoc.visibility === MediaVisibility.PUBLIC) {
+            } else if (mediaDoc.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(mediaDoc.bucket)) {
                 url = this.storageService.getPublicUrl(mediaDoc.storageKey);
             } else {
-                url = await this.storageService.createDownloadUrl(mediaDoc.storageKey);
+                url = await this.storageService.createDownloadUrl(mediaDoc.storageKey, undefined, undefined, mediaDoc.bucket);
             }
         } catch {
             return null;

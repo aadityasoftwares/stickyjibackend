@@ -300,6 +300,8 @@ test("1. POST /create adds a favorite and returns enriched response with profile
     // Nested stickyNote object
     assert.ok(body.data.stickyNote);
     assert.equal(body.data.stickyNote.title, "Important Milestone Note");
+    assert.equal(body.data.priority, "HIGH");
+    assert.equal(body.data.stickyNote.priority, "HIGH");
     assert.equal(body.data.stickyNote.isFavorite, true);
 });
 
@@ -333,6 +335,8 @@ test("2. GET / and GET /getall return paginated list of enriched favorites", asy
         const favA = body.data.find((f) => f.stickyNoteId === noteA._id.toString());
         assert.ok(favA);
         assert.equal(favA.title, "Important Milestone Note");
+        assert.equal(favA.priority, "HIGH");
+        assert.equal(favA.stickyNote.priority, "HIGH");
         assert.equal(favA.folderName, "Ideas Folder");
         assert.equal(favA.isFavorite, true);
         assert.ok(favA.creator.profileImage?.url.includes("mock-r2.test/download"));

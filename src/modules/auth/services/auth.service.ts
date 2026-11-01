@@ -1073,16 +1073,16 @@ export class AuthService {
                 _id: profile.profileImage,
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             if (media) {
                 const storageService = new CloudflareR2Service();
                 const url =
-                    media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                    media.visibility === MediaVisibility.PUBLIC && storageService.isPublicBucket(media.bucket) && media.publicUrl
                         ? media.publicUrl
-                        : await storageService.createDownloadUrl(media.storageKey);
+                        : await storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                 profileImage = { id: media._id.toString(), url };
             }
         }

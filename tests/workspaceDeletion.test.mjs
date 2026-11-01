@@ -1,3 +1,4 @@
+import "./helpers/workspaceStorageEnvironment.mjs";
 import { seedProductSubscriptionFixtures } from "./helpers/subscriptionFixtures.mjs";
 import assert from "node:assert/strict";
 import { before, after, test, mock } from "node:test";
@@ -116,6 +117,8 @@ before(async () => {
     await once(server, "listening");
     baseUrl = `http://127.0.0.1:${server.address().port}`;
     await seedProductSubscriptionFixtures();
+    // Quota checks require a persistent billing account, including restore operations.
+    await models().User.collection.insertOne({ _id: owner, email: `owner-${owner}@test.com`, globalRoleId: new Types.ObjectId(), status: "ACTIVE", isDeleted: false });
 });
 
 after(async () => {

@@ -31,6 +31,7 @@ import type {
     IBringStickyNotesToTodayResult,
 } from "../interfaces/stickynote.interface.js";
 import { StickyNoteRepository } from "../repositories/stickynote.repository.js";
+import { StickyNoteAttachmentRepository } from "../../stickynoteattachment/repositories/stickyNoteAttachment.repository.js";
 import { StickyNoteDateService } from "./stickyNoteDate.service.js";
 import { StickyNotePurgeService } from "./stickyNotePurge.service.js";
 import { STICKY_NOTE_CONSTANTS } from "../constants/stickyNote.constants.js";
@@ -62,6 +63,7 @@ import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js
 import type { IStickyNoteAssigneeNormalized } from "../interfaces/stickynote.interface.js";
 
 export class StickyNoteService {
+    private readonly attachmentRepository = new StickyNoteAttachmentRepository();
     private readonly stickyNoteRepository: StickyNoteRepository;
     private readonly auditLogService: AuditLogService;
     private readonly stickyNoteDateService: StickyNoteDateService;
@@ -99,6 +101,7 @@ export class StickyNoteService {
             sort: filters.sort ?? StickyNoteOverdueSort.OLDEST_FIRST,
         });
         const total = result.byColumn.reduce((sum, column) => sum + column.count, 0);
+        const attachmentsMap = await this.attachmentRepository.findMap(result.notes.map((note) => String(note._id)));
         return {
             data: {
                 today,
@@ -108,6 +111,7 @@ export class StickyNoteService {
                     mapStickyNoteOverdueListItem(
                         note,
                         StickyNoteDateService.getCalendarDaysBetween(note.noteDate, today),
+                        attachmentsMap.get(String(note._id)) ?? [],
                     ),
                 ),
             },
@@ -351,12 +355,13 @@ export class StickyNoteService {
             }
         }
 
-        const [folderMap, favoriteMap, creatorMap, assigneesMap, checklistsMap] = await Promise.all([
+        const [folderMap, favoriteMap, creatorMap, assigneesMap, checklistsMap, attachmentsMap] = await Promise.all([
             this.stickyNoteRepository.findFolderNamesMap(Array.from(folderIdsSet)),
             this.stickyNoteRepository.findFavoritesMap(noteIds, userId),
             this.stickyNoteRepository.findCreatorEmailsMap(Array.from(creatorUserIdsSet)),
             this.stickyNoteRepository.findAssigneesMap(noteIds),
             this.stickyNoteRepository.findChecklistsMap(noteIds),
+            this.attachmentRepository.findMap(noteIds),
         ]);
 
         const allUserIdsSet = new Set<string>(creatorUserIdsSet);
@@ -409,6 +414,7 @@ export class StickyNoteService {
                     : null,
                 assignees: enrichedAssignees,
                 checklists,
+                attachments: attachmentsMap.get(noteIdStr) ?? [],
             });
         });
 
@@ -1087,19 +1093,19 @@ export class StickyNoteService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     let url: string;
-                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
+                    if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl) {
                         url = media.publicUrl;
-                    } else if (media.visibility === MediaVisibility.PUBLIC) {
+                    } else if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket)) {
                         url = this.storageService.getPublicUrl(media.storageKey);
                     } else {
-                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                        url = await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     }
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),
@@ -1147,13 +1153,14 @@ export class StickyNoteService {
         const noteId = note._id.toString();
         const folderId = note.workspaceFolderId ? note.workspaceFolderId.toString() : null;
 
-        const [folderName, fav, rawAssignees, checklists] = await Promise.all([
+        const [folderName, fav, rawAssignees, checklists, attachmentsMap] = await Promise.all([
             folderId ? this.stickyNoteRepository.findSingleFolderName(folderId) : Promise.resolve(null),
             userId
                 ? this.stickyNoteRepository.findSingleFavorite(noteId, userId)
                 : Promise.resolve({ isFavorite: false, favoriteId: null }),
             this.stickyNoteRepository.findSingleAssignees(noteId),
             this.stickyNoteRepository.findSingleChecklists(noteId),
+            this.attachmentRepository.findMap([noteId]),
         ]);
 
         const userIdsSet = new Set<string>();
@@ -1197,6 +1204,7 @@ export class StickyNoteService {
                 : null,
             assignees: enrichedAssignees,
             checklists,
+            attachments: attachmentsMap.get(noteId) ?? [],
         });
     }
 

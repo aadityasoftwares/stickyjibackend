@@ -7,6 +7,7 @@ import { PlanCode } from "../../../modules/plan/constants/plan.enums.js";
 import { PlanFeatureLimitType } from "../../../modules/planfeature/constants/planFeature.enums.js";
 
 export const SUBSCRIPTION_LIMIT_CODES = {
+    MAX_ATTACHMENTS_PER_NOTE: FeatureCode.MAX_ATTACHMENTS_PER_NOTE,
     MAX_USERS: FeatureCode.MAX_USERS,
     MAX_WORKSPACES: FeatureCode.MAX_WORKSPACES,
     MAX_FOLDERS_PER_WORKSPACE: FeatureCode.MAX_FOLDERS_PER_WORKSPACE,
@@ -16,6 +17,13 @@ export const SUBSCRIPTION_LIMIT_CODES = {
 } as const;
 
 export const DEFAULT_SUBSCRIPTION_LIMITS = [
+    {
+        code: FeatureCode.MAX_ATTACHMENTS_PER_NOTE,
+        name: "Attachments per note",
+        description: "Verified and pending attachment slots within one note.",
+        scope: "NOTE", unit: "COUNT", limitType: PlanFeatureLimitType.COUNT,
+        values: [20, 20, 20],
+    },
     {
         code: FeatureCode.MAX_USERS,
         name: "Personal billing seats",

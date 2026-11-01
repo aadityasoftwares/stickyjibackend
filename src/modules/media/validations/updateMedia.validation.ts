@@ -15,6 +15,22 @@ export const updateMediaValidation = (req: Request, res: Response, next: NextFun
         if (!req.body || Object.keys(req.body).length === 0) {
             return next(new AppError(MediaMessages.UPDATE_REQUIRED, 400));
         }
+        for (const field of [
+            "tenantId",
+            "workspaceId",
+            "storageKeyVersion",
+            "checksum",
+            "uploadedAt",
+            "uploadUrlExpiresAt",
+            "uploadOperationId",
+            "lastVerifiedAt",
+            "storageDeletionPending",
+            "deletedAt",
+            "publicUrl",
+        ]) {
+            if (req.body[field] !== undefined)
+                return next(new AppError(`The server controls ${field}.`, 400));
+        }
 
         const restrictedFields = [
             {

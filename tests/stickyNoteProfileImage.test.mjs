@@ -16,6 +16,7 @@ for (const key of ["ACCOUNT_ID", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "BUCKET_N
     process.env[`CLOUDFLARE_R2_${key}`] = "note-img-test";
 }
 process.env.CLOUDFLARE_R2_PUBLIC_URL = "https://cdn.example.test";
+process.env.CLOUDFLARE_R2_BUCKET_IS_PRIVATE = "false";
 
 const { UserModel } = await import("../src/modules/user/models/user.model.ts");
 const { UserProfileModel } = await import("../src/modules/userprofile/models/userProfile.model.ts");
@@ -399,4 +400,93 @@ test("GET /stickynotes/get/:id provides profileImage and avatarUrl for assignees
     assert.equal(note.assignees[0].name, "Dev Assignee");
     assert.ok(note.assignees[0].profileImage);
     assert.equal(note.assignees[0].profileImage.id, assigneeMedia._id.toString());
+});
+
+test("note lists and details embed only active scoped attachment metadata in stable order", async () => {
+    const { StickyNoteAttachmentService } = await import("../src/modules/stickynoteattachment/services/stickyNoteAttachment.service.ts");
+    const { StickyNoteAttachmentRepository } = await import("../src/modules/stickynoteattachment/repositories/stickyNoteAttachment.repository.ts");
+    const repository = new StickyNoteAttachmentRepository();
+    const headers = { Authorization: `Bearer ${creatorToken}`, "Content-Type": "application/json" };
+    const empty = await fetch(`${baseUrl}/stickynotes/get/${testNote._id}`, { headers });
+    assert.deepEqual((await empty.json()).data.attachments, []);
+
+    const makeAttachment = (overrides = {}) => MediaModel.create({
+        uploadedBy: creatorUser._id,
+        tenantId: creatorUser._id,
+        workspaceId: testWorkspace._id,
+        storageKeyVersion: 2,
+        bucket: "private-test-bucket",
+        storageKey: `attachments/${new Types.ObjectId()}.txt`,
+        originalFileName: "notes.txt",
+        mimeType: "text/plain",
+        size: 40,
+        mediaType: MediaType.DOCUMENT,
+        purpose: MediaPurpose.ATTACHMENT,
+        visibility: MediaVisibility.PRIVATE,
+        status: MediaStatus.ACTIVE,
+        resourceType: MediaResourceType.NOTE,
+        resourceId: testNote._id,
+        ...overrides,
+    });
+    const later = await makeAttachment({ sortOrder: 2 });
+    const first = await makeAttachment({ sortOrder: 1, originalFileName: "first.txt" });
+    const legacy = await makeAttachment({ sortOrder: 3, tenantId: null, workspaceId: null, storageKeyVersion: 1 });
+    await makeAttachment({ status: MediaStatus.PENDING });
+    await makeAttachment({ status: MediaStatus.DELETED });
+    await makeAttachment({ storageDeletionPending: true });
+    await makeAttachment({ tenantId: assigneeUser._id });
+    await makeAttachment({ workspaceId: new Types.ObjectId() });
+    await makeAttachment({ tenantId: null, workspaceId: null });
+    await makeAttachment({ resourceId: new Types.ObjectId() });
+    await makeAttachment({ resourceType: MediaResourceType.USER });
+    await makeAttachment({ purpose: MediaPurpose.AVATAR });
+
+    const attachmentList = await new StickyNoteAttachmentService().list(String(testNote._id), String(creatorUser._id), {});
+    const expected = JSON.parse(JSON.stringify(attachmentList.data));
+    assert.deepEqual(expected.map((item) => item.attachmentId), [first, later, legacy].map((item) => String(item._id)));
+
+    const { StickyNoteFavoriteModel } = await import("../src/modules/stickynotesfavorites/models/stickyNoteFavorite.model.ts");
+    const { StickyNoteFavoriteService } = await import("../src/modules/stickynotesfavorites/services/stickyNoteFavorite.service.ts");
+    await StickyNoteFavoriteModel.create({ stickyNoteId: testNote._id, userId: creatorUser._id });
+    const favorites = await new StickyNoteFavoriteService().getStickyNoteFavorites(String(creatorUser._id));
+    assert.deepEqual(JSON.parse(JSON.stringify(favorites.data[0].stickyNote.attachments)), expected);
+
+    await StickyNoteModel.updateOne({ _id: testNote._id }, { noteDate: "2000-01-01" });
+    const overdueResponse = await fetch(`${baseUrl}/stickynotes/overdue?workspaceId=${testWorkspace._id}`, { headers });
+    assert.equal(overdueResponse.status, 200);
+    const overdue = await overdueResponse.json();
+    assert.deepEqual(overdue.data.notes.find((note) => note.id === String(testNote._id)).attachments, expected);
+
+    for (const [path, options, isList] of [
+        [`/getall?workspaceId=${testWorkspace._id}`, {}, true],
+        ["/getall", { method: "POST", body: JSON.stringify({ workspaceId: String(testWorkspace._id) }) }, true],
+        [`/get/${testNote._id}`, {}, false],
+    ]) {
+        const response = await fetch(`${baseUrl}/stickynotes${path}`, { ...options, headers });
+        assert.equal(response.status, 200);
+        const body = await response.json();
+        const note = isList ? body.data.find((item) => item.id === String(testNote._id)) : body.data;
+        assert.deepEqual(note.attachments, expected);
+        for (const item of note.attachments) {
+            assert.equal(item.bucket, undefined);
+            assert.equal(item.storageKey, undefined);
+            assert.equal(item.downloadUrl, undefined);
+        }
+    }
+
+    assert.equal((await repository.findMap([])).size, 0);
+    const unrelatedId = String(new Types.ObjectId());
+    const batched = await repository.findMap([String(testNote._id), unrelatedId]);
+    assert.equal(batched.get(String(testNote._id)).length, 3);
+    assert.equal(batched.has(unrelatedId), false);
+
+    try {
+        await StickyNoteModel.updateOne({ _id: testNote._id }, { status: StickyNoteStatus.ARCHIVED });
+        assert.equal((await repository.findMap([String(testNote._id)])).get(String(testNote._id)).length, 3);
+        await StickyNoteModel.updateOne({ _id: testNote._id }, { status: StickyNoteStatus.TRASHED });
+        assert.equal((await repository.findMap([String(testNote._id)])).size, 0);
+    } finally {
+        await StickyNoteModel.updateOne({ _id: testNote._id }, { status: StickyNoteStatus.ACTIVE });
+    }
+    assert.equal((await repository.findMap([String(testNote._id)])).get(String(testNote._id)).length, 3);
 });

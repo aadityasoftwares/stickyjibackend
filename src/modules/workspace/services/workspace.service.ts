@@ -952,19 +952,19 @@ export class WorkspaceService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     let url: string;
-                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
+                    if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl) {
                         url = media.publicUrl;
-                    } else if (media.visibility === MediaVisibility.PUBLIC) {
+                    } else if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket)) {
                         url = this.storageService.getPublicUrl(media.storageKey);
                     } else {
-                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                        url = await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     }
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),

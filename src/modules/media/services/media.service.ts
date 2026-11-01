@@ -1,8 +1,5 @@
-import path from "node:path";
-import crypto from "node:crypto";
+import { createHash } from "node:crypto";
 import { Types } from "mongoose";
-
-import { workspaceAvailabilityService } from "../../workspace/services/workspaceAvailability.service.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { MediaRepository } from "../repositories/media.repository.js";
 import { MEDIA_CONSTANTS } from "../constants/media.constants.js";
@@ -12,618 +9,422 @@ import {
     MediaResourceType,
     MediaStatus,
     MediaStorageProvider,
-    MediaType,
     MediaVisibility,
 } from "../constants/media.enums.js";
 import type {
+    IMedia,
     IMediaFilter,
     IMediaUpdateRequest,
     IMediaUploadRequest,
 } from "../interfaces/media.interface.js";
 import { CloudflareR2Service } from "../storage/cloudflareR2.service.js";
+import { StorageKeyBuilder, type MediaStorageScope } from "../storage/storageKey.builder.js";
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
-import { FeatureCode } from "../../feature/constants/feature.enums.js";
-import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
-import { PermissionAction, PermissionModule } from "../../permissions/constants/permission.enums.js";
-import { StickyNoteModel } from "../../stickynotes/models/stickynote.model.js";
+import { SubscriptionEntitlementRepository } from "../../subscriptionentitlement/repositories/subscriptionentitlement.repository.js";
+import { PermissionAction } from "../../permissions/constants/permission.enums.js";
 import { MediaUtil } from "../utils/media.util.js";
 import { MediaValidation } from "../validations/media.validation.js";
+import { MediaAccessService } from "./mediaAccess.service.js";
+import { MediaContentService } from "./mediaContent.service.js";
+import { MediaSecurity } from "../constants/mediaSecurity.constants.js";
+import { SubscriptionUsageService } from "../../subscriptionusage/services/subscriptionusage.service.js";
+import { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
 
 export class MediaService {
-    private readonly mediaRepository: MediaRepository;
-    private readonly storageService: CloudflareR2Service;
-    private readonly subscriptionEntitlementService: SubscriptionEntitlementService;
-
-    constructor() {
-        this.mediaRepository = new MediaRepository();
-        this.storageService = new CloudflareR2Service();
-        this.subscriptionEntitlementService = new SubscriptionEntitlementService();
-    }
+    private readonly mediaRepository = new MediaRepository();
+    private readonly storageService = new CloudflareR2Service();
+    private readonly subscriptionEntitlementService = new SubscriptionEntitlementService();
+    private readonly locks = new SubscriptionEntitlementRepository();
+    private readonly access = new MediaAccessService();
+    private readonly content = new MediaContentService();
 
     async requestUpload(data: IMediaUploadRequest, userId: string) {
-        if (!Types.ObjectId.isValid(userId)) {
-            throw new AppError("Invalid user ID.", 400);
-        }
-
-        const fileName = MediaUtil.sanitizeFileName(data.fileName);
-        if (!fileName || fileName.length > MEDIA_CONSTANTS.MAX_FILE_NAME_LENGTH) {
-            throw new AppError(MediaMessages.INVALID_FILE_NAME, 400);
-        }
-
-        const mimeType = (data.mimeType || "").trim().toLowerCase();
-        if (!mimeType || mimeType.length > MEDIA_CONSTANTS.MAX_MIME_TYPE_LENGTH) {
-            throw new AppError(MediaMessages.INVALID_MIME_TYPE, 400);
-        }
-
-        if (!MediaValidation.isValidMediaType(data.mediaType)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_TYPE, 400);
-        }
-
-        if (!MediaValidation.isValidPurpose(data.purpose)) {
-            throw new AppError(MediaMessages.INVALID_PURPOSE, 400);
-        }
-
-        if (!MediaUtil.isMediaTypeAllowedForPurpose(data.purpose, data.mediaType)) {
-            throw new AppError(MediaMessages.PURPOSE_MEDIA_TYPE_MISMATCH, 400);
-        }
-
-        const sizeValidation = MediaUtil.validateFileSize(data.size, data.mediaType, data.purpose);
-        if (!sizeValidation.valid) {
-            throw new AppError(sizeValidation.message ?? MediaMessages.INVALID_FILE_SIZE, 400);
-        }
-
-        const allowedMimeTypes: readonly string[] = MEDIA_CONSTANTS.ALLOWED_MIME_TYPES[data.mediaType];
-        if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(mimeType)) {
-            throw new AppError(MediaMessages.MEDIA_TYPE_MISMATCH, 400);
-        }
-
-        const rawExtension = MediaUtil.extractExtension(fileName);
-        if (rawExtension && !MediaUtil.isExtensionAllowedForMimeType(mimeType, rawExtension)) {
-            throw new AppError(MediaMessages.INVALID_FILE_EXTENSION_FOR_MIME, 400);
-        }
-
-        const extension = MediaUtil.resolveExtension(fileName, mimeType, data.purpose);
-
-        const hasResourceType = Boolean(data.resourceType);
-        const hasResourceId = Boolean(data.resourceId);
-        if (hasResourceId && !hasResourceType) {
-            throw new AppError(MediaMessages.INVALID_RESOURCE_TYPE, 400);
-        }
-        if (hasResourceType !== hasResourceId) {
-            throw new AppError(MediaMessages.INVALID_RESOURCE, 400);
-        }
-
-        await this.assertResourceAvailable(data.resourceType, data.resourceId);
-        await this.assertUploadAccess(userId, data.resourceType, data.resourceId);
-
-        const mediaId = new Types.ObjectId();
-        const storageKey = this.generateStorageKey({
+        if (Boolean(data.resourceType) !== Boolean(data.resourceId))
+            throw new AppError(
+                data.resourceId ? MediaMessages.INVALID_RESOURCE_TYPE : MediaMessages.INVALID_RESOURCE,
+                400,
+            );
+        const scope = await this.access.resolve(
             userId,
-            purpose: data.purpose,
-            mediaId,
-            resourceType: data.resourceType,
-            extension,
-        });
-
-        const uploadExpiresAt = new Date(
-            Date.now() + MEDIA_CONSTANTS.PENDING_UPLOAD_EXPIRY_MINUTES * 60 * 1000,
+            data.resourceType,
+            data.resourceId,
+            PermissionAction.UPDATE,
         );
+        const operationId = data.idempotencyKey ? this.operationId(data, userId) : undefined;
+        if (scope.noteId || operationId) {
+            return this.locks.withQuotaLock(`media:${scope.noteId ?? operationId}`, async (assertLease) => {
+                await assertLease();
+                return this.initializeUpload(data, userId, scope, operationId, assertLease);
+            });
+        }
+        return this.initializeUpload(data, userId, scope);
+    }
 
-        const visibility = data.visibility ?? MEDIA_CONSTANTS.DEFAULT_VISIBILITY;
-        const publicUrl =
-            visibility === MediaVisibility.PUBLIC ? this.storageService.getPublicUrl(storageKey) : null;
+    private operationId(data: IMediaUploadRequest, userId: string) {
+        if (!data.idempotencyKey || !/^[\w-]{8,100}$/.test(data.idempotencyKey))
+            throw new AppError("Invalid idempotency key.", 400);
+        return createHash("sha256")
+            .update(`${userId}:${data.resourceType ?? ""}:${data.resourceId ?? ""}:${data.idempotencyKey}`)
+            .digest("hex");
+    }
 
-        const resourceId = data.resourceId ? this.validateResourceId(data.resourceId) : null;
-
+    private async initializeUpload(
+        data: IMediaUploadRequest,
+        userId: string,
+        scope: MediaStorageScope,
+        operationId?: string,
+        assertLease?: () => Promise<void>,
+    ) {
+        const fileName = MediaUtil.sanitizeFileName(data.fileName);
+        if (!fileName) throw new AppError(MediaMessages.INVALID_FILE_NAME, 400);
+        const mimeType = (data.mimeType || "").trim().toLowerCase();
+        if (!MediaValidation.isValidMediaType(data.mediaType))
+            throw new AppError(MediaMessages.INVALID_MEDIA_TYPE, 400);
+        if (!MediaValidation.isValidPurpose(data.purpose))
+            throw new AppError(MediaMessages.INVALID_PURPOSE, 400);
+        if (!MediaUtil.isMediaTypeAllowedForPurpose(data.purpose, data.mediaType))
+            throw new AppError(MediaMessages.PURPOSE_MEDIA_TYPE_MISMATCH, 400);
+        const size = MediaUtil.validateFileSize(data.size, data.mediaType, data.purpose);
+        if (!size.valid) throw new AppError(size.message ?? MediaMessages.INVALID_FILE_SIZE, 400);
+        const format = MediaSecurity.format(mimeType);
+        if (format.mediaType !== data.mediaType) throw new AppError(MediaMessages.MEDIA_TYPE_MISMATCH, 400);
+        if (data.size > MediaSecurity.maxFileBytes()) throw new AppError(MediaMessages.FILE_TOO_LARGE, 400);
+        const extension = MediaUtil.extractExtension(fileName);
+        if (extension && !MediaUtil.isExtensionAllowedForMimeType(mimeType, extension))
+            throw new AppError(MediaMessages.INVALID_FILE_EXTENSION_FOR_MIME, 400);
+        if (scope.noteId && data.purpose !== MediaPurpose.ATTACHMENT)
+            throw new AppError("Note media must use the ATTACHMENT purpose.", 400);
+        if (data.visibility && !MediaValidation.isValidVisibility(data.visibility))
+            throw new AppError(MediaMessages.INVALID_VISIBILITY, 400);
+        const visibility =
+            scope.workspaceId || !this.storageService.isPublicBucket(this.storageService.getBucketName())
+                ? MediaVisibility.PRIVATE
+                : (data.visibility ?? MediaVisibility.PRIVATE);
+        if (visibility === MediaVisibility.PUBLIC && !mimeType.startsWith("image/"))
+            throw new AppError("Documents must remain private.", 400);
+        const bucket = this.storageService.getUploadBucket(visibility === MediaVisibility.PRIVATE);
+        if (operationId) {
+            const previous = await this.mediaRepository.findByOperationId(operationId);
+            if (previous) {
+                await this.access.assertMedia(previous, userId, PermissionAction.UPDATE);
+                if (
+                    previous.originalFileName !== fileName ||
+                    previous.mimeType !== mimeType ||
+                    previous.size !== data.size ||
+                    previous.purpose !== data.purpose ||
+                    previous.visibility !== visibility
+                ) {
+                    throw new AppError("Idempotency key was already used for different file metadata.", 409);
+                }
+                return this.uploadResponse(previous);
+            }
+        }
+        if (scope.noteId)
+            await this.subscriptionEntitlementService.assertNoteAttachmentCapacity(
+                scope.accountId,
+                scope.noteId,
+            );
         const reservation = await this.subscriptionEntitlementService.assertCanUploadAttachment(
             userId,
             data.resourceType ?? null,
-            resourceId,
+            data.resourceId ?? null,
             data.size,
         );
-
+        const mediaId = new Types.ObjectId();
         try {
+            await assertLease?.();
+            const currentScope = await this.access.resolve(
+                userId,
+                data.resourceType,
+                data.resourceId,
+                PermissionAction.UPDATE,
+            );
+            if (JSON.stringify(currentScope) !== JSON.stringify(scope))
+                throw new AppError("Storage ownership changed.", 409);
             const media = await this.mediaRepository.create({
                 _id: mediaId,
                 uploadedBy: new Types.ObjectId(userId),
+                tenantId: scope.tenantId ? new Types.ObjectId(scope.tenantId) : null,
+                workspaceId: scope.workspaceId ? new Types.ObjectId(scope.workspaceId) : null,
                 storageProvider: MediaStorageProvider.CLOUDFLARE_R2,
-                bucket: this.storageService.getBucketName(),
-                storageKey,
-                publicUrl,
+                bucket,
+                storageKey: StorageKeyBuilder.build(scope, data.purpose, format.extension),
+                storageKeyVersion: StorageKeyBuilder.VERSION,
+                publicUrl: null,
                 originalFileName: fileName,
                 mimeType,
-                extension,
+                extension: format.extension,
                 size: data.size,
                 mediaType: data.mediaType,
                 purpose: data.purpose,
                 visibility,
                 status: MediaStatus.PENDING,
                 resourceType: data.resourceType ?? null,
-                resourceId,
-                uploadExpiresAt,
+                resourceId: data.resourceId ? new Types.ObjectId(String(data.resourceId)) : null,
+                uploadExpiresAt: new Date(Date.now() + MEDIA_CONSTANTS.PENDING_UPLOAD_EXPIRY_MINUTES * 60000),
+                uploadUrlExpiresAt: new Date(
+                    Date.now() + MEDIA_CONSTANTS.UPLOAD_URL_EXPIRES_IN_SECONDS * 1000,
+                ),
+                ...(operationId ? { uploadOperationId: operationId } : {}),
             });
-
-            const uploadUrl = await this.storageService.createUploadUrl(storageKey, mimeType, data.size);
+            const result = await this.uploadResponse(media);
+            // Handoff the short reservation to durable PENDING Media, included in admission only.
             await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
-
-            return {
-                mediaId: media._id,
-                uploadUrl,
-                storageKey,
-                expiresAt: uploadExpiresAt,
-                media,
-            };
+            return result;
         } catch (error) {
-            await this.subscriptionEntitlementService.releaseReservation(reservation.reservationId).catch(() => undefined);
-            await this.mediaRepository.deleteDocument(mediaId.toString()).catch(() => undefined);
+            await this.mediaRepository.markDeleted(String(mediaId)).catch(() => undefined);
+            await this.subscriptionEntitlementService
+                .releaseReservation(reservation.reservationId)
+                .catch(() => undefined);
             throw error;
         }
     }
 
+    private async uploadResponse(media: IMedia & { _id: Types.ObjectId }) {
+        if (media.status === MediaStatus.ACTIVE)
+            return {
+                mediaId: media._id,
+                media,
+                storageKey: media.storageKey,
+                uploadUrl: null,
+                expiresAt: null,
+                requiredHeaders: {},
+            };
+        const seconds = Math.floor(((media.uploadUrlExpiresAt?.getTime() ?? 0) - Date.now()) / 1000);
+        if (media.status !== MediaStatus.PENDING || seconds <= 0)
+            throw new AppError(
+                "This upload URL has expired. Complete an existing upload or start with a new idempotency key.",
+                409,
+            );
+        const uploadUrl = await this.storageService.createUploadUrl(
+            media.storageKey,
+            media.mimeType,
+            media.size,
+            media.bucket,
+            seconds,
+        );
+        return {
+            mediaId: media._id,
+            media,
+            storageKey: media.storageKey,
+            uploadUrl,
+            expiresAt: media.uploadUrlExpiresAt,
+            requiredHeaders: { "Content-Type": media.mimeType, "If-None-Match": "*" },
+        };
+    }
+
+    private async findAuthorized(mediaId: string, userId: string, action = PermissionAction.READ) {
+        if (!Types.ObjectId.isValid(mediaId)) throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
+        const media = await this.mediaRepository.findById(mediaId);
+        if (!media || media.storageDeletionPending) throw new AppError(MediaMessages.NOT_FOUND, 404);
+        await this.access.assertMedia(media, userId, action);
+        this.storageService.assertBucket(media.bucket);
+        return media;
+    }
+
     async completeUpload(mediaId: string, userId: string) {
-        if (!Types.ObjectId.isValid(mediaId)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
-        }
-
-        if (!Types.ObjectId.isValid(userId)) {
-            throw new AppError("Invalid user ID.", 400);
-        }
-
-        const media = await this.mediaRepository.findByIdForUser(mediaId, userId);
-        if (!media) {
-            throw new AppError(MediaMessages.NOT_FOUND, 404);
-        }
-
-        await this.assertResourceAvailable(media.resourceType, media.resourceId);
-
-        // Idempotent completion check: if already active, return the existing active record
-        if (media.status === MediaStatus.ACTIVE) {
-            return media;
-        }
-
-        if (media.status === MediaStatus.FAILED) {
-            throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
-        }
-
-        if (media.status !== MediaStatus.PENDING) {
-            throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
-        }
-
-        // Expired upload handling
+        const media = await this.findAuthorized(mediaId, userId, PermissionAction.UPDATE);
+        if (media.status === MediaStatus.ACTIVE) return media;
+        if (media.status !== MediaStatus.PENDING) throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
         if (!media.uploadExpiresAt || media.uploadExpiresAt <= new Date()) {
-            await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
-            await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.FAILED, {
-                uploadExpiresAt: null,
-            });
+            await this.failUpload(mediaId);
             throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
         }
-
-        // Check object existence in Cloudflare R2
-        const metadata = await this.storageService.headObject(media.storageKey).catch(async () => {
-            await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.FAILED, {
-                uploadExpiresAt: null,
-            });
-            throw new AppError(MediaMessages.STORAGE_OBJECT_NOT_FOUND, 404);
-        });
-
-        const actualSize = metadata.ContentLength ?? 0;
-        const actualMimeType = metadata.ContentType?.toLowerCase();
-
-        // Validate uploaded object size matches expectation
-        if (actualSize !== media.size) {
-            await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
-            await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.FAILED, {
-                uploadExpiresAt: null,
-            });
+        // Transient HEAD errors leave PENDING so upload/completion can be retried.
+        const metadata = await this.storageService.headObject(media.storageKey, media.bucket);
+        if (metadata.ContentLength !== media.size || metadata.ContentType?.toLowerCase() !== media.mimeType) {
+            await this.failUpload(mediaId);
             throw new AppError(MediaMessages.STORAGE_METADATA_MISMATCH, 400);
         }
-
-        // Validate uploaded object MIME type matches expectation
-        if (actualMimeType && actualMimeType !== media.mimeType) {
-            await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
-            await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.FAILED, {
-                uploadExpiresAt: null,
-            });
-            throw new AppError(MediaMessages.STORAGE_METADATA_MISMATCH, 400);
+        let checksum: string | null = null;
+        if (media.storageKeyVersion === 2) {
+            try {
+                checksum = await this.content.verify(this.storageService, media);
+            } catch (error) {
+                await this.failUpload(mediaId);
+                throw error;
+            }
         }
-
-        // Atomic transition from PENDING to ACTIVE
+        await this.access.assertMedia(media, userId, PermissionAction.UPDATE);
+        const now = new Date();
         const updated = await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.ACTIVE, {
             uploadExpiresAt: null,
+            uploadedAt: now,
+            lastVerifiedAt: now,
+            checksum,
+            publicUrl:
+                media.visibility === MediaVisibility.PUBLIC &&
+                this.storageService.isPublicBucket(media.bucket)
+                    ? this.storageService.getPublicUrl(media.storageKey)
+                    : null,
         });
-
-        if (!updated) {
-            // Concurrent request might have completed it just now
-            const current = await this.mediaRepository.findByIdForUser(mediaId, userId);
-            if (current && current.status === MediaStatus.ACTIVE) {
-                return current;
-            }
-            throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 400);
+        if (updated) {
+            await this.refreshUsage(updated);
+            return updated;
         }
+        const current = await this.findAuthorized(mediaId, userId, PermissionAction.UPDATE);
+        if (current.status === MediaStatus.ACTIVE) return current;
+        throw new AppError(MediaMessages.UPLOAD_NOT_COMPLETED, 409);
+    }
 
-        return updated;
+    private async failUpload(id: string) {
+        await this.mediaRepository.updateStatusFromPending(id, MediaStatus.FAILED, {
+            storageDeletionPending: true,
+            deletedAt: new Date(),
+            publicUrl: null,
+        });
     }
 
     async getMedia(mediaId: string, userId: string) {
-        if (!Types.ObjectId.isValid(mediaId)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
-        }
-
-        const media = await this.mediaRepository.findByIdForUser(mediaId, userId);
-        if (!media) {
-            throw new AppError(MediaMessages.NOT_FOUND, 404);
-        }
-
-        await this.assertResourceAvailable(media.resourceType, media.resourceId);
-
-        const mediaObj = typeof (media as any).toObject === "function" ? (media as any).toObject() : { ...media };
-
-        // Secure download URL generation for private media
-        if (media.visibility === MediaVisibility.PRIVATE) {
-            if (media.status === MediaStatus.ACTIVE) {
-                mediaObj.downloadUrl = await this.storageService.createDownloadUrl(media.storageKey);
-            } else {
-                mediaObj.downloadUrl = null;
-            }
-            mediaObj.publicUrl = null;
-        } else if (media.visibility === MediaVisibility.PUBLIC) {
-            mediaObj.publicUrl = this.storageService.getPublicUrl(media.storageKey);
-            mediaObj.downloadUrl = mediaObj.publicUrl;
-        }
-
-        return mediaObj;
+        const media = await this.findAuthorized(mediaId, userId);
+        const result = media.toObject();
+        return {
+            ...result,
+            publicUrl:
+                media.status === MediaStatus.ACTIVE &&
+                this.storageService.isPublicBucket(media.bucket) &&
+                !media.workspaceId &&
+                media.resourceType !== MediaResourceType.NOTE &&
+                media.resourceType !== MediaResourceType.WORKSPACE
+                    ? result.publicUrl
+                    : null,
+            downloadUrl:
+                media.status === MediaStatus.ACTIVE
+                    ? (await this.getDownloadUrl(mediaId, userId)).downloadUrl
+                    : null,
+        };
     }
 
     async getDownloadUrl(mediaId: string, userId: string) {
-        if (!Types.ObjectId.isValid(mediaId)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
-        }
-
-        const media = await this.mediaRepository.findByIdForUser(mediaId, userId);
-        if (!media) {
-            throw new AppError(MediaMessages.NOT_FOUND, 404);
-        }
-
-        await this.assertResourceAvailable(media.resourceType, media.resourceId);
-
-        if (media.status !== MediaStatus.ACTIVE) {
+        const media = await this.findAuthorized(mediaId, userId);
+        if (media.status !== MediaStatus.ACTIVE)
             throw new AppError(MediaMessages.CANNOT_DOWNLOAD_UNPROCESSED_MEDIA, 400);
-        }
-
-        if (media.visibility === MediaVisibility.PUBLIC) {
+        if (
+            media.visibility === MediaVisibility.PUBLIC &&
+            this.storageService.isPublicBucket(media.bucket) &&
+            !media.workspaceId &&
+            media.resourceType !== MediaResourceType.NOTE &&
+            media.resourceType !== MediaResourceType.WORKSPACE
+        ) {
             return {
                 downloadUrl: this.storageService.getPublicUrl(media.storageKey),
                 visibility: MediaVisibility.PUBLIC,
             };
         }
-
-        const downloadUrl = await this.storageService.createDownloadUrl(media.storageKey);
         return {
-            downloadUrl,
+            downloadUrl: await this.storageService.createDownloadUrl(
+                media.storageKey,
+                MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
+                media.originalFileName,
+                media.bucket,
+            ),
             visibility: MediaVisibility.PRIVATE,
             expiresInSeconds: MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
         };
     }
 
     async getMediaFiles(userId: string, filters: IMediaFilter = {}) {
-        await this.assertResourceAvailable(filters.resourceType, filters.resourceId);
+        const scope = await this.access.resolve(userId, filters.resourceType, filters.resourceId);
         return this.mediaRepository.findAll({
             ...filters,
-            uploadedBy: userId,
+            tenantId: scope.tenantId,
+            workspaceId: scope.workspaceId,
+            uploadedBy: scope.workspaceId ? undefined : userId,
+            status: MediaStatus.ACTIVE,
+            page: Math.max(1, Math.floor(filters.page ?? 1)),
+            limit: Math.min(100, Math.max(1, Math.floor(filters.limit ?? 10))),
+            sortBy: ["createdAt", "originalFileName", "size", "sortOrder"].includes(filters.sortBy ?? "")
+                ? filters.sortBy
+                : "createdAt",
         });
     }
 
     async updateMedia(mediaId: string, userId: string, data: IMediaUpdateRequest) {
-        if (!Types.ObjectId.isValid(mediaId)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
+        const media = await this.findAuthorized(mediaId, userId, PermissionAction.UPDATE);
+        if (
+            (data.resourceType !== undefined && data.resourceType !== media.resourceType) ||
+            (data.resourceId !== undefined &&
+                String(data.resourceId ?? "") !== String(media.resourceId ?? ""))
+        ) {
+            throw new AppError("Media reassignment requires an explicit authorized transfer workflow.", 409);
         }
-
-        const media = await this.mediaRepository.findByIdForUser(mediaId, userId);
-        if (!media) {
-            throw new AppError(MediaMessages.NOT_FOUND, 404);
-        }
-        await this.assertResourceAvailable(media.resourceType, media.resourceId);
-
-        const updateData: IMediaUpdateRequest = {};
-
-        if (data.originalFileName !== undefined) {
-            const cleanName = MediaUtil.sanitizeFileName(data.originalFileName);
-            if (!cleanName || cleanName.length > MEDIA_CONSTANTS.MAX_FILE_NAME_LENGTH) {
-                throw new AppError(MediaMessages.INVALID_FILE_NAME, 400);
-            }
-            updateData.originalFileName = cleanName;
-        }
-
-        if (data.extension !== undefined) {
-            updateData.extension = data.extension ? data.extension.trim().toLowerCase() : null;
-        }
-
-        if (data.purpose !== undefined) {
-            if (!MediaValidation.isValidPurpose(data.purpose)) {
-                throw new AppError(MediaMessages.INVALID_PURPOSE, 400);
-            }
-            if (!MediaUtil.isMediaTypeAllowedForPurpose(data.purpose, media.mediaType)) {
-                throw new AppError(MediaMessages.PURPOSE_MEDIA_TYPE_MISMATCH, 400);
-            }
-            updateData.purpose = data.purpose;
-        }
-
-        if (data.visibility !== undefined) {
-            if (!MediaValidation.isValidVisibility(data.visibility)) {
-                throw new AppError(MediaMessages.INVALID_VISIBILITY, 400);
-            }
-            updateData.visibility = data.visibility;
-
-            if (data.visibility === MediaVisibility.PUBLIC) {
-                updateData.publicUrl = this.storageService.getPublicUrl(media.storageKey);
-            } else {
-                updateData.publicUrl = null;
-            }
-        }
-
-        if (data.resourceType !== undefined) {
-            updateData.resourceType = data.resourceType;
-        }
-
-        if (data.resourceId !== undefined) {
-            updateData.resourceId = data.resourceId ? this.validateResourceId(data.resourceId) : null;
-        }
-
-        const nextType = data.resourceType !== undefined ? data.resourceType : media.resourceType;
-        const nextId = data.resourceId !== undefined ? data.resourceId : media.resourceId;
-        await this.assertResourceAvailable(nextType, nextId);
-
-        const associationChanged =
-            nextType !== media.resourceType || String(nextId ?? "") !== String(media.resourceId ?? "");
-        if (!associationChanged) {
-            return this.mediaRepository.updateById(mediaId, updateData as any);
-        }
-
-        await this.assertUploadAccess(userId, nextType, nextId);
-        if (media.status !== MediaStatus.ACTIVE) {
-            throw new AppError("Complete the upload before moving its attachment.", 409);
-        }
-
-        const previousScope = await this.subscriptionEntitlementService.resolveAttachmentBillingScope(
-            userId,
-            media.resourceType ?? null,
-            media.resourceId ?? null,
-        );
-        const destinationScope = await this.subscriptionEntitlementService.resolveAttachmentBillingScope(
-            userId,
-            nextType ?? null,
-            nextId ?? null,
-        );
-
-        if (previousScope.id === destinationScope.id) {
-            await this.subscriptionEntitlementService.assertFeatureEnabled(
-                destinationScope,
-                FeatureCode.ATTACHMENTS,
+        if (
+            (data.purpose !== undefined && data.purpose !== media.purpose) ||
+            (data.extension !== undefined && data.extension !== media.extension) ||
+            (data.visibility !== undefined && data.visibility !== media.visibility)
+        ) {
+            throw new AppError(
+                "Media purpose, format and visibility cannot be changed after upload initialization.",
+                409,
             );
-            return this.mediaRepository.updateById(mediaId, updateData as any);
         }
-
-        // Moving a file can change the billing owner. Reserve against the destination
-        // before changing its association, just as for a new upload.
-        const reservation = await this.subscriptionEntitlementService.assertCanUploadAttachment(
-            userId,
-            nextType ?? null,
-            nextId ?? null,
-            media.size,
-        );
-        try {
-            const updated = await this.mediaRepository.updateById(mediaId, updateData as any);
-            if (!updated) throw new AppError(MediaMessages.NOT_FOUND, 404);
-            await this.subscriptionEntitlementService.commitReservation(reservation.reservationId);
-            return updated;
-        } catch (error) {
-            await this.subscriptionEntitlementService.releaseReservation(reservation.reservationId);
-            throw error;
+        const update: Partial<IMedia> = {};
+        if (data.originalFileName !== undefined) {
+            const name = MediaUtil.sanitizeFileName(data.originalFileName);
+            if (!name) throw new AppError(MediaMessages.INVALID_FILE_NAME, 400);
+            update.originalFileName = name;
         }
+        return this.mediaRepository.updateById(mediaId, update);
     }
 
     async deleteMedia(mediaId: string, userId: string) {
-        if (!Types.ObjectId.isValid(mediaId)) {
-            throw new AppError(MediaMessages.INVALID_MEDIA_ID, 400);
-        }
-
-        const media = await this.mediaRepository.findByIdForUser(mediaId, userId);
-        if (!media) {
-            throw new AppError(MediaMessages.NOT_FOUND, 404);
-        }
-        await this.assertResourceAvailable(media.resourceType, media.resourceId);
-
-        // Soft-delete the media record in DB first with storageDeletionPending flag
+        const media = await this.findAuthorized(mediaId, userId, PermissionAction.UPDATE);
         const marked = await this.mediaRepository.markDeleted(mediaId);
-
-        // Check if underlying storageKey is referenced by another active media record
-        const isReferencedElsewhere = await this.mediaRepository.isStorageKeyReferencedElsewhere(
-            media.storageKey,
-            mediaId,
-        );
-
-        if (!isReferencedElsewhere) {
-            try {
-                // Ensure configured bucket matches
-                if (media.bucket === this.storageService.getBucketName()) {
-                    await this.storageService.deleteObject(media.storageKey);
-                }
-                // When R2 deletion succeeds, purge tombstone
-                await this.mediaRepository.deleteStorageTombstone(mediaId);
-            } catch (storageError) {
-                // When R2 deletion fails, tombstone remains with storageDeletionPending: true for scheduled retry
-                console.warn(
-                    `[MediaService] Storage deletion for ${media.storageKey} failed. Tombstone scheduled for retry:`,
-                    storageError,
-                );
-            }
-        } else {
-            // Shared reference exists; remove only this tombstone without deleting the R2 object
-            await this.mediaRepository.deleteStorageTombstone(mediaId);
-        }
-
+        await this.refreshUsage(media);
+        if (this.canDeleteObject(media)) await this.deleteTombstone(media).catch(() => undefined);
         return marked;
     }
 
-    async cleanupPendingUploads(batchLimit = MEDIA_CONSTANTS.CLEANUP_BATCH_SIZE): Promise<number> {
-        const expiredMedia = await this.mediaRepository.findExpiredPendingUploads(batchLimit);
-        let cleaned = 0;
+    private async refreshUsage(media: IMedia) {
+        await new SubscriptionUsageService()
+            .recalculateUsage({ type: BillingScopeType.USER, id: String(media.tenantId ?? media.uploadedBy) })
+            .catch(() => undefined);
+    }
 
-        for (const media of expiredMedia) {
-            try {
-                // Atomically claim by transitioning status from PENDING to FAILED
-                const claimed = await this.mediaRepository.updateStatusFromPending(
-                    media._id.toString(),
-                    MediaStatus.FAILED,
-                    { uploadExpiresAt: null },
-                );
+    private canDeleteObject(media: IMedia): boolean {
+        const expiry =
+            media.uploadUrlExpiresAt ?? (media.status === MediaStatus.PENDING ? media.uploadExpiresAt : null);
+        return !expiry || expiry.getTime() + 3600000 < Date.now();
+    }
 
-                if (!claimed) {
-                    continue; // claimed by another worker
-                }
-
-                // Delete file from R2 if not referenced elsewhere
-                const isReferenced = await this.mediaRepository.isStorageKeyReferencedElsewhere(
-                    media.storageKey,
-                    media._id.toString(),
-                );
-
-                if (!isReferenced) {
-                    await this.storageService.deleteObject(media.storageKey).catch(() => undefined);
-                }
-
-                await this.mediaRepository.deleteDocument(media._id.toString());
-                cleaned += 1;
-            } catch (err) {
-                console.error(`[MediaService] Failed to clean expired pending media ${media._id}:`, err);
-            }
+    private async deleteTombstone(media: IMedia & { _id: Types.ObjectId }) {
+        this.storageService.assertBucket(media.bucket);
+        if (
+            !(await this.mediaRepository.isStorageKeyReferencedElsewhere(media.storageKey, String(media._id)))
+        ) {
+            await this.storageService.deleteObject(media.storageKey, media.bucket);
         }
+        await this.mediaRepository.deleteStorageTombstone(String(media._id));
+    }
 
+    async cleanupPendingUploads(batchLimit = MEDIA_CONSTANTS.CLEANUP_BATCH_SIZE) {
+        const expired = await this.mediaRepository.findExpiredPendingUploads(batchLimit);
+        let cleaned = 0;
+        for (const media of expired) {
+            const claimed = await this.mediaRepository.updateStatusFromPending(
+                String(media._id),
+                MediaStatus.FAILED,
+                { storageDeletionPending: true, deletedAt: new Date(), publicUrl: null },
+            );
+            if (claimed) cleaned++;
+        }
+        await this.cleanupPendingStorageDeletions(batchLimit);
         return cleaned;
     }
 
-    async cleanupPendingStorageDeletions(
-        batchLimit = MEDIA_CONSTANTS.CLEANUP_BATCH_SIZE,
-    ): Promise<{ deleted: number; failed: number }> {
-        const media = await this.mediaRepository.findPendingStorageDeletions(batchLimit);
+    async cleanupPendingStorageDeletions(batchLimit = MEDIA_CONSTANTS.CLEANUP_BATCH_SIZE) {
+        const files = await this.mediaRepository.findPendingStorageDeletions(batchLimit);
         const result = { deleted: 0, failed: 0 };
-
-        for (const file of media) {
+        for (const file of files) {
+            if (!this.canDeleteObject(file)) continue;
             try {
-                const isReferenced = await this.mediaRepository.isStorageKeyReferencedElsewhere(
-                    file.storageKey,
-                    file._id.toString(),
-                );
-
-                if (!isReferenced && file.bucket === this.storageService.getBucketName()) {
-                    await this.storageService.deleteObject(file.storageKey);
-                }
-
-                await this.mediaRepository.deleteStorageTombstone(file._id.toString());
-                result.deleted += 1;
-            } catch (err) {
-                result.failed += 1;
-                console.warn(`[MediaService] Retry storage deletion failed for ${file.storageKey}:`, err);
+                await this.deleteTombstone(file);
+                result.deleted++;
+            } catch {
+                result.failed++;
             }
         }
-
         return result;
-    }
-
-    private validateResourceId(resourceId: Types.ObjectId | string): Types.ObjectId {
-        if (resourceId instanceof Types.ObjectId) {
-            return resourceId;
-        }
-
-        if (!Types.ObjectId.isValid(resourceId)) {
-            throw new AppError(MediaMessages.INVALID_RESOURCE_ID, 400);
-        }
-
-        return new Types.ObjectId(resourceId);
-    }
-
-    private async assertUploadAccess(
-        userId: string,
-        type: MediaResourceType | null | undefined,
-        id: unknown,
-    ) {
-        if (type === MediaResourceType.NOTE || type === MediaResourceType.WORKSPACE) {
-            if (!id || !Types.ObjectId.isValid(String(id))) {
-                throw new AppError(MediaMessages.INVALID_RESOURCE_ID, 400);
-            }
-            if (type === MediaResourceType.NOTE) {
-                const note = await StickyNoteModel.findById(String(id)).lean().exec();
-                if (!note) throw new AppError("Note not found.", 404);
-                const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
-                    userId,
-                    String(note.workspaceId),
-                );
-                permissionAuthorizationService.assertNoteAccess(auth, note, PermissionAction.UPDATE);
-            } else {
-                const auth = await permissionAuthorizationService.resolveWorkspaceAuthorization(
-                    userId,
-                    String(id),
-                );
-                permissionAuthorizationService.assertPermission(
-                    auth,
-                    PermissionModule.WORKSPACE,
-                    PermissionAction.UPDATE,
-                );
-            }
-        } else if (id && (type !== MediaResourceType.USER || String(id) !== userId)) {
-            throw new AppError(MediaMessages.INVALID_RESOURCE_ID, 400);
-        }
-    }
-
-    private async assertResourceAvailable(type: MediaResourceType | null | undefined, id: unknown) {
-        if (!id) return;
-        if (type === MediaResourceType.WORKSPACE) await workspaceAvailabilityService.assertAvailable(id);
-        if (type === MediaResourceType.NOTE)
-            await workspaceAvailabilityService.assertNoteWorkspaceAvailable(String(id));
-    }
-
-    private getResourceFolder(resourceType: IMediaUploadRequest["resourceType"]): string {
-        if (!resourceType) {
-            return "unlinked";
-        }
-
-        return resourceType.toLowerCase().replace(/_/g, "-");
-    }
-
-    private getPurposeFolder(purpose: MediaPurpose): string {
-        switch (purpose) {
-            case MediaPurpose.AVATAR:
-            case MediaPurpose.PROFILE_IMAGE:
-                return "avatars";
-
-            case MediaPurpose.LOGO:
-                return "logos";
-
-            case MediaPurpose.ICON:
-                return "icons";
-
-            case MediaPurpose.COVER:
-                return "covers";
-
-            case MediaPurpose.THUMBNAIL:
-                return "thumbnails";
-
-            case MediaPurpose.ATTACHMENT:
-                return "attachments";
-
-            case MediaPurpose.GALLERY:
-                return "gallery";
-
-            case MediaPurpose.CONTENT:
-                return "content";
-
-            case MediaPurpose.DOCUMENT:
-                return "documents";
-
-            case MediaPurpose.OTHER:
-            default:
-                return "other";
-        }
     }
 
     generateStorageKey(params: {
@@ -632,19 +433,18 @@ export class MediaService {
         mediaId: Types.ObjectId;
         resourceType?: MediaResourceType | null;
         extension?: string | null;
-    }): string {
-        const year = new Date().getFullYear();
-        const ext = params.extension ? `.${params.extension}` : "";
-
-        if (params.purpose === MediaPurpose.PROFILE_IMAGE || params.purpose === MediaPurpose.AVATAR) {
-            const uniqueFileName = crypto.randomUUID();
-            return `user/avatars/${params.userId}/${year}/${uniqueFileName}${ext}`;
+        scope?: MediaStorageScope;
+    }) {
+        if (
+            [MediaResourceType.NOTE, MediaResourceType.WORKSPACE].includes(params.resourceType!) &&
+            !params.scope?.tenantId
+        ) {
+            throw new AppError("Resource storage keys require resolved tenant ownership.", 400);
         }
-
-        const resourceFolder = this.getResourceFolder(params.resourceType);
-        const purposeFolder = this.getPurposeFolder(params.purpose);
-        const randomKey = crypto.randomBytes(16).toString("hex");
-
-        return `${resourceFolder}/${purposeFolder}/${year}/${params.mediaId.toString()}-${randomKey}${ext}`;
+        return StorageKeyBuilder.build(
+            params.scope ?? { accountId: params.userId },
+            params.purpose,
+            params.extension ?? "jpg",
+        );
     }
 }

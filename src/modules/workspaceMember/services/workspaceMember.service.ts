@@ -248,16 +248,16 @@ export class WorkspaceMemberService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     const url =
-                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                        media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl
                             ? media.publicUrl
-                            : await this.storageService.createDownloadUrl(media.storageKey);
+                            : await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),
                         url,
@@ -709,15 +709,15 @@ export class WorkspaceMemberService {
                     _id: profile.profileImage,
                     isDeleted: { $ne: true },
                 })
-                    .select("_id storageKey publicUrl visibility")
+                    .select("_id bucket storageKey publicUrl visibility")
                     .lean()
                     .exec();
 
                 if (media) {
                     const url =
-                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
+                        media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl
                             ? media.publicUrl
-                            : await this.storageService.createDownloadUrl(media.storageKey);
+                            : await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     profileImage = { id: media._id.toString(), url };
                 }
             }

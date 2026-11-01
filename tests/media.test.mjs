@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { before, after, test, mock } from "node:test";
-import { spawn } from "node:child_process";
+import { spawn, execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { once } from "node:events";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -9,6 +10,7 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 import express from "express";
+import "./helpers/mediaVerificationMock.mjs";
 
 process.env.JWT_ACCESS_SECRET = "media-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "media-test-refresh-secret";
@@ -16,6 +18,7 @@ for (const key of ["ACCOUNT_ID", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "BUCKET_N
     process.env[`CLOUDFLARE_R2_${key}`] = "media-test";
 }
 process.env.CLOUDFLARE_R2_PUBLIC_URL = "https://cdn.example.test";
+process.env.CLOUDFLARE_R2_PRIVATE_BUCKET_NAME = "media-test-private";
 
 const { UserModel } = await import("../src/modules/user/models/user.model.ts");
 const { WorkspaceModel } = await import("../src/modules/workspace/models/workspace.model.ts");
@@ -24,14 +27,8 @@ const { MediaModel } = await import("../src/modules/media/models/media.model.ts"
 const { MediaService } = await import("../src/modules/media/services/media.service.ts");
 const { MediaRepository } = await import("../src/modules/media/repositories/media.repository.ts");
 const { CloudflareR2Service } = await import("../src/modules/media/storage/cloudflareR2.service.ts");
-const {
-    MediaStatus,
-    MediaType,
-    MediaPurpose,
-    MediaVisibility,
-    MediaResourceType,
-    MediaStorageProvider,
-} = await import("../src/modules/media/constants/media.enums.js");
+const { MediaStatus, MediaType, MediaPurpose, MediaVisibility, MediaResourceType, MediaStorageProvider } =
+    await import("../src/modules/media/constants/media.enums.js");
 const { MediaMessages } = await import("../src/modules/media/constants/media.messages.js");
 const { MEDIA_CONSTANTS } = await import("../src/modules/media/constants/media.constants.js");
 const { JwtUtil } = await import("../src/modules/auth/utils/jwt.util.ts");
@@ -76,6 +73,11 @@ CloudflareR2Service.prototype.deleteObject = async function (storageKey) {
 
 const mediaService = new MediaService();
 const mediaRepository = new MediaRepository();
+const { StickyNoteAttachmentService } =
+    await import("../src/modules/stickynoteattachment/services/stickyNoteAttachment.service.ts");
+const { default: attachmentRoutes } =
+    await import("../src/modules/stickynoteattachment/routes/stickyNoteAttachment.routes.ts");
+const attachments = new StickyNoteAttachmentService();
 
 async function createTestUser(emailPrefix) {
     return UserModel.create({
@@ -168,6 +170,7 @@ before(async () => {
     const app = express();
     app.use(express.json());
     app.use("/media", mediaRoutes);
+    app.use("/stickynotes/:noteId/attachments", attachmentRoutes);
     app.use(errorMiddleware);
 
     const httpSocket = createServer().listen(0, "127.0.0.1");
@@ -485,6 +488,9 @@ test("10. Successful storage deletion soft-deletes and removes from R2 and purge
     await mediaService.deleteMedia(init.mediaId.toString(), userA._id.toString());
 
     // R2 object removed
+    assert.equal(mockStorageObjects.has(init.storageKey), true, "Keep object while signed PUT can be reused");
+    await MediaModel.updateOne({ _id: init.mediaId }, { uploadUrlExpiresAt: new Date(Date.now() - 7200000) });
+    await mediaService.cleanupPendingStorageDeletions();
     assert.equal(mockStorageObjects.has(init.storageKey), false);
 
     // Document tombstone removed from DB
@@ -508,6 +514,7 @@ test("11. R2 deletion failure preserves tombstone with storageDeletionPending fo
     await mediaService.completeUpload(init.mediaId.toString(), userA._id.toString());
 
     // Cause R2 deletion to fail
+    await MediaModel.updateOne({ _id: init.mediaId }, { uploadUrlExpiresAt: new Date(Date.now() - 7200000) });
     storageFails = true;
     try {
         await mediaService.deleteMedia(init.mediaId.toString(), userA._id.toString());
@@ -625,4 +632,278 @@ test("13. Media listing and retrieval supports pagination and generates signed d
     assert.ok(listBody.meta);
     assert.equal(listBody.meta.page, 1);
     assert.equal(listBody.meta.limit, 5);
+});
+
+async function newNote(owner = userA, workspace = workspaceA) {
+    return StickyNoteModel.create({
+        title: "Attachment test",
+        content: "Test",
+        updatedBy: owner._id,
+        workspaceId: workspace._id,
+        columnId: new Types.ObjectId(),
+        stickyNoteNumber: Math.floor(Math.random() * 1000000) + 100,
+        createdBy: owner._id,
+        status: "ACTIVE",
+    });
+}
+const fileInput = () => ({
+    fileName: "notes.txt",
+    mimeType: "text/plain",
+    size: 40,
+    idempotencyKey: String(new Types.ObjectId()),
+});
+async function uploadAttachment(note, user = userA) {
+    const result = await attachments.requestUpload(String(note._id), String(user._id), fileInput());
+    const media = await MediaModel.findById(result.mediaId);
+    mockStorageObjects.set(media.storageKey, { size: 40, mimeType: "text/plain" });
+    return { result, media };
+}
+
+test("attachment requests are idempotent, scoped to owner account, private, and completed once", async () => {
+    const note = await newNote();
+    const data = fileInput();
+    const [first, second] = await Promise.all([
+        attachments.requestUpload(String(note._id), String(userA._id), data),
+        attachments.requestUpload(String(note._id), String(userA._id), data),
+    ]);
+    assert.equal(first.mediaId, second.mediaId);
+    assert.equal(first.storageKey, undefined);
+    assert.equal(first.requiredHeaders["If-None-Match"], "*");
+    const media = await MediaModel.findById(first.mediaId);
+    assert.equal(String(media.tenantId), String(userA._id));
+    assert.equal(String(media.workspaceId), String(workspaceA._id));
+    assert.equal(media.bucket, "media-test-private");
+    assert.equal(media.visibility, "PRIVATE");
+    assert.match(media.storageKey, /tenants\/.*\/workspaces\/.*\/notes\/.*\/attachments\//);
+    await assert.rejects(() => attachments.download(String(note._id), first.mediaId, String(userA._id)));
+    mockStorageObjects.set(media.storageKey, { size: 40, mimeType: "text/plain" });
+    const completed = await Promise.all([
+        attachments.complete(String(note._id), first.mediaId, String(userA._id)),
+        attachments.complete(String(note._id), first.mediaId, String(userA._id)),
+    ]);
+    assert.ok(completed.every((row) => row.status === "ACTIVE"));
+    assert.equal((await attachments.list(String(note._id), String(userA._id), {})).total, 1);
+    await assert.rejects(
+        () => attachments.requestUpload(String(note._id), String(userA._id), { ...data, size: 41 }),
+        { statusCode: 409 },
+    );
+});
+
+test("attachment and generic APIs reject cross-tenant access, resource tampering and reassignment", async () => {
+    const note = await newNote();
+    const other = await newNote();
+    const { result } = await uploadAttachment(note);
+    await attachments.complete(String(note._id), result.mediaId, String(userA._id));
+    for (const action of [
+        () => attachments.download(String(note._id), result.mediaId, String(userB._id)),
+        () => mediaService.getMedia(result.mediaId, String(userB._id)),
+        () => mediaService.completeUpload(result.mediaId, String(userB._id)),
+        () => mediaService.deleteMedia(result.mediaId, String(userB._id)),
+        () => mediaService.getMediaFiles(String(userB._id), { resourceType: "NOTE", resourceId: note._id }),
+        () => attachments.complete(String(other._id), result.mediaId, String(userA._id)),
+        () => attachments.download(String(other._id), result.mediaId, String(userA._id)),
+        () => mediaService.updateMedia(result.mediaId, String(userA._id), { resourceId: other._id }),
+        () => mediaService.updateMedia(result.mediaId, String(userA._id), { visibility: "PUBLIC" }),
+    ])
+        await assert.rejects(action);
+    const token = JwtUtil.generateAccessToken(String(userA._id), String(new Types.ObjectId()));
+    const response = await fetch(`${baseUrl}/stickynotes/${note._id}/attachments/request-upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+            ...fileInput(),
+            tenantId: String(userB._id),
+            workspaceId: String(workspaceA._id),
+        }),
+    });
+    assert.equal(response.status, 400);
+    await attachments.delete(String(note._id), result.mediaId, String(userA._id));
+    await assert.rejects(() => mediaService.getDownloadUrl(result.mediaId, String(userA._id)), {
+        statusCode: 404,
+    });
+});
+
+test("note archive retains files, trash blocks access, restore recovers, purge schedules deletion", async () => {
+    const note = await newNote();
+    const { result, media } = await uploadAttachment(note);
+    await attachments.complete(String(note._id), result.mediaId, String(userA._id));
+    await StickyNoteModel.updateOne({ _id: note._id }, { status: "ARCHIVED" });
+    assert.equal((await attachments.list(String(note._id), String(userA._id), {})).total, 1);
+    await StickyNoteModel.updateOne({ _id: note._id }, { status: "TRASHED" });
+    await assert.rejects(() => attachments.list(String(note._id), String(userA._id), {}));
+    await assert.rejects(() => mediaService.getDownloadUrl(result.mediaId, String(userA._id)));
+    await assert.rejects(() => attachments.requestUpload(String(note._id), String(userA._id), fileInput()));
+    assert.ok(mockStorageObjects.has(media.storageKey));
+    await StickyNoteModel.updateOne({ _id: note._id }, { status: "ACTIVE" });
+    assert.equal((await attachments.list(String(note._id), String(userA._id), {})).total, 1);
+    await StickyNoteModel.updateOne({ _id: note._id }, { status: "TRASHED" });
+    const { StickyNotePurgeService } =
+        await import("../src/modules/stickynotes/services/stickyNotePurge.service.ts");
+    await new StickyNotePurgeService().purgeById(String(note._id));
+    const tombstone = await MediaModel.findById(result.mediaId);
+    assert.equal(tombstone.status, "DELETED");
+    assert.equal(tombstone.storageDeletionPending, true);
+});
+
+test("content rejection quarantines files and failed deletions retain retry state", async () => {
+    const note = await newNote();
+    const { result } = await uploadAttachment(note);
+    const { MediaContentService } = await import("../src/modules/media/services/mediaContent.service.ts");
+    const verify = mock.method(MediaContentService.prototype, "verify", async () => {
+        throw new Error("unsafe content");
+    });
+    try {
+        await assert.rejects(() => attachments.complete(String(note._id), result.mediaId, String(userA._id)));
+    } finally {
+        verify.mock.restore();
+    }
+    assert.equal((await MediaModel.findById(result.mediaId)).status, "FAILED");
+    assert.equal((await attachments.list(String(note._id), String(userA._id), {})).total, 0);
+    await MediaModel.updateOne({ _id: result.mediaId }, { uploadUrlExpiresAt: new Date(0) });
+    storageFails = true;
+    try {
+        assert.ok((await mediaService.cleanupPendingStorageDeletions()).failed > 0);
+    } finally {
+        storageFails = false;
+    }
+    assert.ok(await MediaModel.findById(result.mediaId));
+    await mediaService.cleanupPendingStorageDeletions();
+    assert.equal(await MediaModel.findById(result.mediaId), null);
+});
+
+test("concurrent attachment admissions honor note count and total byte limits", async () => {
+    const { FeatureModel } = await import("../src/modules/feature/models/feature.model.ts");
+    const { PlanFeatureModel } = await import("../src/modules/planfeature/models/planfeature.model.ts");
+    const feature = await FeatureModel.findOne({ code: "MAX_ATTACHMENTS_PER_NOTE" });
+    await PlanFeatureModel.updateMany({ featureId: feature._id }, { limit: 1, isUnlimited: false });
+    const note = await newNote();
+    try {
+        const results = await Promise.allSettled(
+            Array.from({ length: 4 }, () =>
+                attachments.requestUpload(String(note._id), String(userA._id), fileInput()),
+            ),
+        );
+        assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+        assert.equal(await MediaModel.countDocuments({ resourceId: note._id }), 1);
+    } finally {
+        await PlanFeatureModel.updateMany({ featureId: feature._id }, { isUnlimited: true });
+    }
+    const storageFeature = await FeatureModel.findOne({ code: "MAX_STORAGE_BYTES" });
+    const owner = await createTestUser("quota");
+    const workspace = await WorkspaceModel.create({
+        name: "Quota",
+        slug: `quota-${owner._id}`,
+        ownerId: owner._id,
+    });
+    const notes = await Promise.all([newNote(owner, workspace), newNote(owner, workspace)]);
+    await PlanFeatureModel.updateMany({ featureId: storageFeature._id }, { limit: 60, isUnlimited: false });
+    try {
+        const results = await Promise.allSettled(
+            notes.map((note) => attachments.requestUpload(String(note._id), String(owner._id), fileInput())),
+        );
+        assert.equal(results.filter((result) => result.status === "fulfilled").length, 1);
+    } finally {
+        await PlanFeatureModel.updateMany({ featureId: storageFeature._id }, { isUnlimited: true });
+    }
+});
+
+test("legacy ownership resolution preserves keys and refuses orphaned or conflicting relationships", async () => {
+    const { resolveLegacyMediaOwnership } =
+        await import("../src/modules/media/services/mediaMigration.service.ts");
+    const note = await newNote();
+    const row = {
+        uploadedBy: userA._id,
+        storageKey: "stickyji/legacy/file.txt",
+        resourceType: "NOTE",
+        resourceId: note._id,
+    };
+    const result = await resolveLegacyMediaOwnership(row);
+    assert.equal(String(result.tenantId), String(userA._id));
+    assert.deepEqual(await resolveLegacyMediaOwnership({ ...row, ...result }), result);
+    assert.equal(row.storageKey, "stickyji/legacy/file.txt");
+    await assert.rejects(() => resolveLegacyMediaOwnership({ ...row, resourceId: new Types.ObjectId() }));
+    await assert.rejects(() => resolveLegacyMediaOwnership({ ...row, tenantId: userB._id }));
+});
+
+test("workspace readers can download but cannot write; removed uploaders lose generic Media access", async () => {
+    const { PermissionModel } = await import("../src/modules/permissions/models/permission.model.ts");
+    const { RoleModel } = await import("../src/modules/roles/models/role.model.ts");
+    const { WorkspaceMemberModel } =
+        await import("../src/modules/workspaceMember/models/workspaceMember.model.ts");
+    const permission = await PermissionModel.create({
+        name: "attachment reader",
+        displayName: "Attachment reader",
+        code: "TEST_ATTACHMENT_READ",
+        module: "NOTES",
+        action: "READ",
+        access: "ANY",
+    });
+    const role = await RoleModel.create({
+        name: "attachment reader",
+        displayName: "Attachment reader",
+        code: "TEST_ATTACHMENT_READER",
+        scope: "WORKSPACE",
+        workspaceId: workspaceA._id,
+        permissions: [permission._id],
+        isActive: true,
+    });
+    const membership = await WorkspaceMemberModel.create({
+        userId: userB._id,
+        workspaceId: workspaceA._id,
+        roleId: role._id,
+        status: "ACTIVE",
+    });
+    const note = await newNote();
+    const { result } = await uploadAttachment(note);
+    await attachments.complete(String(note._id), result.mediaId, String(userA._id));
+    assert.ok((await attachments.download(String(note._id), result.mediaId, String(userB._id))).downloadUrl);
+    for (const action of [
+        () => attachments.requestUpload(String(note._id), String(userB._id), fileInput()),
+        () => attachments.complete(String(note._id), result.mediaId, String(userB._id)),
+        () => attachments.delete(String(note._id), result.mediaId, String(userB._id)),
+    ])
+        await assert.rejects(action, { statusCode: 403 });
+    const update = await PermissionModel.create({
+        name: "attachment editor",
+        displayName: "Attachment editor",
+        code: "TEST_ATTACHMENT_UPDATE",
+        module: "NOTES",
+        action: "UPDATE",
+        access: "ANY",
+    });
+    await RoleModel.updateOne({ _id: role._id }, { $push: { permissions: update._id } });
+    const ownUpload = await uploadAttachment(note, userB);
+    await WorkspaceMemberModel.deleteOne({ _id: membership._id });
+    await assert.rejects(() => mediaService.completeUpload(ownUpload.result.mediaId, String(userB._id)));
+    await assert.rejects(() => mediaService.getMedia(ownUpload.result.mediaId, String(userB._id)));
+    await assert.rejects(() => mediaService.getDownloadUrl(result.mediaId, String(userB._id)));
+});
+
+test("ownership migration CLI dry-run, repeat apply and guarded rollback preserve legacy objects", async () => {
+    const note = await newNote();
+    const id = new Types.ObjectId();
+    const legacy = await MediaModel.create({ _id: id, uploadedBy: userA._id, bucket: "media-test",
+        storageKey: `legacy/${id}.txt`, originalFileName: "legacy.txt", mimeType: "text/plain", size: 40,
+        mediaType: "DOCUMENT", purpose: "ATTACHMENT", resourceType: "NOTE", resourceId: note._id, status: "ACTIVE" });
+    const directory = await mkdtemp(join(tmpdir(), "media-migration-test-"));
+    const journal = join(directory, "journal.jsonl");
+    const previousId = (BigInt(`0x${id}`) - 1n).toString(16).padStart(24, "0");
+    const run = (...args) => promisify(execFile)(process.execPath,
+        ["--import", "tsx", "src/scripts/migrate-media-ownership.ts", ...args],
+        { windowsHide: true, env: { ...process.env, MONGO_URI: `mongodb://127.0.0.1:${mongoose.connection.port}/${mongoose.connection.name}?directConnection=true` } });
+    try {
+        await run("--dry-run", `--after=${previousId}`);
+        assert.equal((await MediaModel.findById(id)).tenantId, null);
+        await run("--apply", `--journal=${journal}`, `--after=${previousId}`);
+        assert.equal(String((await MediaModel.findById(id)).tenantId), String(userA._id));
+        assert.equal((await MediaModel.findById(id)).storageKey, legacy.storageKey);
+        const repeat = await run("--apply", `--journal=${journal}`, `--after=${previousId}`);
+        assert.ok(!repeat.stdout.includes('"action":"backfilled"'));
+        await run(`--rollback=${journal}`, "--dry-run");
+        assert.equal(String((await MediaModel.findById(id)).tenantId), String(userA._id));
+        await run(`--rollback=${journal}`, "--apply");
+        assert.equal((await MediaModel.findById(id)).tenantId, null);
+        assert.equal((await MediaModel.findById(id)).storageKey, legacy.storageKey);
+        await assert.rejects(() => run("--apply", "--dry-run", `--journal=${journal}`));
+    } finally { await rm(directory, { recursive: true, force: true }); }
 });

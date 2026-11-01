@@ -8,9 +8,11 @@ import type {
     IStickyNoteOverdueRecord,
     IStickyNoteOverdueListItem,
 } from "../interfaces/stickynote.interface.js";
+import type { StickyNoteAttachmentResponse } from "../../stickynoteattachment/utils/attachmentResponse.js";
 import {
     StickyNoteBackgroundPattern,
     StickyNoteColor,
+    StickyNotePriority,
     StickyNoteShape,
     StickyNoteVariant,
 } from "../constants/stickyNote.enums.js";
@@ -74,6 +76,7 @@ export function normalizeAssignee(raw: any): IStickyNoteAssigneeNormalized {
 }
 
 export interface IMapStickyNoteOptions {
+    attachments?: StickyNoteAttachmentResponse[];
     folderName?: string | null;
     isFavorite?: boolean;
     favoriteId?: string | null;
@@ -101,8 +104,10 @@ function getNoteKey(note: { noteKey?: string; stickyNoteNumber: number }): strin
 export function mapStickyNoteOverdueListItem(
     note: IStickyNoteOverdueRecord,
     daysOverdue: number,
+    attachments: StickyNoteAttachmentResponse[] = [],
 ): IStickyNoteOverdueListItem {
     return {
+        attachments,
         id: note._id.toString(),
         noteKey: getNoteKey(note),
         workspaceId: note.workspaceId.toString(),
@@ -116,7 +121,7 @@ export function mapStickyNoteOverdueListItem(
             name: note.column.name,
             type: note.column.type,
         },
-        priority: note.priority,
+        priority: note.priority ?? StickyNotePriority.NONE,
         color: note.color,
         createdAt: note.createdAt,
         updatedAt: note.updatedAt,
@@ -146,6 +151,7 @@ export function mapStickyNoteListItem(
         content: note.content ?? "",
         noteDate: note.noteDate ?? null,
         color: note.color ?? StickyNoteColor.YELLOW,
+        priority: note.priority ?? StickyNotePriority.NONE,
         shape: note.shape ?? StickyNoteShape.SQUARE,
         variant: note.variant ?? StickyNoteVariant.PLAIN,
         backgroundPattern: note.backgroundPattern ?? StickyNoteBackgroundPattern.NONE,
@@ -161,6 +167,7 @@ export function mapStickyNoteListItem(
         assignees: options.assignees ?? [],
         checklistSummary,
         checklists,
+        attachments: options.attachments ?? [],
         updatedAt: note.updatedAt ?? note.createdAt ?? new Date(),
     };
 }
@@ -188,6 +195,7 @@ export function mapStickyNoteDetail(
         content: note.content ?? "",
         noteDate: note.noteDate ?? null,
         color: note.color ?? StickyNoteColor.YELLOW,
+        priority: note.priority ?? StickyNotePriority.NONE,
         shape: note.shape ?? StickyNoteShape.SQUARE,
         variant: note.variant ?? StickyNoteVariant.PLAIN,
         backgroundPattern: note.backgroundPattern ?? StickyNoteBackgroundPattern.NONE,
@@ -204,7 +212,7 @@ export function mapStickyNoteDetail(
         checklistSummary,
         checklists,
         reminders: [],
-        attachments: [],
+        attachments: options.attachments ?? [],
         links: [],
         updatedAt: note.updatedAt ?? note.createdAt ?? new Date(),
     };
