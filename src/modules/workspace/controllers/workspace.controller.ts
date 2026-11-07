@@ -2,6 +2,7 @@ import type { WorkspaceListFilters } from "../validations/workspaceList.schema.j
 import type { WorkspaceDropdownFilters } from "../validations/workspaceDropdown.schema.js";
 import type { Request, Response, NextFunction } from "express";
 import { WorkspaceService } from "../services/workspace.service.js";
+import { UserWorkspaceProvisioningService } from "../services/userWorkspaceProvisioning.service.js";
 import { WorkspaceMessages } from "../constants/workspace.messages.js";
 import { ResponseUtil } from "../../../utils/response.util.js";
 import { RequestUtil } from "../../../utils/request.util.js";
@@ -19,10 +20,37 @@ export class WorkspaceController {
         };
     }
     private readonly workspaceService: WorkspaceService;
+    private readonly userWorkspaceProvisioningService: UserWorkspaceProvisioningService;
 
     constructor() {
         this.workspaceService = new WorkspaceService();
+        this.userWorkspaceProvisioningService = new UserWorkspaceProvisioningService();
     }
+
+    getOnboardingStatus = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const status = await this.userWorkspaceProvisioningService.getOnboardingStatus(req.user?.id as string);
+            return res.status(200).json(ResponseUtil.success("Onboarding status retrieved successfully.", status));
+        } catch (error) {
+            next(error);
+        }
+    };
+
+    initialSetup = async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            const result = await this.userWorkspaceProvisioningService.initialSetup(
+                req.user?.id as string,
+                req.body,
+                this.getAuditContext(req),
+            );
+
+            return res
+                .status(201)
+                .json(ResponseUtil.created("Initial onboarding setup completed successfully.", result));
+        } catch (error) {
+            next(error);
+        }
+    };
 
     createWorkspace = async (req: Request, res: Response, next: NextFunction) => {
         try {

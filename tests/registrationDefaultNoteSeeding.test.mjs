@@ -86,7 +86,7 @@ after(async () => {
     }
 });
 
-test("1. Registration automatically provisions workspace, folder, columns, default 'My First Note', and preferences", async () => {
+test("1. Registration creates user with zero workspaces and zero folders (auto-seeding decommissioned)", async () => {
     const authService = new AuthService();
     const result = await authService.register({
         email: "firstnote@test.com",
@@ -98,23 +98,57 @@ test("1. Registration automatically provisions workspace, folder, columns, defau
     const userId = result.data.user.id;
     assert.ok(userId, "User ID must be returned");
 
-    // 1. Verify Personal Workspace exists
-    const workspace = await WorkspaceModel.findOne({
+    // 1. Verify ZERO workspaces exist upon registration
+    const workspaceCount = await WorkspaceModel.countDocuments({
         ownerId: new Types.ObjectId(userId),
-        isPersonal: true,
     });
-    assert.ok(workspace, "Personal workspace must be provisioned");
-    assert.equal(workspace.name, USER_WORKSPACE_CONSTANTS.WORKSPACE.NAME);
+    assert.equal(workspaceCount, 0, "Newly registered user must begin with 0 workspaces");
 
-    // 2. Verify Default Workspace Folder exists
-    const folder = await WorkspaceFolderModel.findOne({
-        workspaceId: workspace._id,
-        isDefault: true,
+    // 2. Verify ZERO folders exist upon registration
+    const folderCount = await WorkspaceFolderModel.countDocuments({
+        createdBy: new Types.ObjectId(userId),
     });
-    assert.ok(folder, "Default folder must be provisioned");
-    assert.equal(folder.name, USER_WORKSPACE_CONSTANTS.DEFAULT_FOLDER.NAME);
+    assert.equal(folderCount, 0, "Newly registered user must begin with 0 folders");
 
-    // 3. Verify Default Columns exist (TODO, COMPLETED)
+    // 3. Verify onboarding status requires initial setup
+    const provisioningService = new UserWorkspaceProvisioningService();
+    const status = await provisioningService.getOnboardingStatus(userId);
+    assert.deepEqual(status, {
+        hasWorkspaces: false,
+        hasFolders: false,
+        requiresOnboarding: true,
+    });
+});
+
+test("2. Dynamic initial setup creates workspace, folder, columns, default note, and initializes preferences", async () => {
+    const user = await UserModel.findOne({ email: "firstnote@test.com" });
+    assert.ok(user);
+    const userId = user._id.toString();
+
+    const provisioningService = new UserWorkspaceProvisioningService();
+    const setupResult = await provisioningService.initialSetup(userId, {
+        workspaceTitle: "Acme Workspace",
+        folderTitle: "Main Notes",
+    });
+
+    assert.ok(setupResult.workspace, "Workspace must be returned");
+    assert.equal(setupResult.workspace.name, "Acme Workspace");
+    assert.ok(setupResult.folder, "Folder must be returned");
+    assert.equal(setupResult.folder.name, "Main Notes");
+
+    // Verify workspace in DB
+    const workspace = await WorkspaceModel.findById(setupResult.workspace.id);
+    assert.ok(workspace, "Workspace must exist in database");
+    assert.equal(workspace.name, "Acme Workspace");
+    assert.equal(workspace.isPersonal, true);
+
+    // Verify folder in DB
+    const folder = await WorkspaceFolderModel.findById(setupResult.folder.id);
+    assert.ok(folder, "Folder must exist in database");
+    assert.equal(folder.name, "Main Notes");
+    assert.equal(folder.isDefault, true);
+
+    // Verify columns exist
     const columns = await StickyNoteColumnModel.find({
         workspaceId: workspace._id,
         workspaceFolderId: folder._id,
@@ -124,23 +158,15 @@ test("1. Registration automatically provisions workspace, folder, columns, defau
     const todoColumn = columns.find((c) => c.type === StickyNoteColumnType.TODO);
     assert.ok(todoColumn, "Default TODO column must exist");
 
-    // 4. Verify Default 'My First Note' exists
+    // Verify default note exists in TODO column
     const note = await StickyNoteModel.findOne({
         workspaceId: workspace._id,
         workspaceFolderId: folder._id,
-        title: USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
     });
-    assert.ok(note, "Default 'My First Note' must be seeded in database");
-    assert.equal(note.columnId.toString(), todoColumn._id.toString(), "Note must be in TODO column");
-    assert.equal(note.content, USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.CONTENT);
-    assert.equal(note.color, StickyNoteColor.YELLOW);
-    assert.equal(note.status, StickyNoteStatus.ACTIVE);
-    assert.equal(note.position, 0);
-    assert.equal(note.stickyNoteNumber, 1, "First note in workspace must have stickyNoteNumber = 1");
-    assert.ok(note.rank, "Note must have a valid rank");
-    assert.equal(note.createdBy.toString(), userId);
+    assert.ok(note, "Default note must be created");
+    assert.equal(note.columnId.toString(), todoColumn._id.toString());
 
-    // 5. Verify User Preferences for selected workspace & folder are initialized
+    // Verify User Preferences for selected workspace & folder are updated
     const userObjectId = new Types.ObjectId(userId);
     const selectedWsPref = await UserPreferenceModel.findOne({
         userId: userObjectId,
@@ -156,44 +182,30 @@ test("1. Registration automatically provisions workspace, folder, columns, defau
     assert.ok(selectedFolderPref, "selectedFolderId preference must exist");
     assert.equal(selectedFolderPref.value, folder._id.toString());
 
-    const myNotesWsPref = await UserPreferenceModel.findOne({
-        userId: userObjectId,
-        key: "mynotesselectedworkspace",
+    // Verify onboarding status now reflects completion
+    const status = await provisioningService.getOnboardingStatus(userId);
+    assert.deepEqual(status, {
+        hasWorkspaces: true,
+        hasFolders: true,
+        requiresOnboarding: false,
     });
-    assert.ok(myNotesWsPref, "myNotesSelectedWorkspace preference must exist");
-    assert.equal(myNotesWsPref.value, workspace._id.toString());
-
-    const myNotesFolderPref = await UserPreferenceModel.findOne({
-        userId: userObjectId,
-        key: "mynotesselectedfolder",
-    });
-    assert.ok(myNotesFolderPref, "myNotesSelectedFolder preference must exist");
-    assert.equal(myNotesFolderPref.value, folder._id.toString());
-
-    const favWsPref = await UserPreferenceModel.findOne({
-        userId: userObjectId,
-        key: "favouriteselectedworkspace",
-    });
-    assert.ok(favWsPref, "favouriteSelectedWorkspace preference must exist");
-    assert.equal(favWsPref.value, workspace._id.toString());
 });
 
-test("2. Default provisioning is idempotent and does not create duplicates on second run", async () => {
+test("3. Second initial setup attempt is rejected (conflict)", async () => {
     const user = await UserModel.findOne({ email: "firstnote@test.com" });
     assert.ok(user);
+    const userId = user._id.toString();
 
     const provisioningService = new UserWorkspaceProvisioningService();
-    await provisioningService.provisionUserDefaults(user);
-
-    const workspaceCount = await WorkspaceModel.countDocuments({
-        ownerId: user._id,
-        isPersonal: true,
-    });
-    assert.equal(workspaceCount, 1, "Only 1 personal workspace should exist");
-
-    const noteCount = await StickyNoteModel.countDocuments({
-        createdBy: user._id,
-        title: USER_WORKSPACE_CONSTANTS.DEFAULT_NOTE.TITLE,
-    });
-    assert.equal(noteCount, 1, "Only 1 default note should exist");
+    await assert.rejects(
+        () =>
+            provisioningService.initialSetup(userId, {
+                workspaceTitle: "Duplicate Workspace",
+                folderTitle: "Duplicate Folder",
+            }),
+        (err) => {
+            assert.equal(err.statusCode, 409);
+            return true;
+        },
+    );
 });

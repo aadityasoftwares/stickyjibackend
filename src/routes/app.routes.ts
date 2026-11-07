@@ -16,6 +16,7 @@ import auditLogRoutes from "../modules/auditlog/routes/auditLog.routes.js";
 import authRoutes from "../modules/auth/routes/auth.routes.js";
 import mediaRoutes from "../modules/media/routes/media.routes.js";
 import userPreferenceRoutes from "../modules/userpreference/routes/userPreference.routes.js";
+import onboardingRoutes from "../modules/onboarding/routes/onboarding.routes.js";
 import workspaceRoutes from "../modules/workspace/routes/workspace.routes.js";
 import workspaceMemberRoutes from "../modules/workspaceMember/routes/workspaceMember.routes.js";
 import workspaceMemberInvitationRoutes from "../modules/workspaceInvitations/routes/workspaceMemberInvitation.routes.js";
@@ -92,6 +93,9 @@ router.use("/media", savePerformanceModule("media"), mediaRoutes);
 
 //MANAGE USER PREFERENCE ROUTES
 router.use("/userpreference", savePerformanceModule("userpreference"), userPreferenceRoutes);
+
+//MANAGE USER ONBOARDING ROUTES
+router.use("/onboarding", savePerformanceModule("onboarding"), onboardingRoutes);
 
 //MANAGE USER WORKSPACES ROUTES
 router.use("/workspaces", savePerformanceModule("workspaces"), workspaceRoutes);

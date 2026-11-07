@@ -11,6 +11,7 @@ import { updateWorkspaceValidation } from "../validations/updateWorkspace.valida
 import { updateWorkspaceStatusValidation } from "../validations/updateWorkspaceStatus.validation.js";
 import { getAllWorkspacesValidation } from "../validations/getAllWorkspaces.validation.js";
 import { getWorkspaceDropdownValidation } from "../validations/getWorkspaceDropdown.validation.js";
+import { initialSetupValidation } from "../../onboarding/validations/initialSetup.schema.js";
 
 const workspaceRoutes = Router();
 const workspaceController = new WorkspaceController();
@@ -28,6 +29,15 @@ const workspacePermission = (
     });
 
 workspaceRoutes.use(authMiddleware);
+
+workspaceRoutes.get("/status", workspaceController.getOnboardingStatus);
+
+workspaceRoutes.post(
+    ["/initialize", "/initial-setup"],
+    validateContentType("application/json"),
+    initialSetupValidation,
+    workspaceController.initialSetup,
+);
 
 workspaceRoutes.post(
     "/create",

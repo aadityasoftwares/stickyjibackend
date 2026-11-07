@@ -952,7 +952,7 @@ export class AuthService {
          * UserService handles:
          *
          * - user-created audit log
-         * - default workspace/folder/columns/starter note
+         * - initial user preferences
          * - welcome email
          *
          * The method is intentionally non-throwing.

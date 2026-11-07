@@ -2,8 +2,8 @@ import { WorkspaceFolderStatus } from "./workspaceFolder.enums.js";
 
 export const WORKSPACE_FOLDER_CONSTANTS = {
     TRASH: { RETENTION_DAYS: 60 },
-    NAME: { MIN_LENGTH: 1, MAX_LENGTH: 100 },
-    SLUG: { MIN_LENGTH: 1, MAX_LENGTH: 120 },
+    NAME: { MIN_LENGTH: 1, MAX_LENGTH: 255 },
+    SLUG: { MIN_LENGTH: 1, MAX_LENGTH: 255 },
     DESCRIPTION: { MAX_LENGTH: 500 },
     ICON: { MAX_LENGTH: 100 },
     COLOR: { MAX_LENGTH: 20 },

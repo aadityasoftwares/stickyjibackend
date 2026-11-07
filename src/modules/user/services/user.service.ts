@@ -72,7 +72,7 @@ export class UserService {
     }
 
     async createUser(data: CreateUserInput, context?: IAuditLogContext, options: CreateUserOptions = {}) {
-        const { provisionDefaults = true, sendWelcomeEmail = true, writeAuditLog = true } = options;
+        const { provisionDefaults = false, sendWelcomeEmail = true, writeAuditLog = true } = options;
 
         const email = StringHelper.normalizeEmail(data.email);
 
@@ -171,22 +171,11 @@ export class UserService {
         await this.safeLogUserCreated(user, context);
         await this.safeProvisionUserPreferences(user);
 
-        try {
-            const role = await RoleModel.findById(user.globalRoleId).select("_id code").lean();
-
-            if (role?.code === DEFAULT_GLOBAL_ROLE_CODE) {
-                await this.safeProvisionUserDefaults(user, context);
-            }
-        } catch (error) {
-            console.error(
-                "Registration succeeded, but the user role could not be resolved for default provisioning.",
-                {
-                    userId: user._id.toString(),
-
-                    error,
-                },
-            );
-        }
+        /*
+         * Note: Default workspace/folder auto-seeding has been decommissioned
+         * from registration. New users now begin with zero workspaces and
+         * zero folders, and complete setup via dynamic onboarding APIs.
+         */
 
         /*
          * Email is deliberately started only after
