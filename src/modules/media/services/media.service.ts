@@ -18,6 +18,7 @@ import type {
     IMediaUploadRequest,
 } from "../interfaces/media.interface.js";
 import { CloudflareR2Service } from "../storage/cloudflareR2.service.js";
+import { R2_CONFIG } from "../../../config/cloudflareR2.config.js";
 import { StorageKeyBuilder, type MediaStorageScope } from "../storage/storageKey.builder.js";
 import { SubscriptionEntitlementService } from "../../subscriptionentitlement/services/subscriptionentitlement.service.js";
 import { SubscriptionEntitlementRepository } from "../../subscriptionentitlement/repositories/subscriptionentitlement.repository.js";
@@ -303,21 +304,23 @@ export class MediaService {
         const media = await this.findAuthorized(mediaId, userId);
         if (media.status !== MediaStatus.ACTIVE)
             throw new AppError(MediaMessages.CANNOT_DOWNLOAD_UNPROCESSED_MEDIA, 400);
+
         const publicUrl = buildMediaUrl(media.storageKey, media.publicUrl);
-        if (
-            media.visibility === MediaVisibility.PUBLIC &&
-            this.storageService.isPublicBucket(media.bucket) &&
-            !media.workspaceId &&
-            media.resourceType !== MediaResourceType.NOTE &&
-            media.resourceType !== MediaResourceType.WORKSPACE
-        ) {
+        const isSeparatePrivateBucket =
+            Boolean(R2_CONFIG.PRIVATE_BUCKET_NAME) &&
+            R2_CONFIG.PRIVATE_BUCKET_NAME !== this.storageService.getBucketName() &&
+            media.bucket === R2_CONFIG.PRIVATE_BUCKET_NAME;
+
+        if (publicUrl && !isSeparatePrivateBucket) {
             return {
-                downloadUrl: this.storageService.getPublicUrl(media.storageKey),
-                url: publicUrl ?? this.storageService.getPublicUrl(media.storageKey),
-                publicUrl: publicUrl ?? this.storageService.getPublicUrl(media.storageKey),
-                visibility: MediaVisibility.PUBLIC,
+                downloadUrl: publicUrl,
+                url: publicUrl,
+                publicUrl,
+                visibility: media.visibility,
+                expiresInSeconds: MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
             };
         }
+
         const downloadUrl = await this.storageService.createDownloadUrl(
             media.storageKey,
             MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
@@ -328,7 +331,7 @@ export class MediaService {
             downloadUrl,
             url: publicUrl ?? downloadUrl,
             publicUrl: publicUrl ?? downloadUrl,
-            visibility: MediaVisibility.PRIVATE,
+            visibility: media.visibility,
             expiresInSeconds: MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
         };
     }

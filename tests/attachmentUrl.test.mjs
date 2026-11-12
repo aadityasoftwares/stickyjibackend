@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildMediaUrl } from "../src/modules/media/utils/mediaUrl.util.js";
 import { attachmentResponse } from "../src/modules/stickynoteattachment/utils/attachmentResponse.js";
+import { MediaService } from "../src/modules/media/services/media.service.js";
 import { Types } from "mongoose";
 
 test("buildMediaUrl generates public URLs using media.stickyji.com", () => {
@@ -50,3 +51,29 @@ test("attachmentResponse includes public media URL for sticky note attachments",
     assert.equal(response.url, `https://media.stickyji.com/${storageKey}`);
 });
 
+test("MediaService.getDownloadUrl returns media.stickyji.com downloadUrl for bucket objects", async () => {
+    const mediaService = new MediaService();
+    const storageKey = "tenants/6ade26babb10cefd3e3b575a/workspaces/6ade26bbbb10cefd3e3b5764/notes/6adf76a69d4970578bee5fff/attachments/2026/11/2b51ca84-446e-4b05-b8f2-6686a722fd69.png";
+    const mediaId = new Types.ObjectId().toString();
+    const userId = new Types.ObjectId().toString();
+
+    // Mock findAuthorized to return a sample media object in main bucket
+    mediaService["findAuthorized"] = async () => ({
+        _id: mediaId,
+        storageKey,
+        status: "ACTIVE",
+        bucket: "stickyji",
+        visibility: "PRIVATE",
+        originalFileName: "image.png",
+    });
+
+    const result = await mediaService.getDownloadUrl(mediaId, userId);
+    assert.equal(
+        result.downloadUrl,
+        `https://media.stickyji.com/${storageKey}`,
+    );
+    assert.equal(
+        result.url,
+        `https://media.stickyji.com/${storageKey}`,
+    );
+});
