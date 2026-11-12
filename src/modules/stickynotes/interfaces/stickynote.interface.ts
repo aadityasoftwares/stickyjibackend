@@ -71,6 +71,7 @@ export interface IStickyNoteCreate {
     rank?: string;
     noteDate?: string | null;
     assigneeIds?: string[];
+    status?: StickyNoteStatus;
 }
 
 export interface IStickyNoteUpdate {
@@ -88,6 +89,7 @@ export interface IStickyNoteUpdate {
     rank?: string;
     noteDate?: string | null;
     assigneeIds?: string[];
+    status?: StickyNoteStatus;
 }
 
 export interface IStickyNoteReorder {
@@ -196,6 +198,7 @@ export interface IStickyNoteListItemResponse {
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
     attachments: StickyNoteAttachmentResponse[];
+    status: StickyNoteStatus;
     updatedAt: Date | string;
 }
 
@@ -216,6 +219,7 @@ export interface IStickyNoteDetailResponse {
     backgroundPattern: StickyNoteBackgroundPattern;
     position: number;
     rank: string;
+    status: StickyNoteStatus;
     isFavorite: boolean;
     favoriteId: string | null;
     creatorEmail?: string | null;

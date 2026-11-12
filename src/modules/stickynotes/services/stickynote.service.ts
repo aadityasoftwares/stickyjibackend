@@ -470,6 +470,13 @@ export class StickyNoteService {
             await this.assertStickyNoteHierarchy(nextWorkspaceId, nextWorkspaceFolderId, nextColumnId);
         }
 
+        if (data.status !== undefined && data.status !== stickyNote.status) {
+            if (data.status === StickyNoteStatus.TRASHED) {
+                return this.updateStickyNoteStatus(id, data.status, updatedBy, context);
+            }
+            await this.updateStickyNoteStatus(id, data.status, updatedBy, context);
+        }
+
         const updateData: Partial<IStickyNote> = {
             updatedBy: new Types.ObjectId(updatedBy),
         };

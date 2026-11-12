@@ -323,3 +323,42 @@ test("7. Route alias POST /api/v1/workspaces/initialize also works identically",
     assert.equal(statusBody2.data.requiresOnboarding, false);
 });
 
+test("8. PUT /stickynotes/update/:id accepts full payload including status (ARCHIVED)", async () => {
+    const user = await UserModel.findOne({ email: "onboard_user1@test.com" });
+    assert.ok(user);
+    const headers = await createAuthHeaders(user._id);
+
+    const note = await StickyNoteModel.findOne({ createdBy: user._id });
+    assert.ok(note);
+
+    const updateRes = await fetch(`${baseUrl}/stickynotes/update/${note._id}`, {
+        method: "PUT",
+        headers,
+        body: JSON.stringify({
+            workspaceId: note.workspaceId.toString(),
+            workspaceFolderId: note.workspaceFolderId.toString(),
+            columnId: note.columnId.toString(),
+            title: "Updated Note Title",
+            content: "Updated note content text.",
+            color: "YELLOW",
+            priority: "NONE",
+            status: "ARCHIVED",
+            shape: "SQUARE",
+            variant: "PLAIN",
+            backgroundPattern: "NONE",
+            noteDate: "2026-11-07",
+        }),
+    });
+
+    assert.equal(updateRes.status, 200);
+    const updateBody = await updateRes.json();
+    assert.equal(updateBody.success, true);
+    assert.equal(updateBody.data.title, "Updated Note Title");
+    assert.equal(updateBody.data.status, "ARCHIVED");
+
+    // Verify in DB
+    const updatedNoteInDb = await StickyNoteModel.findById(note._id);
+    assert.equal(updatedNoteInDb.status, "ARCHIVED");
+    assert.equal(updatedNoteInDb.title, "Updated Note Title");
+});
+

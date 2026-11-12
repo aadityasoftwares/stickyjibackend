@@ -18,6 +18,7 @@ const allowedFields = new Set([
     "position",
     "noteDate",
     "assigneeIds",
+    "status",
 ]);
 // Shared create/update rules; request validation stays in middleware.
 export function validateStickyNoteFields(body: unknown, mode: "create" | "update"): void {
@@ -52,6 +53,7 @@ export function validateStickyNoteFields(body: unknown, mode: "create" | "update
         position,
         noteDate,
         assigneeIds,
+        status,
     } = values;
     if (mode === "create" && !workspaceId) throw new AppError(StickyNoteMessages.WORKSPACE_ID_REQUIRED, 400);
     if (workspaceId !== undefined && !V.isValidObjectId(workspaceId))
@@ -101,6 +103,8 @@ export function validateStickyNoteFields(body: unknown, mode: "create" | "update
         (!V.isValidPosition(position) || position < STICKY_NOTE_CONSTANTS.POSITION.MIN)
     )
         throw new AppError(StickyNoteMessages.INVALID_POSITION, 400);
+    if (status !== undefined && !V.isValidStatus(status))
+        throw new AppError(StickyNoteMessages.INVALID_STATUS, 400);
     if (assigneeIds !== undefined) {
         if (!Array.isArray(assigneeIds))
             throw new AppError(StickyNoteAssigneeMessages.INVALID_ASSIGNEE_IDS, 400);

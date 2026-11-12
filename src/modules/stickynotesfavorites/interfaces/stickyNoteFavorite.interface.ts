@@ -41,7 +41,7 @@ export interface IStickyNoteFavoritePagination {
     totalPages: number;
 }
 
-export interface IStickyNoteFavoriteResponse extends Partial<IStickyNoteListItemResponse> {
+export interface IStickyNoteFavoriteResponse extends Omit<Partial<IStickyNoteListItemResponse>, "status"> {
     id: string;
     _id?: string;
     stickyNoteId: string | unknown;

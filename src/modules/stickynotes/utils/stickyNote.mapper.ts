@@ -14,6 +14,7 @@ import {
     StickyNoteColor,
     StickyNotePriority,
     StickyNoteShape,
+    StickyNoteStatus,
     StickyNoteVariant,
 } from "../constants/stickyNote.enums.js";
 
@@ -168,6 +169,7 @@ export function mapStickyNoteListItem(
         checklistSummary,
         checklists,
         attachments: options.attachments ?? [],
+        status: (note.status as StickyNoteStatus) ?? StickyNoteStatus.ACTIVE,
         updatedAt: note.updatedAt ?? note.createdAt ?? new Date(),
     };
 }
@@ -201,6 +203,7 @@ export function mapStickyNoteDetail(
         backgroundPattern: note.backgroundPattern ?? StickyNoteBackgroundPattern.NONE,
         position: note.position ?? 0,
         rank: note.rank ?? "",
+        status: (note.status as StickyNoteStatus) ?? StickyNoteStatus.ACTIVE,
         isFavorite: Boolean(options.isFavorite),
         favoriteId: options.favoriteId ?? null,
         creatorEmail: options.creatorEmail ?? null,
