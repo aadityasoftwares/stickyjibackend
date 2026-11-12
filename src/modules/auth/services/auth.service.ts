@@ -8,6 +8,7 @@ import type { IUser, IUserDocument } from "../../user/interfaces/user.interface.
 import { UserProfileProvisioningService } from "../../userprofile/services/userProfileProvisioning.service.js";
 import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import { MediaModel } from "../../media/models/media.model.js";
 import { MediaVisibility } from "../../media/constants/media.enums.js";
 import type { IAuthUserProfileResponse } from "../interfaces/auth.interface.js";
@@ -1080,8 +1081,8 @@ export class AuthService {
             if (media) {
                 const storageService = new CloudflareR2Service();
                 const url =
-                    media.visibility === MediaVisibility.PUBLIC && storageService.isPublicBucket(media.bucket) && media.publicUrl
-                        ? media.publicUrl
+                    media.visibility === MediaVisibility.PUBLIC
+                        ? (buildMediaUrl(media.storageKey, media.publicUrl) ?? storageService.getPublicUrl(media.storageKey))
                         : await storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                 profileImage = { id: media._id.toString(), url };
             }

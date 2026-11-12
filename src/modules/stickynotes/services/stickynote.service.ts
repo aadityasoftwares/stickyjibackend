@@ -60,6 +60,7 @@ import { UserProfileModel } from "../../userprofile/models/userProfile.model.js"
 import { MediaModel } from "../../media/models/media.model.js";
 import { MediaVisibility } from "../../media/constants/media.enums.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import type { IStickyNoteAssigneeNormalized } from "../interfaces/stickynote.interface.js";
 
 export class StickyNoteService {
@@ -1107,10 +1108,8 @@ export class StickyNoteService {
             for (const media of mediaDocs) {
                 try {
                     let url: string;
-                    if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket) && media.publicUrl) {
-                        url = media.publicUrl;
-                    } else if (media.visibility === MediaVisibility.PUBLIC && this.storageService.isPublicBucket(media.bucket)) {
-                        url = this.storageService.getPublicUrl(media.storageKey);
+                    if (media.visibility === MediaVisibility.PUBLIC) {
+                        url = buildMediaUrl(media.storageKey, media.publicUrl) ?? this.storageService.getPublicUrl(media.storageKey);
                     } else {
                         url = await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     }

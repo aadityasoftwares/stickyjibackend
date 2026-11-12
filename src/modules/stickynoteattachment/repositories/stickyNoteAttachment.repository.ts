@@ -40,7 +40,7 @@ export class StickyNoteAttachmentRepository {
         if (!scopes.length) return map;
 
         const media = await MediaModel.find({ $or: scopes, status: MediaStatus.ACTIVE })
-            .select("_id resourceId originalFileName mimeType size status uploadedBy sortOrder uploadedAt createdAt")
+            .select("_id resourceId originalFileName mimeType size status uploadedBy sortOrder uploadedAt createdAt storageKey publicUrl bucket")
             .sort({ sortOrder: 1, createdAt: 1, _id: 1 }).lean().exec();
         for (const item of media) {
             const noteId = String(item.resourceId);

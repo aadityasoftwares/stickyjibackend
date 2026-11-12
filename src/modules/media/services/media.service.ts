@@ -27,6 +27,7 @@ import { MediaValidation } from "../validations/media.validation.js";
 import { MediaAccessService } from "./mediaAccess.service.js";
 import { MediaContentService } from "./mediaContent.service.js";
 import { MediaSecurity } from "../constants/mediaSecurity.constants.js";
+import { buildMediaUrl } from "../utils/mediaUrl.util.js";
 import { SubscriptionUsageService } from "../../subscriptionusage/services/subscriptionusage.service.js";
 import { BillingScopeType } from "../../subscriptionusage/constants/subscriptionusage.enums.js";
 
@@ -247,6 +248,7 @@ export class MediaService {
         }
         await this.access.assertMedia(media, userId, PermissionAction.UPDATE);
         const now = new Date();
+        const resolvedPublicUrl = buildMediaUrl(media.storageKey);
         const updated = await this.mediaRepository.updateStatusFromPending(mediaId, MediaStatus.ACTIVE, {
             uploadExpiresAt: null,
             uploadedAt: now,
@@ -255,7 +257,7 @@ export class MediaService {
             publicUrl:
                 media.visibility === MediaVisibility.PUBLIC &&
                 this.storageService.isPublicBucket(media.bucket)
-                    ? this.storageService.getPublicUrl(media.storageKey)
+                    ? (resolvedPublicUrl ?? this.storageService.getPublicUrl(media.storageKey))
                     : null,
         });
         if (updated) {
@@ -278,16 +280,18 @@ export class MediaService {
     async getMedia(mediaId: string, userId: string) {
         const media = await this.findAuthorized(mediaId, userId);
         const result = media.toObject();
+        const url = buildMediaUrl(media.storageKey, media.publicUrl);
+        const isPublic =
+            media.status === MediaStatus.ACTIVE &&
+            this.storageService.isPublicBucket(media.bucket) &&
+            !media.workspaceId &&
+            media.resourceType !== MediaResourceType.NOTE &&
+            media.resourceType !== MediaResourceType.WORKSPACE;
+
         return {
             ...result,
-            publicUrl:
-                media.status === MediaStatus.ACTIVE &&
-                this.storageService.isPublicBucket(media.bucket) &&
-                !media.workspaceId &&
-                media.resourceType !== MediaResourceType.NOTE &&
-                media.resourceType !== MediaResourceType.WORKSPACE
-                    ? result.publicUrl
-                    : null,
+            publicUrl: isPublic ? (url ?? result.publicUrl ?? null) : null,
+            url: url ?? result.publicUrl ?? null,
             downloadUrl:
                 media.status === MediaStatus.ACTIVE
                     ? (await this.getDownloadUrl(mediaId, userId)).downloadUrl
@@ -299,6 +303,7 @@ export class MediaService {
         const media = await this.findAuthorized(mediaId, userId);
         if (media.status !== MediaStatus.ACTIVE)
             throw new AppError(MediaMessages.CANNOT_DOWNLOAD_UNPROCESSED_MEDIA, 400);
+        const publicUrl = buildMediaUrl(media.storageKey, media.publicUrl);
         if (
             media.visibility === MediaVisibility.PUBLIC &&
             this.storageService.isPublicBucket(media.bucket) &&
@@ -308,16 +313,21 @@ export class MediaService {
         ) {
             return {
                 downloadUrl: this.storageService.getPublicUrl(media.storageKey),
+                url: publicUrl ?? this.storageService.getPublicUrl(media.storageKey),
+                publicUrl: publicUrl ?? this.storageService.getPublicUrl(media.storageKey),
                 visibility: MediaVisibility.PUBLIC,
             };
         }
+        const downloadUrl = await this.storageService.createDownloadUrl(
+            media.storageKey,
+            MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
+            media.originalFileName,
+            media.bucket,
+        );
         return {
-            downloadUrl: await this.storageService.createDownloadUrl(
-                media.storageKey,
-                MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
-                media.originalFileName,
-                media.bucket,
-            ),
+            downloadUrl,
+            url: publicUrl ?? downloadUrl,
+            publicUrl: publicUrl ?? downloadUrl,
             visibility: MediaVisibility.PRIVATE,
             expiresInSeconds: MEDIA_CONSTANTS.DOWNLOAD_URL_EXPIRES_IN_SECONDS,
         };
@@ -325,7 +335,7 @@ export class MediaService {
 
     async getMediaFiles(userId: string, filters: IMediaFilter = {}) {
         const scope = await this.access.resolve(userId, filters.resourceType, filters.resourceId);
-        return this.mediaRepository.findAll({
+        const result = await this.mediaRepository.findAll({
             ...filters,
             tenantId: scope.tenantId,
             workspaceId: scope.workspaceId,
@@ -337,6 +347,18 @@ export class MediaService {
                 ? filters.sortBy
                 : "createdAt",
         });
+        return {
+            ...result,
+            data: result.data.map((item) => {
+                const doc = typeof (item as any).toObject === "function" ? (item as any).toObject() : item;
+                const url = buildMediaUrl(doc.storageKey, doc.publicUrl);
+                return {
+                    ...doc,
+                    publicUrl: url ?? doc.publicUrl ?? null,
+                    url: url ?? doc.publicUrl ?? null,
+                };
+            }),
+        };
     }
 
     async updateMedia(mediaId: string, userId: string, data: IMediaUpdateRequest) {
