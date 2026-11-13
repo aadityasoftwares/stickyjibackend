@@ -944,7 +944,7 @@ export class AuthService {
     private async safeCompleteRegistration(
         user: IUserDocument,
         data: IRegisterInput,
-        verificationToken: string,
+        _verificationToken: string,
         ipAddress?: string,
         userAgent?: string,
         context?: IAuditLogContext,
@@ -954,12 +954,15 @@ export class AuthService {
          *
          * - user-created audit log
          * - initial user preferences
-         * - welcome email
+         * - welcome email (using registered user's name)
          *
          * The method is intentionally non-throwing.
          */
         try {
-            await this.userService.completeRegistration(user, context);
+            await this.userService.completeRegistration(user, context, {
+                firstName: data.firstName,
+                lastName: data.lastName,
+            });
         } catch (error) {
             console.error("Registration succeeded, but post-registration user setup failed.", {
                 userId: user._id.toString(),
@@ -969,15 +972,9 @@ export class AuthService {
         }
 
         /*
-         * Send verification email asynchronously.
-         * Failure to deliver must never block or fail registration.
+         * Note: Email verification is not sent on signup.
+         * The user receives the welcome email instead.
          */
-        void this.sendEmailVerificationEmail(user.email, verificationToken).catch((error) => {
-            console.error("Failed to send verification email during registration.", {
-                email: user.email,
-                error,
-            });
-        });
 
         try {
             await this.auditLogService.log({

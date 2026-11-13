@@ -23,6 +23,7 @@ import { StringHelper } from "../../../utils/helpers/string.helper.js";
 import { welcomeEmailTemplate } from "../../../emails/templates/welcome.template.js";
 
 import { sendEmail } from "../../../emails/services/emailService.js";
+import { helloSender } from "../../../config/emailmailer.js";
 
 import { RoleScope } from "../../roles/constants/role.enums.js";
 
@@ -32,6 +33,7 @@ import bcrypt from "bcryptjs";
 import { AUTH_CONSTANTS } from "../../auth/constants/auth.constants.js";
 import { UserPreferenceProvisioningService } from "../../userpreference/seeders/userPreferenceProvisioning.service.js";
 import { UserSubscriptionService } from "../../usersubscription/services/usersubscription.service.js";
+import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
 
 type CreateUserInput = Partial<IUser> & Pick<IUser, "email" | "authProvider">;
 
@@ -158,7 +160,11 @@ export class UserService {
      * welcome email / audit / starter-data problems must
      * not make the frontend display "registration failed".
      */
-    async completeRegistration(user: IUserDocument, context?: IAuditLogContext): Promise<void> {
+    async completeRegistration(
+        user: IUserDocument,
+        context?: IAuditLogContext,
+        options?: { firstName?: string; lastName?: string; userName?: string },
+    ): Promise<void> {
         try {
             await this.userSubscriptionService.ensureFreeSubscription(user._id.toString(), context);
         } catch (error) {
@@ -178,10 +184,15 @@ export class UserService {
          */
 
         /*
-         * Email is deliberately started only after
-         * user + profile + session have succeeded.
+         * Send welcome email to newly registered user
          */
-        void this.sendWelcomeEmail(user);
+        const resolvedName =
+            options?.firstName?.trim() ||
+            options?.userName?.trim() ||
+            (options?.lastName ? `${options.firstName ?? ""} ${options.lastName}`.trim() : "") ||
+            "";
+
+        void this.sendWelcomeEmail(user, resolvedName);
     }
 
     /**
@@ -331,17 +342,28 @@ export class UserService {
         return new AppError("A user with the same unique account information already exists.", 409);
     }
 
-    private async sendWelcomeEmail(user: IUserDocument): Promise<void> {
+    private async sendWelcomeEmail(user: IUserDocument, userName?: string): Promise<void> {
         try {
+            let nameToUse = userName?.trim();
+            if (!nameToUse) {
+                const profile = await UserProfileModel.findOne({ userId: user._id })
+                    .select("firstName lastName displayName")
+                    .lean();
+                nameToUse =
+                    profile?.firstName?.trim() ||
+                    profile?.displayName?.trim() ||
+                    user.email.split("@")[0] ||
+                    "there";
+            }
+
             const html = welcomeEmailTemplate({
-                userName: user.email || "there",
+                userName: nameToUse || "there",
             });
 
             await sendEmail({
+                from: helloSender,
                 to: user.email,
-
                 subject: "Welcome to Sticky Ji 👋",
-
                 html,
             });
         } catch (error) {

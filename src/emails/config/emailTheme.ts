@@ -6,8 +6,8 @@ export const emailTheme = {
     // Brand
     brand: {
         name: "Sticky Ji",
-        logo: "https://aadityasoftwares.fun/mystickynotes/mystickynoteslogo.png",
-        website: "https://aadityasoftwares.fun/mystickynotes",
+        logo: "https://media.stickyji.com/companylogos/StickyJiHorizontalLogo.png",
+        website: "https://stickyji.com",
     },
 
     // Design System Colors
