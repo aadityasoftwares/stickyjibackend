@@ -8,6 +8,7 @@ import type { IUser, IUserDocument } from "../../user/interfaces/user.interface.
 import { UserProfileProvisioningService } from "../../userprofile/services/userProfileProvisioning.service.js";
 import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import { MediaModel } from "../../media/models/media.model.js";
 import { MediaVisibility } from "../../media/constants/media.enums.js";
 import type { IAuthUserProfileResponse } from "../interfaces/auth.interface.js";
@@ -952,7 +953,7 @@ export class AuthService {
          * UserService handles:
          *
          * - user-created audit log
-         * - default workspace/folder/columns/starter note
+         * - initial user preferences
          * - welcome email
          *
          * The method is intentionally non-throwing.
@@ -1073,16 +1074,16 @@ export class AuthService {
                 _id: profile.profileImage,
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             if (media) {
                 const storageService = new CloudflareR2Service();
                 const url =
-                    media.visibility === MediaVisibility.PUBLIC && media.publicUrl
-                        ? media.publicUrl
-                        : await storageService.createDownloadUrl(media.storageKey);
+                    media.visibility === MediaVisibility.PUBLIC
+                        ? (buildMediaUrl(media.storageKey, media.publicUrl) ?? storageService.getPublicUrl(media.storageKey))
+                        : await storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                 profileImage = { id: media._id.toString(), url };
             }
         }

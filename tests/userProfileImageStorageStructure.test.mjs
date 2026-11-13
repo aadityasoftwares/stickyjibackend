@@ -9,6 +9,7 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 import express from "express";
+import "./helpers/mediaVerificationMock.mjs";
 
 process.env.JWT_ACCESS_SECRET = "storage-struct-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "storage-struct-test-refresh-secret";
@@ -16,6 +17,7 @@ for (const key of ["ACCOUNT_ID", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "BUCKET_N
     process.env[`CLOUDFLARE_R2_${key}`] = "storage-struct-test";
 }
 process.env.CLOUDFLARE_R2_PUBLIC_URL = "https://cdn.example.test";
+process.env.CLOUDFLARE_R2_PRIVATE_BUCKET_NAME = "storage-struct-test-private";
 
 const { UserModel } = await import("../src/modules/user/models/user.model.ts");
 const { UserProfileModel } = await import("../src/modules/userprofile/models/userProfile.model.ts");
@@ -204,14 +206,14 @@ test("1 & 2. User A uploads a profile image and image is saved under User A ID p
     assert.ok(body.data.storageKey);
 
     // Expected prefix: user/avatars/{userA._id}/{year}/
-    const expectedPrefix = `user/avatars/${userA._id.toString()}/${year}/`;
+    const expectedPrefix = `accounts/${userA._id}/users/${userA._id}/avatars/${year}/`;
     assert.ok(
         body.data.storageKey.startsWith(expectedPrefix),
         `Storage key "${body.data.storageKey}" does not start with expected prefix "${expectedPrefix}"`,
     );
 
     // Verify key format: user/avatars/{userId}/{year}/{uuid}.png
-    const pattern = new RegExp(`^user/avatars/${userA._id.toString()}/${year}/[0-9a-f-]+\\.png$`);
+    const pattern = new RegExp(`^${expectedPrefix}[0-9]{2}/[0-9a-f-]+\\.png$`);
     assert.ok(pattern.test(body.data.storageKey), `Key "${body.data.storageKey}" does not match pattern ${pattern}`);
 });
 
@@ -232,7 +234,7 @@ test("3 & 4. User B uploads a profile image and uses a different User B ID prefi
 
     assert.equal(res.status, 201);
     const body = await res.json();
-    const expectedPrefixB = `user/avatars/${userB._id.toString()}/${year}/`;
+    const expectedPrefixB = `accounts/${userB._id}/users/${userB._id}/avatars/${year}/`;
 
     assert.ok(
         body.data.storageKey.startsWith(expectedPrefixB),
@@ -332,12 +334,15 @@ test("8. No MIME-type slash or accidental MIME string appears in generated filen
 
     // Must strictly have exactly 4 slash-separated segments: user/avatars/{userId}/{year}/{uuid.ext}
     const segments = key.split("/");
-    assert.equal(segments.length, 5, `Expected 5 segments (user/avatars/userId/year/filename), got ${segments.length}`);
-    assert.equal(segments[0], "user");
-    assert.equal(segments[1], "avatars");
-    assert.equal(segments[2], userA._id.toString());
-    assert.equal(segments[3], String(new Date().getFullYear()));
-    assert.ok(/^[0-9a-f-]+\.png$/.test(segments[4]));
+    assert.equal(segments.length, 8);
+    assert.equal(segments[0], "accounts");
+    assert.equal(segments[1], userA._id.toString());
+    assert.equal(segments[2], "users");
+    assert.equal(segments[3], userA._id.toString());
+    assert.equal(segments[4], "avatars");
+    assert.equal(segments[5], String(new Date().getUTCFullYear()));
+    assert.match(segments[6], /^\d{2}$/);
+    assert.ok(/^[0-9a-f-]+\.png$/.test(segments[7]));
 });
 
 test("9 & 10. Upload confirmation and presigned download URLs work with new storage structure", async () => {
@@ -523,8 +528,8 @@ test("16. Other Media purposes remain unaffected by user profile structure chang
     const year = new Date().getFullYear();
     // Non-profile attachments must use their standard prefix (e.g. unlinked/attachments/{year}/...)
     assert.ok(
-        otherRes.storageKey.startsWith(`unlinked/attachments/${year}/`),
+        otherRes.storageKey.startsWith(`accounts/${userA._id}/users/${userA._id}/attachments/${year}/`),
         `Expected non-profile upload to start with unlinked/attachments/${year}/, got ${otherRes.storageKey}`,
     );
-    assert.ok(!otherRes.storageKey.includes(userA._id.toString()));
+    assert.ok(otherRes.storageKey.includes(userA._id.toString()));
 });

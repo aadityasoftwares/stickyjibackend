@@ -1,4 +1,6 @@
 import { runMongoTransaction } from "../../../utils/mongoTransaction.util.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaResourceType, MediaStatus } from "../../media/constants/media.enums.js";
 import { WorkspaceRepository } from "../../workspace/repositories/workspace.repository.js";
 import { UserPreferenceModel } from "../../userpreference/models/userPreference.model.js";
 import { TimezoneModel } from "../../timezones/models/timezone.model.js";
@@ -865,6 +867,11 @@ export class StickyNoteRepository {
 
     async deleteDependentData(id: string, session?: ClientSession) {
         const stickyNoteId = new Types.ObjectId(id);
+        // Same transaction as the note purge; R2 is removed asynchronously after commit.
+        const mediaQuery = MediaModel.updateMany({ resourceType: MediaResourceType.NOTE, resourceId: stickyNoteId },
+            { $set: { status: MediaStatus.DELETED, storageDeletionPending: true, deletedAt: new Date(), publicUrl: null } });
+        if (session) mediaQuery.session(session);
+        await mediaQuery.exec();
         const checklistsQuery = StickyNoteChecklistModel.find({
             stickyNoteId,
         }).select("_id");

@@ -1,4 +1,5 @@
 import type { Document, Types } from "mongoose";
+import type { StickyNoteAttachmentResponse } from "../../stickynoteattachment/utils/attachmentResponse.js";
 import type { StickyNoteColumnType } from "../../stickynotescolumns/constants/stickyNoteColumn.enums.js";
 import type {
     StickyNoteBackgroundPattern,
@@ -70,6 +71,7 @@ export interface IStickyNoteCreate {
     rank?: string;
     noteDate?: string | null;
     assigneeIds?: string[];
+    status?: StickyNoteStatus;
 }
 
 export interface IStickyNoteUpdate {
@@ -87,6 +89,7 @@ export interface IStickyNoteUpdate {
     rank?: string;
     noteDate?: string | null;
     assigneeIds?: string[];
+    status?: StickyNoteStatus;
 }
 
 export interface IStickyNoteReorder {
@@ -172,6 +175,7 @@ export interface IStickyNoteListItemResponse {
     content: string;
     noteDate: string | null;
     color: StickyNoteColor;
+    priority: StickyNotePriority;
     shape: StickyNoteStoredShape;
     variant: StickyNoteVariant;
     backgroundPattern: StickyNoteBackgroundPattern;
@@ -193,6 +197,8 @@ export interface IStickyNoteListItemResponse {
     assignees: IStickyNoteAssigneeNormalized[];
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
+    attachments: StickyNoteAttachmentResponse[];
+    status: StickyNoteStatus;
     updatedAt: Date | string;
 }
 
@@ -207,11 +213,13 @@ export interface IStickyNoteDetailResponse {
     content: string;
     noteDate: string | null;
     color: StickyNoteColor;
+    priority: StickyNotePriority;
     shape: StickyNoteStoredShape;
     variant: StickyNoteVariant;
     backgroundPattern: StickyNoteBackgroundPattern;
     position: number;
     rank: string;
+    status: StickyNoteStatus;
     isFavorite: boolean;
     favoriteId: string | null;
     creatorEmail?: string | null;
@@ -229,7 +237,7 @@ export interface IStickyNoteDetailResponse {
     checklistSummary: IStickyNoteChecklistSummary;
     checklists: IStickyNoteChecklistResponse[];
     reminders: unknown[];
-    attachments: unknown[];
+    attachments: StickyNoteAttachmentResponse[];
     links: unknown[];
     updatedAt: Date | string;
 }
@@ -275,6 +283,7 @@ export interface IStickyNoteOverdueRecord extends Pick<
 }
 
 export interface IStickyNoteOverdueListItem {
+    attachments: StickyNoteAttachmentResponse[];
     id: string;
     noteKey: string;
     workspaceId: string;

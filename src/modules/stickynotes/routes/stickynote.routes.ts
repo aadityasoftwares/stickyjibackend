@@ -1,4 +1,5 @@
 import { Router } from "express";
+import stickyNoteAttachmentRoutes from "../../stickynoteattachment/routes/stickyNoteAttachment.routes.js";
 import { authMiddleware } from "../../../middlewares/authmiddleware/auth.middleware.js";
 import { validateContentType } from "../../../utils/validations/validateContentType.js";
 import { createStickyNoteValidation } from "../validations/createStickyNote.validation.js";
@@ -22,6 +23,7 @@ const stickyNoteController = new StickyNoteController();
 const stickyNoteAssigneeController = new StickyNoteAssigneeController();
 
 stickyNoteRoutes.use(authMiddleware);
+stickyNoteRoutes.use("/:noteId/attachments", stickyNoteAttachmentRoutes);
 
 stickyNoteRoutes.post(
     "/overdue",

@@ -168,7 +168,8 @@ export class MediaUtil {
      * Validates that the mediaType is allowed for the given purpose
      */
     static isMediaTypeAllowedForPurpose(purpose: MediaPurpose, mediaType: MediaType): boolean {
-        const allowedTypes = MEDIA_CONSTANTS.ALLOWED_PURPOSE_MEDIA_TYPES[purpose] as readonly MediaType[] | undefined;
+        const allowedTypes = MEDIA_CONSTANTS.ALLOWED_PURPOSE_MEDIA_TYPES[purpose] as
+            readonly MediaType[] | undefined;
         if (!allowedTypes || allowedTypes.length === 0) {
             return true;
         }

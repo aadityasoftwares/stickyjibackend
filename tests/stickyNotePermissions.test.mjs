@@ -427,6 +427,61 @@ test("NOTES + CREATE: Member can create a note in active workspace", async () =>
 
     assert.equal(res.status, 201);
     assert.equal(res.body.data.title, "Member note");
+    assert.equal(res.body.data.priority, "NONE");
+});
+
+test("NOTES: priority persists through create/update and is returned by detail and list APIs", async () => {
+    const created = await request(
+        "/stickynotes/create",
+        {
+            method: "POST",
+            body: JSON.stringify({
+                workspaceId: workspaceId.toString(),
+                workspaceFolderId: folderId.toString(),
+                columnId: columnId.toString(),
+                content: "Priority round trip",
+                priority: "LOW",
+            }),
+        },
+        memberId,
+    );
+    assert.equal(created.status, 201);
+    assert.equal(created.body.data.priority, "LOW");
+    const noteId = created.body.data.id;
+
+    for (const priority of ["LOW", "MEDIUM", "HIGH", "URGENT", "NONE"]) {
+        if (priority !== "LOW") {
+            const updated = await request(
+                `/stickynotes/update/${noteId}`,
+                { method: "PUT", body: JSON.stringify({ priority }) },
+                memberId,
+            );
+            assert.equal(updated.status, 200);
+            assert.equal(updated.body.data.priority, priority);
+        }
+        const stored = await StickyNoteModel.collection.findOne({ _id: new Types.ObjectId(noteId) });
+        assert.equal(stored.priority, priority);
+
+        const detail = await request(`/stickynotes/get/${noteId}`, {}, memberId);
+        assert.equal(detail.status, 200);
+        assert.equal(detail.body.data.priority, priority);
+
+        const list = await request(`/stickynotes/getall?workspaceId=${workspaceId}`, {}, memberId);
+        assert.equal(list.status, 200);
+        assert.equal(list.body.data.find((note) => note.id === noteId)?.priority, priority);
+    }
+
+    // Legacy records can lack priority; lean reads must still return the default.
+    await StickyNoteModel.collection.updateOne(
+        { _id: new Types.ObjectId(noteId) },
+        { $unset: { priority: "" } },
+    );
+    const detail = await request(`/stickynotes/get/${noteId}`, {}, memberId);
+    assert.equal(detail.status, 200);
+    assert.equal(detail.body.data.priority, "NONE");
+    const list = await request(`/stickynotes/getall?workspaceId=${workspaceId}`, {}, memberId);
+    assert.equal(list.status, 200);
+    assert.equal(list.body.data.find((note) => note.id === noteId)?.priority, "NONE");
 });
 
 test("NOTES + CREATE: Stranger without membership is rejected with 403", async () => {

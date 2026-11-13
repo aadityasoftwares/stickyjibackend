@@ -19,6 +19,7 @@ import { AppModule } from "../../../utils/enums/appModule.enums.js";
 import { MediaService } from "../../media/services/media.service.js";
 import { MediaRepository } from "../../media/repositories/media.repository.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import { MediaModel } from "../../media/models/media.model.js";
 import {
     MediaPurpose,
@@ -678,18 +679,16 @@ export class UserProfileService {
             mediaDoc = await this.mediaRepository.findById(idStr, true);
         }
 
-        if (!mediaDoc || mediaDoc.status === MediaStatus.DELETED) {
+        if (!mediaDoc || mediaDoc.status !== MediaStatus.ACTIVE || mediaDoc.storageDeletionPending) {
             return null;
         }
 
         let url: string;
         try {
-            if (mediaDoc.visibility === MediaVisibility.PUBLIC && mediaDoc.publicUrl) {
-                url = mediaDoc.publicUrl;
-            } else if (mediaDoc.visibility === MediaVisibility.PUBLIC) {
-                url = this.storageService.getPublicUrl(mediaDoc.storageKey);
+            if (mediaDoc.visibility === MediaVisibility.PUBLIC) {
+                url = mediaDoc.publicUrl ?? buildMediaUrl(mediaDoc.storageKey) ?? this.storageService.getPublicUrl(mediaDoc.storageKey);
             } else {
-                url = await this.storageService.createDownloadUrl(mediaDoc.storageKey);
+                url = await this.storageService.createDownloadUrl(mediaDoc.storageKey, undefined, undefined, mediaDoc.bucket);
             }
         } catch {
             return null;

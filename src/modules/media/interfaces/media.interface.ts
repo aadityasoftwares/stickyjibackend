@@ -10,6 +10,15 @@ import {
 } from "../constants/media.enums.js";
 
 export interface IMedia {
+    tenantId?: Types.ObjectId | null;
+    workspaceId?: Types.ObjectId | null;
+    storageKeyVersion?: number;
+    checksum?: string | null;
+    uploadedAt?: Date | null;
+    uploadUrlExpiresAt?: Date | null;
+    lastVerifiedAt?: Date | null;
+    sortOrder?: number;
+    uploadOperationId?: string;
     _id?: Types.ObjectId;
     uploadedBy: Types.ObjectId;
     storageProvider: MediaStorageProvider;
@@ -39,6 +48,7 @@ export interface IMediaDocument extends IMedia, Document {
 }
 
 export interface IMediaUploadRequest {
+    idempotencyKey?: string;
     fileName: string;
     mimeType: string;
     size: number;
@@ -60,6 +70,8 @@ export interface IMediaUpdateRequest {
 }
 
 export interface IMediaFilter {
+    tenantId?: Types.ObjectId | string;
+    workspaceId?: Types.ObjectId | string;
     uploadedBy?: Types.ObjectId | string;
     mediaType?: MediaType;
     purpose?: MediaPurpose;

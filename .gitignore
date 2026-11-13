@@ -85,3 +85,7 @@ credentials.json
 
 # Local Docker overrides
 docker-compose.override.yml
+
+# Deployment configurations
+deploy
+docker

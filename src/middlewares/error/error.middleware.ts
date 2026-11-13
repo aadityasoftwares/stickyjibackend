@@ -1,8 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { AppError } from "../../utils/errors/app.error.js";
 import { ResponseUtil } from "../../utils/response.util.js";
+import { ZodError } from "zod";
 
 export const errorMiddleware = (error: Error, req: Request, res: Response, next: NextFunction) => {
+    if (error instanceof ZodError) {
+        return res.status(400).json(ResponseUtil.validationError("Invalid request.", error.issues));
+    }
     if (error instanceof AppError) {
         return res.status(error.statusCode).json(ResponseUtil.error(error.message, error.code));
     }

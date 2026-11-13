@@ -9,6 +9,7 @@ import { createServer } from "node:net";
 import { setTimeout as delay } from "node:timers/promises";
 import mongoose, { Types } from "mongoose";
 import express from "express";
+import "./helpers/mediaVerificationMock.mjs";
 
 process.env.JWT_ACCESS_SECRET = "member-img-test-access-secret";
 process.env.JWT_REFRESH_SECRET = "member-img-test-refresh-secret";
@@ -16,6 +17,7 @@ for (const key of ["ACCOUNT_ID", "ACCESS_KEY_ID", "SECRET_ACCESS_KEY", "BUCKET_N
     process.env[`CLOUDFLARE_R2_${key}`] = "member-img-test";
 }
 process.env.CLOUDFLARE_R2_PUBLIC_URL = "https://cdn.example.test";
+process.env.CLOUDFLARE_R2_BUCKET_IS_PRIVATE = "false";
 
 const { UserModel } = await import("../src/modules/user/models/user.model.ts");
 const { UserProfileModel } = await import("../src/modules/userprofile/models/userProfile.model.ts");

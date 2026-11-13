@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
 import cookieParser from "cookie-parser";
+import { createCorsOptions } from "./config/cors.config.js";
 
 import appRoutes from "./routes/app.routes.js";
 import { errorMiddleware } from "./middlewares/error/error.middleware.js";
@@ -16,14 +17,8 @@ app.use(savePerformanceMiddleware);
  */
 app.use(helmet());
 app.use(cookieParser());
-app.use(
-    cors({
-        origin: "http://localhost:4200",
-        methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-        credentials: true,
-    }),
-);
+
+app.use(cors(createCorsOptions()));
 
 /**
  * Performance

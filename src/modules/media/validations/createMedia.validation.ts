@@ -56,12 +56,17 @@ export const createMediaValidation = (req: Request, res: Response, next: NextFun
             return next(new AppError(MediaMessages.FILE_SIZE_REQUIRED, 400));
         }
 
-        const sizeValidation = MediaUtil.validateFileSize(size, mediaType as MediaType, purpose as MediaPurpose);
+        const sizeValidation = MediaUtil.validateFileSize(
+            size,
+            mediaType as MediaType,
+            purpose as MediaPurpose,
+        );
         if (!sizeValidation.valid) {
             return next(new AppError(sizeValidation.message ?? MediaMessages.INVALID_FILE_SIZE, 400));
         }
 
-        const allowedMimeTypes: readonly string[] = MEDIA_CONSTANTS.ALLOWED_MIME_TYPES[mediaType as MediaType];
+        const allowedMimeTypes: readonly string[] =
+            MEDIA_CONSTANTS.ALLOWED_MIME_TYPES[mediaType as MediaType];
         if (allowedMimeTypes.length > 0 && !allowedMimeTypes.includes(normalizedMimeType)) {
             return next(new AppError(MediaMessages.MEDIA_TYPE_MISMATCH, 400));
         }

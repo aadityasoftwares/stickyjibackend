@@ -1,8 +1,8 @@
 import { MediaPurpose, MediaType, MediaVisibility } from "./media.enums.js";
 
 export const MEDIA_CONSTANTS = {
-    UPLOAD_URL_EXPIRES_IN_SECONDS: 15 * 60,
-    DOWNLOAD_URL_EXPIRES_IN_SECONDS: 15 * 60,
+    UPLOAD_URL_EXPIRES_IN_SECONDS: 5 * 60,
+    DOWNLOAD_URL_EXPIRES_IN_SECONDS: 5 * 60,
     PENDING_UPLOAD_EXPIRY_MINUTES: 60,
     CLEANUP_BATCH_SIZE: 100,
 
@@ -80,6 +80,7 @@ export const MEDIA_CONSTANTS = {
         [MediaType.DOCUMENT]: [
             "application/pdf",
             "text/plain",
+            "text/csv",
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/vnd.ms-excel",
@@ -106,6 +107,7 @@ export const MEDIA_CONSTANTS = {
         "audio/webm": ["weba", "webm"],
         "application/pdf": ["pdf"],
         "text/plain": ["txt"],
+        "text/csv": ["csv"],
         "application/msword": ["doc"],
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ["docx"],
         "application/vnd.ms-excel": ["xls"],

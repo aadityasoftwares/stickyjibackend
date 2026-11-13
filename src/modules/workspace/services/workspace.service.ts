@@ -52,6 +52,7 @@ import { UserProfileModel } from "../../userprofile/models/userProfile.model.js"
 import { MediaModel } from "../../media/models/media.model.js";
 import { MediaVisibility } from "../../media/constants/media.enums.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import type { IWorkspaceProfileImage } from "../interfaces/workspace.interface.js";
 
 const WORKSPACE_MEMBER_PREVIEW_LIMIT = 4;
@@ -952,19 +953,17 @@ export class WorkspaceService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     let url: string;
-                    if (media.visibility === MediaVisibility.PUBLIC && media.publicUrl) {
-                        url = media.publicUrl;
-                    } else if (media.visibility === MediaVisibility.PUBLIC) {
-                        url = this.storageService.getPublicUrl(media.storageKey);
+                    if (media.visibility === MediaVisibility.PUBLIC) {
+                        url = buildMediaUrl(media.storageKey, media.publicUrl) ?? this.storageService.getPublicUrl(media.storageKey);
                     } else {
-                        url = await this.storageService.createDownloadUrl(media.storageKey);
+                        url = await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     }
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),

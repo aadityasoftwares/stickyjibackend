@@ -29,21 +29,7 @@ export class WorkspacePurgeService {
     }
 
     async cleanupDeletedMedia() {
-        const media = await this.mediaRepository.findPendingStorageDeletions();
-        const result = { deleted: 0, failed: 0 };
-        for (const file of media) {
-            try {
-                const { CloudflareR2Service } = await import("../../media/storage/cloudflareR2.service.js");
-                const storageService = new CloudflareR2Service();
-                // Never apply a stored key to a different configured bucket.
-                if (file.bucket !== storageService.getBucketName()) throw new Error("Media bucket mismatch.");
-                await storageService.deleteObject(file.storageKey);
-                await this.mediaRepository.deleteStorageTombstone(file._id.toString());
-                result.deleted += 1;
-            } catch {
-                result.failed += 1;
-            }
-        }
-        return result;
+        const { MediaService } = await import("../../media/services/media.service.js");
+        return new MediaService().cleanupPendingStorageDeletions();
     }
 }

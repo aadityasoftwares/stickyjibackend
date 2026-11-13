@@ -192,9 +192,9 @@ test("2. all required system records are created correctly", async () => {
 
     // Subscription Catalog
     assert.equal(await PlanModel.countDocuments({ isActive: true }), 3);
-    assert.equal(await FeatureModel.countDocuments(), 21);
-    assert.equal(await FeatureModel.countDocuments({ isActive: true }), 17);
-    assert.equal(await PlanFeatureModel.countDocuments(), 63);
+    assert.equal(await FeatureModel.countDocuments(), 22);
+    assert.equal(await FeatureModel.countDocuments({ isActive: true }), 18);
+    assert.equal(await PlanFeatureModel.countDocuments(), 66);
     assert.equal(await PlanPriceModel.countDocuments({ isActive: true }), 4);
 
     // Verification check

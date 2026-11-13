@@ -203,6 +203,7 @@ export class SubscriptionUsageRepository {
         userId: Types.ObjectId,
         ownedWorkspaceIds: Types.ObjectId[],
         session?: ClientSession,
+        includePending = false,
     ): Promise<number> {
         // Trashing a workspace does not remove its stored objects.
         const retainedQuery = WorkspaceModel.find({ ownerId: userId }).select("_id");
@@ -219,6 +220,7 @@ export class SubscriptionUsageRepository {
         }
 
         const resourceOrConditions: Record<string, unknown>[] = [
+            { tenantId: userId },
             { uploadedBy: userId, resourceType: { $in: [MediaResourceType.USER, null] } },
         ];
         if (ownedWorkspaceIds.length > 0) {
@@ -241,7 +243,7 @@ export class SubscriptionUsageRepository {
                         {
                             $or: [
                                 { status: MediaStatus.ACTIVE },
-                                { status: MediaStatus.PENDING, uploadExpiresAt: { $gt: new Date() } },
+                                ...(includePending ? [{ status: MediaStatus.PENDING }] : []),
                             ],
                         },
                     ],
@@ -292,7 +294,6 @@ export class SubscriptionUsageRepository {
                         {
                             $or: [
                                 { status: MediaStatus.ACTIVE },
-                                { status: MediaStatus.PENDING, uploadExpiresAt: { $gt: new Date() } },
                             ],
                         },
                     ],

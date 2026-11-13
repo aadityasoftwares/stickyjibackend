@@ -36,6 +36,7 @@ import {
 } from "../../permissions/services/permissionAuthorization.service.js";
 import { PermissionAction } from "../../permissions/constants/permission.enums.js";
 import { CloudflareR2Service } from "../../media/storage/cloudflareR2.service.js";
+import { buildMediaUrl } from "../../media/utils/mediaUrl.util.js";
 import { MediaModel } from "../../media/models/media.model.js";
 import { MediaVisibility } from "../../media/constants/media.enums.js";
 import { UserProfileModel } from "../../userprofile/models/userProfile.model.js";
@@ -248,16 +249,16 @@ export class WorkspaceMemberService {
                 _id: { $in: mediaIds },
                 isDeleted: { $ne: true },
             })
-                .select("_id storageKey publicUrl visibility")
+                .select("_id bucket storageKey publicUrl visibility")
                 .lean()
                 .exec();
 
             for (const media of mediaDocs) {
                 try {
                     const url =
-                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
-                            ? media.publicUrl
-                            : await this.storageService.createDownloadUrl(media.storageKey);
+                        media.visibility === MediaVisibility.PUBLIC
+                            ? (buildMediaUrl(media.storageKey, media.publicUrl) ?? this.storageService.getPublicUrl(media.storageKey))
+                            : await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     mediaMap.set(media._id.toString(), {
                         id: media._id.toString(),
                         url,
@@ -709,15 +710,15 @@ export class WorkspaceMemberService {
                     _id: profile.profileImage,
                     isDeleted: { $ne: true },
                 })
-                    .select("_id storageKey publicUrl visibility")
+                    .select("_id bucket storageKey publicUrl visibility")
                     .lean()
                     .exec();
 
                 if (media) {
                     const url =
-                        media.visibility === MediaVisibility.PUBLIC && media.publicUrl
-                            ? media.publicUrl
-                            : await this.storageService.createDownloadUrl(media.storageKey);
+                        media.visibility === MediaVisibility.PUBLIC
+                            ? (buildMediaUrl(media.storageKey, media.publicUrl) ?? this.storageService.getPublicUrl(media.storageKey))
+                            : await this.storageService.createDownloadUrl(media.storageKey, undefined, undefined, media.bucket);
                     profileImage = { id: media._id.toString(), url };
                 }
             }

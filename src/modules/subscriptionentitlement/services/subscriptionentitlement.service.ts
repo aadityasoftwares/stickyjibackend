@@ -1,4 +1,7 @@
 import { Types, type ClientSession } from "mongoose";
+import { SubscriptionUsageRepository } from "../../subscriptionusage/repositories/subscriptionusage.repository.js";
+import { MediaModel } from "../../media/models/media.model.js";
+import { MediaStatus } from "../../media/constants/media.enums.js";
 import { permissionAuthorizationService } from "../../permissions/services/permissionAuthorization.service.js";
 import { AppError } from "../../../utils/errors/app.error.js";
 import { FeatureCode } from "../../feature/constants/feature.enums.js";
@@ -569,7 +572,7 @@ export class SubscriptionEntitlementService {
             } else if (resource === FeatureCode.MAX_ACTIVE_STICKY_NOTES) {
                 currentCommitted = usage.activeStickyNotesUsed;
             } else if (resource === FeatureCode.MAX_STORAGE_BYTES) {
-                currentCommitted = usage.storageBytesUsed;
+                currentCommitted = await new SubscriptionUsageRepository().aggregateStorageBytes(scopeObjectId, [], options?.session, true);
             } else if (resource === FeatureCode.MAX_USERS) {
                 currentCommitted = usage.usersUsed;
             }
@@ -642,7 +645,7 @@ export class SubscriptionEntitlementService {
                         : resource === FeatureCode.MAX_ACTIVE_STICKY_NOTES
                           ? usage.activeStickyNotesUsed
                           : resource === FeatureCode.MAX_STORAGE_BYTES
-                            ? usage.storageBytesUsed
+                            ? await new SubscriptionUsageRepository().aggregateStorageBytes(scopeObjectId, [], options?.session, true)
                             : usage.usersUsed;
             }
 
@@ -960,6 +963,21 @@ export class SubscriptionEntitlementService {
 
         // 3. Atomically reserve total storage bytes (MAX_STORAGE_BYTES)
         return this.reserveCapacity(scope, FeatureCode.MAX_STORAGE_BYTES, fileSize, options);
+    }
+
+    /** Called under the distributed per-note admission lock. Pending slots count too. */
+    async assertNoteAttachmentCapacity(ownerId: string, noteId: string) {
+        const scope = { type: BillingScopeType.USER, id: ownerId };
+        const { limits } = await this.resolveEffectivePlanLimits(scope);
+        await this.assertFeatureEnabled(scope, FeatureCode.ATTACHMENTS, undefined, limits);
+        const configured = limits[FeatureCode.MAX_ATTACHMENTS_PER_NOTE];
+        const limit = configured ? this.effectiveLimit(configured) : 20;
+        const count = await MediaModel.countDocuments({
+            resourceType: MediaResourceType.NOTE, resourceId: new Types.ObjectId(noteId),
+            $or: [{ tenantId: new Types.ObjectId(ownerId) }, { tenantId: null, storageKeyVersion: { $ne: 2 } }],
+            status: { $in: [MediaStatus.ACTIVE, MediaStatus.PENDING] }, storageDeletionPending: { $ne: true },
+        });
+        if (count >= limit) throw new AppError(`This note allows at most ${limit} attachments.`, 403, "SUBSCRIPTION_LIMIT_EXCEEDED");
     }
 
     /**
